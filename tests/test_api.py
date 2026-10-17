@@ -154,3 +154,28 @@ def test_v1_requires_key_before_parsing_upload():
             assert client.post("/api/v1/analyze", headers=headers).status_code == 401
             assert client.get("/api/v1/jobs/missing", headers=headers).status_code == 401
             assert client.get("/api/v1/unknown", headers=headers).status_code == 401
+
+
+@pytest.mark.parametrize("frame_time", [43.001, 43.8, 44.2, 44.999, 43.0, 45.0])
+def test_decoded_frame_time_tolerance_through_job_api(frame_time):
+    paths = []
+
+    def analyzer(path):
+        paths.append(path)
+        violation = analyze_stub(path)[0].model_dump()
+        violation["timecode_sec"] = 44.0
+        violation["evidence_frames"][0]["timestamp_sec"] = frame_time
+        return [violation]
+
+    with TestClient(create_app(api_key="jury-key", analyzer=analyzer)) as client:
+        body = finished(client, upload(client))
+        if frame_time in (43.0, 45.0):
+            assert body["status"] == "failed"
+            assert body["verdict"] is None
+            assert body["violations"] == []
+        else:
+            assert body["status"] == "done"
+            assert body["verdict"] == "violation"
+            assert body["violations"][0]["timecode_sec"] == 44.0
+            assert body["violations"][0]["evidence_frames"][0]["timestamp_sec"] == frame_time
+        assert not paths[0].exists()

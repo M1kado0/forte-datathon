@@ -7,6 +7,7 @@ export default function App() {
   const [job, setJob] = useState<Job | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [logoAvailable, setLogoAvailable] = useState(true);
   const active = useRef(0);
   useEffect(() => () => { active.current += 1; }, []);
 
@@ -37,7 +38,7 @@ export default function App() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-8 sm:py-16">
-      <p className="mb-12 text-xl font-bold text-forte-dark">ForteBank</p>
+      {logoAvailable && <img src="/forte-logo.svg" alt="ForteBank" onError={() => setLogoAvailable(false)} className="mb-12 h-10 w-auto" />}
       <h1 className="mb-8 text-3xl font-extrabold text-forte-dark sm:text-4xl">Проверьте кассовую дисциплину</h1>
       <form onSubmit={event => { event.preventDefault(); void analyze(); }} className="space-y-5">
         <label className="block font-semibold">Загрузите видео .mov
@@ -51,7 +52,7 @@ export default function App() {
         <p className="text-sm text-muted-foreground">Демонстрационная заглушка: результат и сплошной кадр не связаны с содержимым видео.</p>
         {!file && <p>Выберите видео, чтобы начать проверку.</p>}
         {busy && <><p role="status">Обрабатываем видео…</p><Skeleton className="h-20 w-full rounded-btn" /></>}
-        {error && <ErrorBox message={error} />}
+        {error && <ErrorBox message={error} onRetry={() => { void analyze(); }} />}
         {job?.status === "done" && <>
           <h2 className="text-2xl font-bold text-forte-dark">{job.verdict === "violation" ? "Обнаружены признаки возможных нарушений" : "Нарушение не обнаружено"}</h2>
           <p>Результат — подсказка для проверки человеком, а не заключение.</p>

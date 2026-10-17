@@ -28,8 +28,9 @@ class Violation(Contract):
 
     @model_validator(mode="after")
     def matching_timecode(self):
-        if self.timecode_sec != self.evidence_frames[0].timestamp_sec:
-            raise ValueError("First evidence frame must match the violation timecode")
+        # Decoding snaps evidence to an actual frame; allow sub-second rounding.
+        if abs(self.timecode_sec - self.evidence_frames[0].timestamp_sec) >= 1.0:
+            raise ValueError("First evidence frame must be less than one second from the violation timecode")
         return self
 
 
