@@ -1,7 +1,7 @@
 """One-hour check (TZ-4.4, #19): does D-FINE find the cashier and OWLv2 find the cash on label frames?
 
 Frames are decoded and scored locally; nothing leaves the machine. Run:
-    uv run python -m src.features.cash_check
+    uv run --with torch --with transformers python -m src.features.cash_check
 """
 
 import csv
@@ -9,15 +9,14 @@ import datetime as dt
 import json
 import os
 from dataclasses import dataclass
+from typing import NamedTuple
 
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
+import numpy as np
+import pandas as pd
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-
-from src.config import EXPERIMENTS, VIDEOS_DIR, WEIGHTS  # noqa: E402
-from src.data.labels import build_labels, load_labels, read_xlsx  # noqa: E402
-from src.data.video import iter_frames  # noqa: E402
+from src.config import EXPERIMENTS, VIDEOS_DIR, WEIGHTS
+from src.data.labels import build_labels, load_labels, read_xlsx
+from src.data.video import iter_frames
 
 PERSON_THRESHOLD = 0.5
 CASH_THRESHOLD = 0.1  # OWLv2 scores are low by design; 0.1 is the value its authors use for demos
@@ -26,6 +25,11 @@ WINDOW_S = 3.0  # frames from [second - WINDOW_S, second + WINDOW_S] around a vi
 CLEAN_FRAMES = 12  # evenly spaced frames per video without violations
 FPS = 2.0
 CASHIER_GOAL, CASH_GOAL = 0.90, 0.70  # ticket pass criteria
+
+
+class FrameScore(NamedTuple):
+    person: float  # best D-FINE person score in the frame
+    cash: float  # best OWLv2 cash-query score in the frame
 
 
 @dataclass
@@ -78,6 +82,7 @@ def share(rows: list[Row], attr: str) -> float:
 
 class Detectors:
     def __init__(self) -> None:
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")  # before transformers is imported
         import torch
         from transformers import (
             AutoImageProcessor,
@@ -96,8 +101,8 @@ class Detectors:
         self.owl = Owlv2ForObjectDetection.from_pretrained(WEIGHTS / "owlv2-base").to(self.device).eval()
         self.person_id = next(i for i, n in self.dfine.config.id2label.items() if n == "person")
 
-    def scores(self, frame_bgr: np.ndarray) -> tuple[float, float]:
-        """(best person score, best cash score) for one BGR frame."""
+    def scores(self, frame_bgr: np.ndarray) -> FrameScore:
+        """Best person and cash scores for one BGR frame."""
         from PIL import Image
 
         image = Image.fromarray(frame_bgr[:, :, ::-1])
@@ -114,7 +119,7 @@ class Detectors:
             out = self.owl(**inputs)
             logits = out.logits.sigmoid()  # (1, boxes, queries)
             cash_best = float(logits.max())
-        return person_best, cash_best
+        return FrameScore(person_best, cash_best)
 
 
 def load_label_table() -> pd.DataFrame:
@@ -124,9 +129,7 @@ def load_label_table() -> pd.DataFrame:
         return build_labels(read_xlsx())
 
 
-def score_frame(
-    det: Detectors, frames: list, cache: dict[int, tuple[float, float]], i: int
-) -> tuple[float, float]:
+def score_frame(det: Detectors, frames: list, cache: dict[int, FrameScore], i: int) -> FrameScore:
     if i not in cache:
         cache[i] = det.scores(frames[i][1])
     return cache[i]
@@ -139,7 +142,7 @@ def run() -> list[Row]:
     for (video_id, file), group in labels.groupby(["video_id", "file"], sort=False):
         frames = list(iter_frames(VIDEOS_DIR / file, FPS))
         seconds = [s for s, _ in frames]
-        cache: dict[int, tuple[float, float]] = {}
+        cache: dict[int, FrameScore] = {}
 
         for second in group["second"]:
             if pd.isna(second):
@@ -149,21 +152,15 @@ def run() -> list[Row]:
                 second = int(second)
                 idx = in_window(seconds, second)
             pairs = [score_frame(det, frames, cache, i) for i in idx]
-            rows.append(summarize(video_id, second, [p for p, _ in pairs], [c for _, c in pairs]))
+            rows.append(summarize(video_id, second, [f.person for f in pairs], [f.cash for f in pairs]))
         print(f"  {video_id}: {len(frames)} frames decoded", flush=True)
     return rows
 
 
-def report(rows: list[Row]) -> dict:
+def summarize_rows(rows: list[Row]) -> dict:
+    """Totals and the ticket's pass decision (cashier >= 90%, cash >= 70% on violation labels)."""
     viol = [r for r in rows if r.second is not None]
     clean = [r for r in rows if r.second is None]
-    print(f"\n{'метка':<8}{'сек':>5}{'кадров':>8}{'кассир':>8}{'conf':>7}{'деньги':>8}{'conf':>7}")
-    for r in rows:
-        sec = "-" if r.second is None else str(r.second)
-        print(
-            f"{r.video_id:<8}{sec:>5}{r.n_frames:>8}{'да' if r.cashier_found else 'нет':>8}"
-            f"{r.cashier_conf:>7.2f}{'да' if r.cash_found else 'нет':>8}{r.cash_conf:>7.2f}"
-        )
     s = {
         "n_violation_labels": len(viol),
         "n_clean_videos": len(clean),
@@ -172,6 +169,21 @@ def report(rows: list[Row]) -> dict:
         "cashier_found_clean": share(clean, "cashier_found"),
         "cash_found_clean": share(clean, "cash_found"),
     }
+    s["passed"] = bool(
+        s["cashier_found_violation"] >= CASHIER_GOAL and s["cash_found_violation"] >= CASH_GOAL
+    )
+    return s
+
+
+def report(rows: list[Row]) -> dict:
+    print(f"\n{'метка':<8}{'сек':>5}{'кадров':>8}{'кассир':>8}{'conf':>7}{'деньги':>8}{'conf':>7}")
+    for r in rows:
+        sec = "-" if r.second is None else str(r.second)
+        print(
+            f"{r.video_id:<8}{sec:>5}{r.n_frames:>8}{'да' if r.cashier_found else 'нет':>8}"
+            f"{r.cashier_conf:>7.2f}{'да' if r.cash_found else 'нет':>8}{r.cash_conf:>7.2f}"
+        )
+    s = summarize_rows(rows)
     print(
         f"\nМетки с нарушением ({s['n_violation_labels']}): кассир {s['cashier_found_violation']:.0%}, "
         f"деньги {s['cash_found_violation']:.0%}"
@@ -180,12 +192,10 @@ def report(rows: list[Row]) -> dict:
         f"Видео без нарушений ({s['n_clean_videos']}): кассир {s['cashier_found_clean']:.0%}, "
         f"деньги в кадре {s['cash_found_clean']:.0%}"
     )
-    passed = s["cashier_found_violation"] >= CASHIER_GOAL and s["cash_found_violation"] >= CASH_GOAL
-    s["passed"] = bool(passed)
-    print(
-        "Итог: "
-        + ("проверка пройдена" if passed else "не пройдена, берём запасной вариант (изменения в зоне стола)")
+    verdict = (
+        "проверка пройдена" if s["passed"] else "не пройдена, берём запасной вариант (изменения в зоне стола)"
     )
+    print(f"Итог: {verdict}")
     print("Типы 1, 2, 4 в labels.csv не размечены (нет колонки type): цифры по всем меткам нарушений.")
     return s
 

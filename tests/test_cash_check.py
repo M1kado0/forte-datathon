@@ -25,3 +25,13 @@ def test_summarize_counts_frames_over_thresholds():
 def test_summarize_empty_window_finds_nothing():
     row = summarize("X-1", 22, [], [])
     assert not row.cashier_found and not row.cash_found
+
+
+def test_pass_decision_needs_both_goals():
+    from src.features.cash_check import summarize_rows
+
+    def rows(cash_hits):
+        return [summarize("X-1", 5, [0.9], [0.2 if hit else 0.0]) for hit in cash_hits]
+
+    assert summarize_rows(rows([True] * 7 + [False] * 3))["passed"]  # 70% cash, 100% cashier
+    assert not summarize_rows(rows([True] * 6 + [False] * 4))["passed"]
