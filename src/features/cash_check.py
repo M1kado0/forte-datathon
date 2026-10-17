@@ -1,14 +1,16 @@
 """One-hour check (TZ-4.4, #19): does D-FINE find the cashier and OWLv2 find the cash on label frames?
 
 Frames are decoded and scored locally; nothing leaves the machine. Run:
-    uv run --with torch --with transformers python -m src.features.cash_check
+    uv run python -m src.features.cash_check [--no-log]
 """
 
 import csv
 import datetime as dt
 import json
 import os
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import NamedTuple
 
 import numpy as np
@@ -77,7 +79,7 @@ def summarize(video_id: str, second: int | None, person: list[float], cash: list
 
 
 def share(rows: list[Row], attr: str) -> float:
-    return sum(getattr(r, attr) for r in rows) / len(rows) if rows else float("nan")
+    return sum(getattr(r, attr) for r in rows) / len(rows) if rows else 0.0
 
 
 class Detectors:
@@ -129,10 +131,9 @@ def load_label_table() -> pd.DataFrame:
         return build_labels(read_xlsx())
 
 
-def score_frame(det: Detectors, frames: list, cache: dict[int, FrameScore], i: int) -> FrameScore:
-    if i not in cache:
-        cache[i] = det.scores(frames[i][1])
-    return cache[i]
+def frame_seconds(path: Path) -> list[float]:
+    """Times of the sampled frames; decodes once and drops each frame, so memory stays flat."""
+    return [sec for sec, _ in iter_frames(path, FPS)]
 
 
 def run() -> list[Row]:
@@ -140,20 +141,20 @@ def run() -> list[Row]:
     det = Detectors()
     rows: list[Row] = []
     for (video_id, file), group in labels.groupby(["video_id", "file"], sort=False):
-        frames = list(iter_frames(VIDEOS_DIR / file, FPS))
-        seconds = [s for s, _ in frames]
-        cache: dict[int, FrameScore] = {}
-
+        path = VIDEOS_DIR / file
+        seconds = frame_seconds(path)
+        wanted: dict[tuple[str, int | None], list[int]] = {}
         for second in group["second"]:
             if pd.isna(second):
-                idx = pick_frame_indices(len(frames), CLEAN_FRAMES)
-                second = None
+                wanted[video_id, None] = pick_frame_indices(len(seconds), CLEAN_FRAMES)
             else:
-                second = int(second)
-                idx = in_window(seconds, second)
-            pairs = [score_frame(det, frames, cache, i) for i in idx]
-            rows.append(summarize(video_id, second, [f.person for f in pairs], [f.cash for f in pairs]))
-        print(f"  {video_id}: {len(frames)} frames decoded", flush=True)
+                wanted[video_id, int(second)] = in_window(seconds, int(second))
+        needed = {i for idx in wanted.values() for i in idx}
+        scores = {i: det.scores(f) for i, (_, f) in enumerate(iter_frames(path, FPS)) if i in needed}
+        for (vid, second), idx in wanted.items():
+            pairs = [scores[i] for i in idx]
+            rows.append(summarize(vid, second, [p.person for p in pairs], [p.cash for p in pairs]))
+        print(f"  {video_id}: {len(seconds)} frames sampled, {len(needed)} scored", flush=True)
     return rows
 
 
@@ -201,22 +202,19 @@ def report(rows: list[Row]) -> dict:
 
 
 def log_experiment(summary: dict) -> None:
-    """Append one row; the stub header is ts,note,<5 metric columns>,params, so metrics go to params."""
+    """Append one row keyed by the file's own header; the metrics go to params (stub header has no slot)."""
+    with EXPERIMENTS.open(newline="") as f:
+        header = next(csv.reader(f))
+    row = {
+        "ts": dt.datetime.now().isoformat(timespec="seconds"),
+        "note": "cash-check-dfine-owlv2",
+        "params": json.dumps(summary, ensure_ascii=False),
+    }
     with EXPERIMENTS.open("a", newline="") as f:
-        csv.writer(f).writerow(
-            [
-                dt.datetime.now().isoformat(timespec="seconds"),
-                "cash-check-dfine-owlv2",
-                "",
-                "",
-                "",
-                "",
-                "",
-                json.dumps(summary, ensure_ascii=False),
-            ]
-        )
+        csv.DictWriter(f, fieldnames=header, restval="").writerow(row)
 
 
 if __name__ == "__main__":
     summary = report(run())
-    log_experiment(summary)
+    if "--no-log" not in sys.argv:
+        log_experiment(summary)
