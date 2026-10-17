@@ -1,4 +1,4 @@
-"""Data contracts (pandera). P3 rewrites these for the real dataset in hour 1."""
+"""Data contracts (pandera). P4 rewrites these for the real dataset (labels.csv)."""
 
 import pandera.pandas as pa
 
