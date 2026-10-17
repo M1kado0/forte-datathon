@@ -1,4 +1,4 @@
-"""Type heuristics over person/object/cash tracks (#24). Pure functions, no models."""
+"""Type heuristics over person, object, cash and document tracks (#24). Pure functions, no models."""
 
 from src.heuristics.detect import Hit, detect
 from src.heuristics.roles import Roles, find_roles
