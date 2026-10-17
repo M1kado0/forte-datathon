@@ -6,6 +6,7 @@ on the shortest real clip.
 """
 
 import base64
+import functools
 from itertools import combinations
 
 import cv2
@@ -150,12 +151,14 @@ REAL_CLIP = shortest_real_clip()
     not (WEIGHTS / MODEL_NAME).exists() or not MODEL_PATH.exists() or REAL_CLIP is None,
     reason="needs `make weights`, models/window_clf.pkl and a ≤ 30 s clip in data/raw/videos",
 )
-def test_smoke_real_model_on_shortest_real_clip():
+def test_smoke_real_model_on_shortest_real_clip(monkeypatch):
     """DINOv2 + saved classifier on a real camera clip (native size, h264); no score is asserted.
 
     With the saved threshold the contract holds whatever the verdict. Threshold 0 flags every video, so
-    the violation path (evidence frames, type, description) also runs on real frames.
+    the violation path (evidence frames, type, description) also runs on real frames. The clip is embedded
+    once and shared by both calls, which keeps the test under the 5 s limit of AGENTS.md.
     """
+    monkeypatch.setattr(analyze_mod, "embed_video", functools.cache(analyze_mod.embed_video))
     assert_contract(analyze(REAL_CLIP))
     forced = analyze(REAL_CLIP, model={**analyze_mod.default_model(), "threshold": 0.0})
     assert len(forced) == MAX_FALLBACK_VIOLATIONS
