@@ -51,12 +51,10 @@ def test_description_states_only_visible_facts(t):
     fields = {f for _, f, _, _ in string.Formatter().parse(text) if f}
     assert fields <= ALLOWED_FIELDS
     assert not UNSUPPORTED.search(text)
-    _, ready = describe_violation(t["id"], {"object": "предмет"})
-    assert not UNSUPPORTED.search(ready)
 
 
 # --- describe_violation: the one place analyze(path) takes `type` and `description` from (TZ-4.6) ---
-PRAVILA_231_CITE = (
+ACT_231_CITATION = (
     "Правила осуществления кассовых операций и операций по инкассации банкнот, монет и ценностей "
     "в банках второго уровня, филиалах банков-нерезидентов Республики Казахстан, Национальном операторе почты "
     "и юридических лицах, исключительной деятельностью которых является инкассация банкнот, монет и ценностей, "
@@ -70,12 +68,12 @@ def test_known_type_returns_name_and_description_ending_with_citation():
     assert description.startswith(
         "На рабочем месте кассира в кассовом узле виден посторонний предмет: телефон."
     )
-    assert description.endswith(f"{PRAVILA_231_CITE}, п. 12")
+    assert description.endswith(f"{ACT_231_CITATION}, п. 12")
 
 
 def test_type_with_two_punkts_cites_each():
     _, description = describe_violation("workplace_left", {})
-    assert description.endswith(f"{PRAVILA_231_CITE}, п. 22; {PRAVILA_231_CITE}, п. 20")
+    assert description.endswith(f"{ACT_231_CITATION}, п. 22; {ACT_231_CITATION}, п. 20")
 
 
 def test_unfilled_placeholder_is_an_error():
@@ -86,7 +84,7 @@ def test_unfilled_placeholder_is_an_error():
 def test_unknown_id_gives_fallback_citing_whole_act():
     name, description = describe_violation("no_such_type", {"object": "x"})
     assert name == FALLBACK_NAME
-    assert description.endswith(f"Нужна проверка человеком. {PRAVILA_231_CITE}")
+    assert description.endswith(f"Нужна проверка человеком. {ACT_231_CITATION}")
 
 
 def test_type_citing_two_acts_cites_each_with_its_own_title():
@@ -95,3 +93,19 @@ def test_type_citing_two_acts_cites_each_with_its_own_title():
     assert description.count("утв. постановлением Правления Агентства") == 2
     assert description.endswith("п. 15 подп. 3), 5)")
     assert "п. 8; " in description and "п. 14 подп. 1); " in description
+
+
+@pytest.mark.parametrize("t", TYPES, ids=[t["id"] for t in TYPES])
+def test_every_type_renders_name_and_cites_each_document_and_punkt(t):
+    name, description = describe_violation(t["id"], {"object": "предмет"})
+    assert name == t["name"]
+    assert not UNSUPPORTED.search(description)
+    for rule in t["rules"]:
+        title = " ".join(DOCS[rule["doc"]]["title"].split())
+        assert title in description
+        assert rule.get("punkt", "") in description
+
+
+def test_unknown_id_is_logged(caplog):
+    describe_violation("no_such_type", {})
+    assert "no_such_type" in caplog.text
