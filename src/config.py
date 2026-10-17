@@ -7,6 +7,7 @@ DATA_RAW = ROOT / "data" / "raw"
 DATA_PROCESSED = ROOT / "data" / "processed"
 DATA_EXTERNAL = ROOT / "data" / "external"
 MODELS = ROOT / "models"
+WEIGHTS = MODELS / "weights"  # filled once by `make weights`; loaded offline afterwards
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 WEB_DIST = ROOT / "web" / "dist"
@@ -38,5 +39,5 @@ FEATURE_LABELS = {
     "region": "Регион",
 }
 
-for p in (DATA_PROCESSED, MODELS, FIGURES):
+for p in (DATA_PROCESSED, MODELS, WEIGHTS, FIGURES):
     p.mkdir(parents=True, exist_ok=True)
