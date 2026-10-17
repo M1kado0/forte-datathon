@@ -123,11 +123,14 @@ async def check_access(client: httpx.AsyncClient) -> list[str]:
     errors = []
     health = await client.get("/api/health")
     try:
-        health_ok = health.status_code == 200 and health.json().get("status") == "ok"
+        payload = health.json()
     except ValueError:  # an HTML page from the tunnel instead of JSON
-        health_ok = False
+        payload = None
+    health_ok = health.status_code == 200 and isinstance(payload, dict) and payload.get("status") == "ok"
     if not health_ok:
         errors.append(f"/api/health вернул {health.status_code} и не JSON со status ok")
+    elif payload.get("model_loaded") is not True:
+        errors.append("/api/health: требуется model_loaded: true; реальная модель не готова")
     async with httpx.AsyncClient(base_url=str(client.base_url), timeout=30) as anonymous:
         unauthorized = await anonymous.get("/api/v1/jobs/none")
     if unauthorized.status_code != 401:
@@ -162,6 +165,10 @@ async def main(args: argparse.Namespace) -> int:
             failures += await check_access(client)
         except httpx.HTTPError as error:
             raise SystemExit(f"Сервис недоступен по {url}: {type(error).__name__}: {error}") from None
+
+        if failures:
+            print("НЕ ПРОШЛО:\n  " + "\n  ".join(failures))
+            return 1
 
         print(f"Жюри: {args.parallel} параллельных задач")
         jury, jury_wall = await run_batch(client, pick_clips(args.videos, args.parallel), args.timeout)
