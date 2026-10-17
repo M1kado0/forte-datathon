@@ -36,6 +36,7 @@ demo:
 
 # Rebuilds every number from raw data. Slides and UI must match this output.
 all:
+	uv run python -m src.rules.types_doc
 	uv run python -m src.pipeline
 
 # Public URL for the jury via ngrok (outbound 443; cloudflared is blocked on our networks). Start `make app` first.

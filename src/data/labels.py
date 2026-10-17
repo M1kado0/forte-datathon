@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from contracts.data import LabelsSchema
+from contracts.data import TYPE_IDS, LabelsSchema
 from src.config import LABELS_CSV, LABELS_XLSX, TYPES_CSV
 
 # Cyrillic Х and х look identical to Latin X, so they are built from code points, not typed.
@@ -94,6 +94,12 @@ def _add_types(labels: pd.DataFrame, types: pd.DataFrame) -> pd.DataFrame:
 def load_labels(path: Path = LABELS_CSV) -> pd.DataFrame:
     """Read data/labels.csv and validate it against the contract."""
     return LabelsSchema.validate(pd.read_csv(path, dtype={"second": "Int64"}))
+
+
+def count_types(labels: pd.DataFrame) -> dict[str, int]:
+    """Violation labels per type id, in rules.yaml order; a type nobody is labelled with counts 0."""
+    counted = labels["violation_type"].value_counts()
+    return {type_id: int(counted.get(type_id, 0)) for type_id in TYPE_IDS}
 
 
 def read_types(path: Path = TYPES_CSV) -> pd.DataFrame:
