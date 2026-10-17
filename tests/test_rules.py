@@ -7,6 +7,7 @@ import pytest
 import yaml
 
 from src.config import RULES_YAML
+from src.rules.describe import describe_violation
 
 RULES = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))
 DOCS = RULES["documents"]
@@ -50,3 +51,39 @@ def test_description_states_only_visible_facts(t):
     fields = {f for _, f, _, _ in string.Formatter().parse(text) if f}
     assert fields <= ALLOWED_FIELDS
     assert not UNSUPPORTED.search(text)
+    _, ready = describe_violation(t["id"], {"object": "предмет"})
+    assert not UNSUPPORTED.search(ready)
+
+
+# --- describe_violation: the one place analyze(path) takes `type` and `description` from (TZ-4.6) ---
+PRAVILA_231_CITE = (
+    "Правила осуществления кассовых операций и операций по инкассации банкнот, монет и ценностей "
+    "в банках второго уровня, филиалах банков-нерезидентов Республики Казахстан, Национальном операторе почты "
+    "и юридических лицах, исключительной деятельностью которых является инкассация банкнот, монет и ценностей, "
+    "утв. постановлением Правления Национального Банка Республики Казахстан от 29 ноября 2019 года № 231"
+)
+
+
+def test_known_type_returns_name_and_description_ending_with_citation():
+    name, description = describe_violation("foreign_object_at_desk", {"object": "телефон"})
+    assert name == "Посторонние предметы на рабочем месте кассира"
+    assert description.startswith(
+        "На рабочем месте кассира в кассовом узле виден посторонний предмет: телефон."
+    )
+    assert description.endswith(f"{PRAVILA_231_CITE}, п. 12")
+
+
+def test_type_with_two_punkts_cites_each():
+    _, description = describe_violation("workplace_left", {})
+    assert description.endswith(f"{PRAVILA_231_CITE}, п. 22; {PRAVILA_231_CITE}, п. 20")
+
+
+def test_unfilled_placeholder_is_an_error():
+    with pytest.raises(ValueError, match="object"):
+        describe_violation("foreign_object_at_desk", {})
+
+
+def test_unknown_id_gives_fallback_citing_whole_act():
+    name, description = describe_violation("no_such_type", {"object": "x"})
+    assert name == FALLBACK_NAME
+    assert description.endswith(f"Нужна проверка человеком. {PRAVILA_231_CITE}")
