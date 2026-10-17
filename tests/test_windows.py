@@ -33,10 +33,10 @@ def test_clean_video_is_negative_everywhere():
 
 
 def test_zones_around_one_label():
-    # N = 20: positive = start in (17, 24) -> 17.5 .. 23.5; negative = end <= 17 -> start <= 15.
+    # N = 20: positive = start in (17, 24) -> 17.5 .. 23.5; negative = end < 17 -> start <= 14.5.
     w = make_windows(40.0, [20])
-    assert _label_at(w, 15.0) == NEGATIVE  # ends exactly at N-3
-    assert _label_at(w, 15.5) == UNLABELED
+    assert _label_at(w, 14.5) == NEGATIVE
+    assert _label_at(w, 15.0) == UNLABELED  # ends exactly at N-3: not "before"
     assert _label_at(w, 17.0) == UNLABELED  # [17, 19] only touches the zone at 19
     assert _label_at(w, 17.5) == POSITIVE
     assert _label_at(w, 23.5) == POSITIVE
@@ -45,13 +45,15 @@ def test_zones_around_one_label():
 
 
 def test_zones_with_two_labels():
-    # N = 10 and 30: positive starts 7.5..13.5 and 27.5..33.5; negatives only before the first label.
+    # N = 10 and 30: positive starts 7.5..13.5 and 27.5..33.5; negatives only before the first label (start <= 4.5).
     w = make_windows(50.0, [10, 30])
     pos = w.loc[w["label"] == POSITIVE, "start"]
     assert list(pos) == [*np.arange(7.5, 14.0, 0.5), *np.arange(27.5, 34.0, 0.5)]
     neg = w.loc[w["label"] == NEGATIVE, "start"]
-    assert neg.max() == 5.0 and len(neg) == 11
+    assert neg.max() == 4.5 and len(neg) == 10
     assert _label_at(w, 24.0) == UNLABELED  # ends before 30-3 but sits after the first label
+    assert _label_at(w, 14.0) == UNLABELED  # after N1+4
+    assert _label_at(w, 27.0) == UNLABELED  # [27, 29] only touches 29 = N2-1
 
 
 def test_labels_by_video():
@@ -108,3 +110,16 @@ def test_metrics_by_hand():
 def test_median_abs_dt_uses_nearest_label():
     m = video_metrics([0.9, 0.9, 0.9], [True] * 3, 0.5, [58.0, 12.0, 30.0], [[57, 68], [10], [20]])
     assert m["median_abs_dt"] == 2.0  # deltas 1, 2, 10
+
+
+def test_windows_of_one_video_stay_on_one_side_of_every_fold():
+    ids = ["X-1", "X-4", "X-47", "X-5", "X-48", "X-3"]
+    labels = {"X-1": [22], "X-4": [57], "X-47": [57], "X-5": [10], "X-48": [10], "X-3": []}
+    rows = pd.concat([make_windows(30.0, labels[v]).assign(video_id=v) for v in ids], ignore_index=True)
+    for train_vid, val_vid in lovo_folds(ids):
+        train_ids = {ids[i] for i in train_vid}
+        val_ids = {ids[i] for i in val_vid}
+        train_rows = rows[rows["video_id"].isin(train_ids)]
+        val_rows = rows[rows["video_id"].isin(val_ids)]
+        assert not set(train_rows["video_id"]) & set(val_rows["video_id"])
+        assert len(train_rows) + len(val_rows) == len(rows)

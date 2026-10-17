@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from collections.abc import Iterator, Sequence
 from statistics import median
 
@@ -15,7 +14,7 @@ WINDOW_SEC = 2.0
 STEP_SEC = 0.5
 POS_BEFORE = 1.0  # a window overlapping [N - POS_BEFORE, N + POS_AFTER] is positive
 POS_AFTER = 4.0
-NEG_BEFORE = 3.0  # a window ending at or before N - NEG_BEFORE is negative
+NEG_BEFORE = 3.0  # a window ending before N - NEG_BEFORE is negative
 
 POSITIVE, NEGATIVE, UNLABELED = 1, 0, -1
 
@@ -23,7 +22,7 @@ POSITIVE, NEGATIVE, UNLABELED = 1, 0, -1
 def make_windows(duration: float, labels: Sequence[float] = ()) -> pd.DataFrame:
     """Sliding windows over one video: columns start, end, label (POSITIVE / NEGATIVE / UNLABELED).
 
-    Positive: overlaps [N-1, N+4] of any label N. Negative: ends at or before N-3 of every label N
+    Positive: overlaps [N-POS_BEFORE, N+POS_AFTER] of any label N. Negative: ends before N-NEG_BEFORE of every label N
     (so also nothing after the first label's N+4: lasting states are not trusted as negatives).
     No labels: negative over the full length. Everything else is UNLABELED.
     """
@@ -34,14 +33,14 @@ def make_windows(duration: float, labels: Sequence[float] = ()) -> pd.DataFrame:
     negative = np.ones(n, dtype=bool)
     for second in labels:
         positive |= (start < second + POS_AFTER) & (end > second - POS_BEFORE)
-        negative &= end <= second - NEG_BEFORE
+        negative &= end < second - NEG_BEFORE
     label = np.where(positive, POSITIVE, np.where(negative, NEGATIVE, UNLABELED))
     return pd.DataFrame({"start": start, "end": end, "label": label})
 
 
 def labels_by_video(labels: pd.DataFrame) -> dict[str, list[int]]:
     """data/labels.csv rows -> {video_id: [label seconds]}; videos without violation map to []."""
-    out: dict[str, list[int]] = defaultdict(list)
+    out: dict[str, list[int]] = {}
     for video_id, second in zip(labels["video_id"], labels["second"], strict=True):
         out.setdefault(video_id, [])
         if not pd.isna(second):
