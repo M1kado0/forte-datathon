@@ -9,7 +9,7 @@ One row per track per decoded frame ("long" format). #32 caches it per video as 
 | kind          | str   | "person", "object" (COCO: phone, bag, cup) or "cash"                         |
 | label         | str   | COCO class name, or "cash"                                                   |
 | t             | float | seconds from the start of the video, on the decoder grid (4 fps by default)  |
-| x1,y1,x2,y2   | float | box corners in pixels, x2 >= x1 and y2 >= y1                                 |
+| x1,y1,x2,y2   | float | box corners in pixels, x2 > x1 and y2 > y1 (a box with no area is dropped by #32) |
 | conf          | float | detector confidence in [0, 1]                                                |
 
 People are boxes only: no faces, no identities (TZ-F.1). "cash" rows are a box around money found by OWLv2
@@ -33,7 +33,7 @@ TRACKS_SCHEMA = pa.DataFrameSchema(
         "y2": pa.Column(float),
         "conf": pa.Column(float, pa.Check.in_range(0, 1)),
     },
-    checks=pa.Check(lambda df: (df["x2"] >= df["x1"]) & (df["y2"] >= df["y1"]), error="box corners swapped"),
+    checks=pa.Check(lambda df: (df["x2"] > df["x1"]) & (df["y2"] > df["y1"]), error="box has no area"),
     unique=["track_id", "t"],
     strict=True,
     coerce=True,

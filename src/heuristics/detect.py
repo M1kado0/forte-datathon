@@ -1,14 +1,19 @@
 """Type heuristics: tracks in, violation types out. Silent (empty list) when no condition holds.
 
 `detect` only decides which type fits and when. The choice between heuristic, kNN and fallback is #34's.
-Thresholds below are first guesses; #34 tunes them on leave-one-video-out.
 
 Known limits, for #32 and #34 (no id merging is built before there is real tracker output):
 - Anyone who is not the cashier is "someone else": clients and incassators are not told apart.
+- Type 4 does not see counting. It fires on cashier at the seat + cash on the desk + nobody else in the
+  frame, so a cashier sitting idle next to cash fires it too.
+- Anyone at the seat counts as the cashier while the cashier's own track is absent. A client standing at
+  the seat while the cashier is away hides type 1; a second worker who sits in the empty seat looks like
+  the cashier, so type 4 can fire with "no second worker in the frame". This is the price of tolerating a
+  cashier who returns under a new track id.
 - If the tracker splits one person into two ids away from the seat, the second id reads as a new person.
-- The cashier is the stillest of the longest-present people; a still client present for most of a clip in
-  which the cashier is mostly away can be picked instead.
-- A detector miss on the cashier of MIN_AWAY_SEC or more reads as "left".
+- The seat is where person boxes pile up most. If the cashier is at the seat for less of the clip than
+  another person stands anywhere else, that other place becomes the seat.
+- A detector miss on the cashier longer than Thresholds.gap_sec reads as "left".
 """
 
 from dataclasses import dataclass
@@ -19,19 +24,12 @@ import numpy as np
 import pandas as pd
 
 from src.heuristics.roles import Roles, find_roles
+from src.heuristics.thresholds import DEFAULT, Thresholds
 from src.heuristics.tracks import with_geometry
 
 WORKPLACE_LEFT = "workplace_left"  # type 1, ids match src/rules/rules.yaml
 CASH_ON_DESK_NEXT_CLIENT = "cash_on_desk_next_client"  # type 2
 COUNT_WITHOUT_CONTROLLER = "count_without_controller"  # type 4
-
-# Distances are in cashier box heights (Roles.distance).
-SEAT_RADIUS = 0.75  # a person this close to the seat is the cashier
-DESK_RADIUS = 2.0  # cash this close to the seat lies on the cashier's desk
-COUNTER_RADIUS = 2.0  # a person this close to the seat is at the counter, not just somewhere in the frame
-MIN_AWAY_SEC = 3.0  # type 1: shorter absences are a step to the shelf, not leaving the workplace
-MIN_HOLD_SEC = 3.0  # type 2: cash must stay this long after the next person arrives
-MIN_COUNT_SEC = 3.0  # type 4: shorter handling of cash is not counting
 
 
 @dataclass(frozen=True)
@@ -48,7 +46,7 @@ class _Timeline:
     fps: float
     at_seat: np.ndarray  # someone stands at the cashier's seat
     others: np.ndarray  # a person other than the cashier is in the frame, a client or an incassator
-    at_counter: np.ndarray  # such a person is within COUNTER_RADIUS of the seat
+    at_counter: np.ndarray  # such a person is within counter_radius of the seat
     cash: np.ndarray  # cash lies on the cashier's desk
     visits: list[tuple[int, int]]  # (first, last) frame of each person at the counter, by arrival
 
@@ -63,63 +61,73 @@ class _Timeline:
     def hit(self, type_id: str, run: tuple[int, int]) -> Hit:
         return Hit(type_id, run[0] / self.fps, run[1] / self.fps)
 
+    def cash_left_for_next_client(self, hold_sec: float) -> list[Hit]:
+        """The previous person left, the next one arrived, and the cash never left the desk (п. 20)."""
+        hold = ceil(hold_sec * self.fps)
+        cash_runs = self.runs(self.cash, 0)
+        hits = []
+        for (_, previous_last), (next_first, _) in pairwise(self.visits):
+            if next_first <= previous_last:
+                continue
+            for first, last in cash_runs:
+                if first <= previous_last and last >= next_first + hold - 1:
+                    hits.append(self.hit(CASH_ON_DESK_NEXT_CLIENT, (next_first, last)))
+        return hits
 
-def detect(tracks: pd.DataFrame, fps: float = 4.0) -> list[Hit]:
-    roles = find_roles(tracks)
+
+def detect(tracks: pd.DataFrame, fps: float = 4.0, thresholds: Thresholds = DEFAULT) -> list[Hit]:
+    roles = find_roles(tracks, thresholds)
     if roles is None:
         return []
-    tl = _timeline(tracks, roles, fps)
+    tl = _timeline(tracks, roles, fps, thresholds)
     arrived = np.maximum.accumulate(tl.at_seat)  # a cashier who was never at the seat has not left it
     left = arrived & ~tl.at_seat & tl.at_counter & tl.cash
     counting = tl.at_seat & tl.cash & ~tl.others
     return [
-        *(tl.hit(WORKPLACE_LEFT, run) for run in tl.runs(left, MIN_AWAY_SEC)),
-        *_cash_left_for_next_client(tl),
-        *(tl.hit(COUNT_WITHOUT_CONTROLLER, run) for run in tl.runs(counting, MIN_COUNT_SEC)),
+        *(tl.hit(WORKPLACE_LEFT, run) for run in tl.runs(left, thresholds.min_away_sec)),
+        *tl.cash_left_for_next_client(thresholds.min_hold_sec),
+        *(tl.hit(COUNT_WITHOUT_CONTROLLER, run) for run in tl.runs(counting, thresholds.min_count_sec)),
     ]
 
 
-def _timeline(tracks: pd.DataFrame, roles: Roles, fps: float) -> _Timeline:
+def _timeline(tracks: pd.DataFrame, roles: Roles, fps: float, th: Thresholds) -> _Timeline:
     d = with_geometry(tracks)
     d = d.assign(
         frame=(d["t"] * fps).round().astype(int), from_seat=lambda x: roles.distance(x["cx"], x["cy"])
     )
     n = int(d["frame"].max()) + 1
     people = d[d["kind"] == "person"]
-    near = people["from_seat"] <= SEAT_RADIUS
+    near = people["from_seat"] <= th.seat_radius
     is_cashier = people["track_id"] == roles.cashier
     # Someone else at the seat counts only while the cashier's own track is there too; without it, a track
     # at the seat is the cashier coming back under a new id.
-    cashier_here = _mask(n, people["frame"][near & is_cashier])[people["frame"].to_numpy()]
+    cashier_here = _frames_to_mask(n, people["frame"][near & is_cashier])[people["frame"].to_numpy()]
     others = people[~is_cashier & (~near | cashier_here)]
-    at_counter = others[others["from_seat"] <= COUNTER_RADIUS]
+    at_counter = others[others["from_seat"] <= th.counter_radius]
     money = d[d["kind"] == "cash"]
     span = at_counter.groupby("track_id")["frame"].agg(["min", "max"]).sort_values("min")
+    gap = ceil(th.gap_sec * fps)
     return _Timeline(
         fps=fps,
-        at_seat=_mask(n, people["frame"][near]),
-        others=_mask(n, others["frame"]),
-        at_counter=_mask(n, at_counter["frame"]),
-        cash=_mask(n, money["frame"][money["from_seat"] <= DESK_RADIUS]),
+        at_seat=_close_gaps(_frames_to_mask(n, people["frame"][near]), gap),
+        others=_close_gaps(_frames_to_mask(n, others["frame"]), gap),
+        at_counter=_close_gaps(_frames_to_mask(n, at_counter["frame"]), gap),
+        cash=_close_gaps(_frames_to_mask(n, money["frame"][money["from_seat"] <= th.desk_radius]), gap),
         visits=list(zip(span["min"].tolist(), span["max"].tolist(), strict=True)),
     )
 
 
-def _cash_left_for_next_client(tl: _Timeline) -> list[Hit]:
-    """The previous person left, the next one arrived, and the cash never left the desk (п. 20)."""
-    hold = ceil(MIN_HOLD_SEC * tl.fps)
-    cash_runs = tl.runs(tl.cash, 0)
-    hits = []
-    for (_, previous_last), (next_first, _) in pairwise(tl.visits):
-        if next_first <= previous_last:
-            continue
-        for first, last in cash_runs:
-            if first <= previous_last and last >= next_first + hold - 1:
-                hits.append(tl.hit(CASH_ON_DESK_NEXT_CLIENT, (next_first, last)))
-    return hits
-
-
-def _mask(n: int, frames: pd.Series) -> np.ndarray:
+def _frames_to_mask(n: int, frames: pd.Series) -> np.ndarray:
     mask = np.zeros(n, dtype=bool)
     mask[frames.to_numpy()] = True
     return mask
+
+
+def _close_gaps(mask: np.ndarray, max_gap: int) -> np.ndarray:
+    """Fill runs of False no longer than max_gap frames that sit between two Trues."""
+    closed = mask.copy()
+    on = np.flatnonzero(mask)
+    for start, gap in zip(on[:-1], np.diff(on) - 1, strict=True):
+        if 0 < gap <= max_gap:
+            closed[start + 1 : start + 1 + gap] = True
+    return closed
