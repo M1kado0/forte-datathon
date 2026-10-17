@@ -155,6 +155,36 @@ def test_labels_contract_rejects_bad_rows(row, column, value):
         LabelsSchema.validate(df)
 
 
+def typed_labels():
+    types = [
+        "cash partially given to client",
+        None,
+        "cash_on_desk_next_client",
+        "cash_on_desk_next_client",
+    ]
+    return good_labels().assign(violation_type=types)
+
+
+def test_labels_contract_accepts_violation_type():
+    LabelsSchema.validate(typed_labels())
+
+
+@pytest.mark.parametrize(
+    ("row", "value"),
+    [
+        (0, None),  # violation without a type
+        (1, "cash_on_desk_next_client"),  # no_violation with a type
+        (0, " "),  # blank type
+        (0, " cash on desk"),  # leading space
+    ],
+)
+def test_labels_contract_rejects_bad_violation_type(row, value):
+    df = typed_labels()
+    df.loc[row, "violation_type"] = value
+    with pytest.raises(pandera.errors.SchemaError):
+        LabelsSchema.validate(df)
+
+
 @pytest.fixture
 def labels_dir(tmp_path):
     """A labels.csv plus a videos folder holding exactly the files it names."""
