@@ -164,7 +164,7 @@
 .cinema { outline-offset: -4px; }
 .cinema-stage { position: relative; min-height: 400px; padding-block: 80px; touch-action: pan-y; isolation: isolate; }
 .depth-ribbon { position: absolute; inset: 0; transition: opacity .3s, transform .8s var(--ease-morph); }
-.ribbon-frame { position: absolute; left: 50%; top: 50%; width: 230px; height: 330px; overflow: hidden; border-radius: 5px; background: var(--cinema-shade); backface-visibility: hidden; box-shadow: var(--ribbon-shadow); transition: box-shadow .4s var(--ease-reveal); cursor: pointer; }
+.ribbon-frame { position: absolute; left: 50%; top: 50%; width: 230px; height: 330px; overflow: hidden; border-radius: 5px; background: var(--cinema-shade); backface-visibility: hidden; box-shadow: var(--ribbon-shadow); transition: box-shadow .4s var(--ease-reveal); }
 .ribbon-frame[data-selected="true"], .ribbon-frame:hover { box-shadow: var(--ribbon-shadow-active); }
 .ribbon-frame img { width: 100%; height: 100%; object-fit: cover; }
 .ribbon-frame:hover img { opacity: .86; }

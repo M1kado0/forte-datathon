@@ -13,7 +13,7 @@ const railScenes = Array.from({ length: 14 }, (_, index) => scenes[index % scene
 
 /** Concave ribbon: small at the vanishing point, large at the edges.
  * Only compositor transforms change per frame; layout is measured on resize. */
-function DepthRibbon({ running, reduced, selected, onSelect }: { running: boolean; reduced: boolean; selected: number; onSelect: (index: number) => void }) {
+function DepthRibbon({ running, reduced, selected }: { running: boolean; reduced: boolean; selected: number }) {
   const rail = useRef<HTMLDivElement>(null);
   const phase = useRef(0);
   const previous = useRef(selected);
@@ -52,7 +52,7 @@ function DepthRibbon({ running, reduced, selected, onSelect }: { running: boolea
     return () => { cancelAnimationFrame(frame); resize.disconnect(); };
   }, [running, reduced, selected]);
   return <div className="depth-ribbon" ref={rail} aria-hidden="true">
-    {railScenes.map((scene, index) => <span className="ribbon-frame" key={index} data-selected={index % scenes.length === selected} onClick={() => onSelect(index % scenes.length)}>
+    {railScenes.map((scene, index) => <span className="ribbon-frame" key={index} data-selected={index % scenes.length === selected}>
       <img src={`/demo/${scene.id}.jpg`} alt="" width="1280" height="720" draggable={false} />
     </span>)}
   </div>;
@@ -177,7 +177,7 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: { uploadOpen: boole
         onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
         onPointerDown={event => { if (!expanded && event.pointerType !== "mouse") pointer.current = { x: event.clientX, y: event.clientY }; }}
         onPointerUp={swipeEnd} onPointerCancel={() => { pointer.current = null; }}>
-        <DepthRibbon running={canAnimate && !expanded && !hovered && !focused} reduced={reduced} selected={selected} onSelect={go} />
+        <DepthRibbon running={canAnimate && !expanded && !hovered && !focused} reduced={reduced} selected={selected} />
         <div className="morph-surface" ref={surface}>
           <div className="feature-films" role="region" aria-roledescription="карусель" aria-label="Иллюстрации кассовых операций" aria-hidden={expanded} {...{ inert: expanded || moving ? "" : undefined }}>
             {scenes.map((item, index) => <div key={item.id} className="cinema-panel" data-position={index === selected ? "active" : "inactive"} aria-hidden={index !== selected} {...{ inert: index !== selected ? "" : undefined }}>
