@@ -59,7 +59,8 @@ watching it. One row per video, keyed by the canonical `video_id` (no `X-47`, `X
 `labels.csv` so a rebuild from the xlsx keeps it. The rebuild raises if a video has no arrangement, if a row matches no
 video or if a video has two. The labels contract accepts only the two values below and requires one value per video.
 
-Positions are given relative to the camera frame (the camera looks down at the cash room from above, the frame is portrait, 464×848).
+Positions are given relative to the camera frame (the camera looks down at the cash room from above, the frame is
+portrait, 464×848).
 
 | Value | Cashier | Desk | Safe | Videos |
 |---|---|---|---|---|
@@ -73,4 +74,8 @@ Both arrangements have videos with both verdicts, so recall and FP rate can be c
 | `back` | 14 | 7 | 7 |
 | `facing` | 26 | 14 | 12 |
 
-The counts are printed by `uv run python -m src.data.check_labels`. Both descriptions come from frames of the clips below that the team viewed. Examples: `X-3`, `X-16` and `X-35` for `back`, `X-11`, `X-25` and `X-43` for `facing`.
+The counts are printed by `uv run python -m src.data.check_labels`. Both descriptions come from frames the team viewed:
+`X-3`, `X-16`, `X-35` (`back`), `X-11`, `X-25`, `X-43` (`facing`).
+
+To assign or check a clip, look at its first frame locally. Do not send frames to any cloud model, not even to look
+at them (`AGENTS.md`, FAQ 6).
