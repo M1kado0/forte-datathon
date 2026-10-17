@@ -20,7 +20,26 @@ from src.rules.describe import describe_violation, rule_catalog
 KEY = {"X-API-Key": "jury-key"}
 
 
-def test_default_app_warms_model_once_and_serves_its_results(monkeypatch):
+@pytest.fixture(autouse=True)
+def real_analyzer_by_default(monkeypatch):
+    monkeypatch.setenv("FORTE_ANALYZER", "real")
+
+
+def test_explicit_stub_mode_starts_without_weights_and_completes_jobs(monkeypatch):
+    monkeypatch.setenv("FORTE_ANALYZER", "stub")
+    monkeypatch.setitem(sys.modules, "src.models.analyze", None)
+    with TestClient(create_app(api_key="jury-key")) as client:
+        assert client.get("/api/health").json()["model_loaded"] is False
+        result = finished(client, upload(client))
+        assert result["status"] == "done"
+        assert result["verdict"] == "violation"
+        assert result["violations"][0]["timecode_sec"] == 0
+
+
+@pytest.mark.parametrize("mode", [None, "real"])
+def test_default_app_warms_model_once_and_serves_its_results(monkeypatch, mode):
+    if mode is None:
+        monkeypatch.delenv("FORTE_ANALYZER")
     warmed = []
     paths = []
 
@@ -81,11 +100,21 @@ def test_model_load_failure_stops_startup_without_stub_fallback(monkeypatch, fai
         pytest.fail("Application must not accept requests without the model")
 
 
-def test_injected_analyzer_does_not_load_model(monkeypatch):
+@pytest.mark.parametrize("mode", ["real", "stub"])
+def test_injected_analyzer_does_not_load_model(monkeypatch, mode):
+    monkeypatch.setenv("FORTE_ANALYZER", mode)
     monkeypatch.setitem(sys.modules, "src.models.analyze", None)
-    with TestClient(create_app(analyzer=analyze_stub, api_key="jury-key")) as client:
+    with TestClient(create_app(analyzer=lambda path: [], api_key="jury-key")) as client:
         assert client.get("/api/health").json()["model_loaded"] is False
-        assert finished(client, upload(client))["status"] == "done"
+        result = finished(client, upload(client))
+        assert result["status"] == "done"
+        assert result["verdict"] == "no_violation"
+
+
+def test_unknown_analyzer_mode_is_rejected(monkeypatch):
+    monkeypatch.setenv("FORTE_ANALYZER", "stbu")
+    with pytest.raises(ValueError, match="FORTE_ANALYZER must be 'real' or 'stub'"):
+        create_app()
 
 
 def test_ui_rule_catalog_has_russian_names_and_exact_sources_without_key():

@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
-from api.analyzer import load_analyzer
+from api.analyzer import analyze_stub, load_analyzer
 from api.jobs import Analyzer, JobQueue
 from contracts.schemas import AnalyzeResponse, Health, JobResponse, RuleType
 from src.config import ROOT, VERSION, WEB_DIST
@@ -25,6 +25,12 @@ from src.rules.describe import rule_catalog
 def create_app(*, analyzer: Analyzer | None = None, api_key: str | None = None) -> FastAPI:
     load_dotenv(ROOT / ".env")
     key = api_key if api_key is not None else os.getenv("API_KEY", "")
+    if analyzer is None:
+        mode = os.getenv("FORTE_ANALYZER", "real")
+        if mode not in {"real", "stub"}:
+            raise ValueError("FORTE_ANALYZER must be 'real' or 'stub'")
+        if mode == "stub":
+            analyzer = analyze_stub
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
