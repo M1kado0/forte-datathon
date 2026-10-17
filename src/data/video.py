@@ -20,19 +20,21 @@ def iter_frames(path: str | Path, fps: float = DEFAULT_FPS) -> Iterator[tuple[fl
     try:
         if not cap.isOpened():
             raise ValueError(f"cannot decode {path}")
-        src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        src_fps = cap.get(cv2.CAP_PROP_FPS)
+        if not src_fps > 0:  # 0 or NaN from a broken container header
+            src_fps = 30.0
         step = 1.0 / fps
-        index = 0
-        taken = 0
+        frame_idx = 0
+        emitted = 0
         while True:
             ok, frame = cap.read()
             if not ok:
                 return
             # tolerance keeps float noise (e.g. 0.25 * 30 = 7.5 frames) from skipping a sample
-            if index / src_fps + 1e-6 >= taken * step:
-                yield taken * step, frame
-                taken += 1
-            index += 1
+            if frame_idx / src_fps + 1e-6 >= emitted * step:
+                yield emitted * step, frame
+                emitted += 1
+            frame_idx += 1
     finally:
         cap.release()
 

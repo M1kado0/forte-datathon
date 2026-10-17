@@ -1,6 +1,7 @@
 """`make weights`: download every model once into models/weights, then load each one offline."""
 
 import os
+import subprocess
 import sys
 
 from src.config import WEIGHTS
@@ -18,6 +19,9 @@ def download() -> None:
     from huggingface_hub import snapshot_download
 
     for name, (repo, _) in MODELS.items():
+        if any((WEIGHTS / name).glob("*.safetensors")):
+            print(f"skip {name}: already in models/weights")
+            continue
         print(f"download {repo} -> models/weights/{name}")
         snapshot_download(
             repo, local_dir=WEIGHTS / name, allow_patterns=["*.json", "*.safetensors", "*.txt", "*.model"]
@@ -25,7 +29,6 @@ def download() -> None:
 
 
 def check_offline() -> None:
-    os.environ["HF_HUB_OFFLINE"] = "1"
     import transformers
 
     for name, (_, loader) in MODELS.items():
@@ -35,6 +38,10 @@ def check_offline() -> None:
 
 
 if __name__ == "__main__":
-    if "--check" not in sys.argv:
+    if "--check" in sys.argv:
+        os.environ["HF_HUB_OFFLINE"] = "1"  # set before huggingface_hub is imported
+        check_offline()
+    else:
         download()
-    check_offline()
+        # fresh process, so the offline flag is honoured from the first import
+        subprocess.run([sys.executable, "-m", "scripts.weights", "--check"], check=True)

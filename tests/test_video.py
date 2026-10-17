@@ -22,7 +22,7 @@ def clip(tmp_path):
 
 
 def test_samples_requested_rate_with_timestamps(clip):
-    out = list(iter_frames(clip, fps=4))
+    out = list(iter_frames(clip))  # default rate is 4/s
     assert [s for s, _ in out] == [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
 
 
