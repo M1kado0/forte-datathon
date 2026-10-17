@@ -11,8 +11,9 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   the cashier, so type 4 can fire with "no second worker in the frame". This is the price of tolerating a
   cashier who returns under a new track id.
 - If the tracker splits one person into two ids away from the seat, the second id reads as a new person.
-- The seat is where person boxes pile up most. If the cashier is at the seat for less of the clip than
-  another person stands anywhere else, that other place becomes the seat.
+- The seat is the place where one track stays longest. A client who stays longer than the cashier's longest
+  single track takes the seat. In particular a cashier who leaves and returns under a new id loses it to a
+  client who stays longer than either fragment, so stable ids are #32's job.
 - A detector miss on the cashier longer than Thresholds.gap_sec reads as "left".
 """
 

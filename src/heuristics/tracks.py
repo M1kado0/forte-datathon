@@ -41,7 +41,9 @@ TRACKS_SCHEMA = pa.DataFrameSchema(
 
 
 def with_geometry(tracks: pd.DataFrame) -> pd.DataFrame:
-    """Add box centre (cx, cy) and height (h) in pixels."""
+    """Add box centre (cx, cy) and height (h) in pixels. Rows without area are dropped: TRACKS_SCHEMA rejects
+    them, but a frame that skipped validation must not crash the heuristics."""
+    tracks = tracks[(tracks["x2"] > tracks["x1"]) & (tracks["y2"] > tracks["y1"])]
     return tracks.assign(
         cx=(tracks["x1"] + tracks["x2"]) / 2,
         cy=(tracks["y1"] + tracks["y2"]) / 2,

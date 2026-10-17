@@ -251,7 +251,7 @@ def cashier_away_for_a_while():
     )
 
 
-def test_the_seat_is_where_people_are_present_longest_not_where_the_stillest_one_stands():
+def test_the_seat_is_where_one_track_is_present_longest_not_where_the_stillest_one_stands():
     roles = find_roles(cashier_away_for_a_while())
 
     assert roles.cashier == 1
@@ -343,3 +343,50 @@ def test_the_seat_radius_decides_who_counts_as_standing_at_the_seat():
 
     assert default == []  # taken for the cashier's stand-in at the seat
     assert [(h.start_sec, h.end_sec) for h in narrow] == [(12.0, 17.75)]  # too far from the seat: a client
+
+
+def back_to_back_clients(*, cashier_away=None):
+    """Clients A (0-15 s) and B (15-30 s) at the same counter spot; the cashier is one track, away or not."""
+    stays = [(0, 30)] if cashier_away is None else [(0, cashier_away[0]), (cashier_away[1], 30)]
+    return tracks(
+        *(part(1, "person", a, b, *SEAT, wobble=3) for a, b in stays),
+        part(2, "person", 0, 15, *COUNTER),
+        part(3, "person", 15, 30, *COUNTER),
+        part(10, "cash", 2, 30, *DESK, h=20),
+    )
+
+
+def test_clients_who_come_one_after_another_do_not_add_up_to_the_seat():
+    roles = find_roles(back_to_back_clients())
+
+    assert roles.cashier == 1
+    assert roles.seat == SEAT
+
+
+def test_type1_is_reported_when_clients_queue_without_a_gap_while_the_cashier_is_away():
+    df = back_to_back_clients(cashier_away=(10, 20))
+
+    assert [(h.start_sec, h.end_sec) for h in hits_of("workplace_left", df)] == [(10.0, 19.75)]
+    assert [
+        h for h in hits_of("count_without_controller", df) if h.end_sec >= 10.0 and h.start_sec < 20.0
+    ] == []
+
+
+@pytest.mark.parametrize(("collapsed", "to"), [("y2", "y1"), ("x2", "x1")], ids=["no height", "no width"])
+def test_a_box_without_area_that_skipped_the_schema_is_ignored_not_a_crash(collapsed, to):
+    broken = tracks(part(99, "person", 5, 6, *COUNTER))
+    broken[collapsed] = broken[to]  # as if TRACKS_SCHEMA.validate had not run
+    mixed = pd.concat([workplace_left(), broken])
+
+    assert find_roles(broken) is None
+    assert detect(broken) == []
+    assert detect(mixed) == detect(workplace_left())
+
+
+def test_the_cashier_is_the_track_most_present_at_the_seat_not_the_lowest_id():
+    df = tracks(
+        part(1, "person", 0, 5, *SEAT, wobble=3),  # a short earlier fragment
+        part(7, "person", 10, 30, *SEAT, wobble=3),
+    )
+
+    assert find_roles(df).cashier == 7
