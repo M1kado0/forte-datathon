@@ -24,7 +24,7 @@ Python отдельно ставить не нужно: uv сам скачает
 | Инструмент | Кому | Зачем | Установка |
 |---|---|---|---|
 | cloudflared | тот, кто сервит (P1 или владелец RTX) | публичный URL для жюри (`make tunnel`) | `brew install cloudflared` / `winget install Cloudflare.cloudflared` |
-| NVIDIA driver с поддержкой CUDA 12.8 | владелец RTX 5070 (P2) | torch cu128 на GPU | GeForce Experience или nvidia.com/drivers. CUDA Toolkit ставить не нужно |
+| NVIDIA driver 595+ (CUDA 13.2) | владелец RTX 5080 (Ubuntu, сервинг) | torch cu132 на GPU | `nvidia-driver-595-open` + `linux-modules-nvidia-595-open-$(uname -r)`, проверка `nvidia-smi`. CUDA Toolkit ставить не нужно |
 | Playwright Chromium | P1, P4 | скриншоты UI 1440/390 (`make screenshots`) | `cd web && npx playwright install chromium` |
 | ffmpeg | P3 (по желанию) | `ffprobe` для кодека и fps клипов | `brew install ffmpeg` / `winget install Gyan.FFmpeg` |
 
