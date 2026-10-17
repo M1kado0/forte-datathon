@@ -30,20 +30,23 @@ check() {
 
 if [ "${1:-}" = check ]; then check; exit $?; fi
 
-command -v tailscale >/dev/null || { echo "tailscale is not installed"; exit 1; }
+TAILSCALE="$(command -v tailscale)" || { echo "tailscale is not installed"; exit 1; }
 [ -x "$ROOT/.venv/bin/uvicorn" ] || { echo "run 'make setup' first"; exit 1; }
 
 # 0. Funnel must be allowed for the tailnet (admin console, one click), otherwise the command waits forever
-funnel_out="$(timeout 20 tailscale funnel --bg "$PORT" 2>&1 || true)"
+funnel_rc=0
+funnel_out="$(timeout 20 tailscale funnel --bg "$PORT" 2>&1)" || funnel_rc=$?
 if grep -q "not enabled" <<<"$funnel_out"; then
   echo "$funnel_out"; echo "Open the link above, enable Funnel, then rerun this script."; exit 1
+elif [ "$funnel_rc" -ne 0 ]; then
+  echo "$funnel_out"; echo "tailscale funnel failed (exit $funnel_rc); e.g. no operator rights: sudo tailscale set --operator=$RUN_USER"; exit 1
 fi
 
 # 1. API key and web build (user level, no sudo)
 if [ ! -f "$ROOT/.env" ]; then
   echo "API_KEY=$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')" > "$ROOT/.env"
   chmod 600 "$ROOT/.env"
-  echo "created .env with a new API_KEY (give it to the jury): $(cat "$ROOT/.env")"
+  echo "created $ROOT/.env with a new API_KEY; read it there (not printed, so a screen recording does not leak it)"
 fi
 if [ ! -f "$ROOT/web/dist/index.html" ]; then
   [ -d "$ROOT/web/node_modules" ] || (cd "$ROOT/web" && npm ci)
@@ -77,7 +80,7 @@ Wants=tailscaled.service network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/tailscale funnel --bg $PORT
+ExecStart=$TAILSCALE funnel --bg $PORT
 Restart=on-failure
 RestartSec=10
 

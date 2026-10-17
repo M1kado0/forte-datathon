@@ -1,14 +1,16 @@
-"""Jury simulation: `uv run python scripts/jury_sim.py --url $PUBLIC_URL`.
+"""Jury simulation: `uv run python -m scripts.jury_sim --url $PUBLIC_URL`.
 
 Phase 1 mimics the jury: N parallel uploads of real clips, p95 of time-to-result, schema check of every
 answer against contracts/. Phase 2 is the stress test: M parallel ~145 s videos built locally with ffmpeg
-from our clips, all of them must finish inside the budget. Exit code is 1 when any criterion fails.
+(needs the `ffmpeg` binary) from our clips, all of them must finish inside the budget. Exit code is 1 when
+any criterion fails.
 """
 
 import argparse
 import asyncio
 import math
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -20,13 +22,12 @@ import httpx
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from contracts.schemas import JobResponse  # noqa: E402
-from src.config import ROOT, VIDEOS_DIR  # noqa: E402
+from contracts.schemas import JobResponse
+from src.config import ROOT, VIDEOS_DIR
 
 P95_LIMIT_SEC = 240.0  # brief: result within 5 min per video, keep a margin
 STRESS_LIMIT_SEC = 300.0
+CLIP_LIMIT_SEC = 45.0  # docs/PLAN.md T10: one 145-s clip
 POLL_SEC = 1.0
 
 
@@ -118,16 +119,24 @@ async def run_batch(
     return list(outcomes), time.monotonic() - started
 
 
-async def check_access(client: httpx.AsyncClient, url: str) -> list[str]:
+async def check_access(client: httpx.AsyncClient) -> list[str]:
     errors = []
     health = await client.get("/api/health")
-    if health.status_code != 200 or health.json().get("status") != "ok":
-        errors.append(f"/api/health вернул {health.status_code}")
-    async with httpx.AsyncClient(base_url=url, timeout=30) as anonymous:
+    try:
+        health_ok = health.status_code == 200 and health.json().get("status") == "ok"
+    except ValueError:  # an HTML page from the tunnel instead of JSON
+        health_ok = False
+    if not health_ok:
+        errors.append(f"/api/health вернул {health.status_code} и не JSON со status ok")
+    async with httpx.AsyncClient(base_url=str(client.base_url), timeout=30) as anonymous:
         unauthorized = await anonymous.get("/api/v1/jobs/none")
     if unauthorized.status_code != 401:
         errors.append(f"без ключа ожидался 401, получен {unauthorized.status_code}")
     return errors
+
+
+def failed(outcomes: list[Outcome]) -> list[str]:
+    return [f"{item.clip}: {item.problem}" for item in outcomes if not item.ok]
 
 
 def report(title: str, outcomes: list[Outcome]) -> None:
@@ -141,43 +150,57 @@ async def main(args: argparse.Namespace) -> int:
     key = args.api_key or os.getenv("API_KEY", "")
     if not key:
         raise SystemExit("Нет ключа: --api-key или API_KEY в .env")
+    if args.stress and not shutil.which("ffmpeg"):
+        raise SystemExit("Для стресса нужен ffmpeg (sudo apt install ffmpeg); без него: --stress 0")
+    url = args.url.rstrip("/")
     failures: list[str] = []
 
     async with httpx.AsyncClient(
-        base_url=args.url.rstrip("/"), headers={"X-API-Key": key}, timeout=httpx.Timeout(120.0)
+        base_url=url, headers={"X-API-Key": key}, timeout=httpx.Timeout(120.0)
     ) as client:
         try:
-            failures += await check_access(client, args.url.rstrip("/"))
+            failures += await check_access(client)
         except httpx.HTTPError as error:
-            raise SystemExit(f"Сервис недоступен по {args.url}: {type(error).__name__}: {error}") from None
+            raise SystemExit(f"Сервис недоступен по {url}: {type(error).__name__}: {error}") from None
 
-        print(f"Жюри: {args.parallel} параллельных задач × {args.rounds}")
-        jury: list[Outcome] = []
-        for _ in range(args.rounds):
-            batch, _ = await run_batch(client, pick_clips(args.videos, args.parallel), args.timeout)
-            jury += batch
+        print(f"Жюри: {args.parallel} параллельных задач")
+        jury, jury_wall = await run_batch(client, pick_clips(args.videos, args.parallel), args.timeout)
         report("Жюри", jury)
         p95 = percentile([item.seconds for item in jury], 0.95)
         schema_errors = sum(item.problem.startswith("schema") for item in jury)
-        print(f"p95 = {p95:.1f} s (порог {P95_LIMIT_SEC:.0f}), ошибок схемы = {schema_errors}")
+        print(
+            f"p95 = {p95:.1f} s (порог {P95_LIMIT_SEC:.0f}; при {len(jury)} задачах p95 = максимум), "
+            f"вся пачка за {jury_wall:.1f} s, ошибок схемы = {schema_errors}"
+        )
         if p95 >= P95_LIMIT_SEC:
             failures.append(f"p95 {p95:.1f} s >= {P95_LIMIT_SEC:.0f} s")
-        failures += [f"{item.clip}: {item.problem}" for item in jury if not item.ok]
+        failures += failed(jury)
 
         if args.stress:
             print(f"Стресс: {args.stress} параллельных видео по {args.stress_seconds} с")
             with tempfile.TemporaryDirectory(prefix="forte-stress-") as directory:
                 longs = []
-                for index, source in enumerate(pick_clips(args.videos, args.stress)):
-                    target = Path(directory) / f"stress-{index}.mov"
-                    make_long_clip(source, target, args.stress_seconds)
-                    longs.append(target)
+                try:
+                    for index, source in enumerate(pick_clips(args.videos, args.stress)):
+                        target = Path(directory) / f"stress-{index}.mov"
+                        make_long_clip(source, target, args.stress_seconds)
+                        longs.append(target)
+                except subprocess.CalledProcessError as error:
+                    raise SystemExit(f"ffmpeg не собрал длинный клип (код {error.returncode})") from None
                 stress, wall = await run_batch(client, longs, STRESS_LIMIT_SEC + 60)
             report("Стресс", stress)
-            print(f"время стресса = {wall:.1f} s (порог {STRESS_LIMIT_SEC:.0f})")
+            slowest = max(item.seconds for item in stress)
+            print(
+                f"время стресса = {wall:.1f} s (порог {STRESS_LIMIT_SEC:.0f}), "
+                f"самый долгий клип = {slowest:.1f} s (порог {CLIP_LIMIT_SEC:.0f})"
+            )
             if wall >= STRESS_LIMIT_SEC:
                 failures.append(f"стресс {wall:.1f} s >= {STRESS_LIMIT_SEC:.0f} s")
-            failures += [f"{item.clip}: {item.problem}" for item in stress if not item.ok]
+            if slowest >= CLIP_LIMIT_SEC:
+                failures.append(
+                    f"клип {args.stress_seconds} с занял {slowest:.1f} s >= {CLIP_LIMIT_SEC:.0f} s"
+                )
+            failures += failed(stress)
 
     print("ПРОШЛО" if not failures else "НЕ ПРОШЛО:\n  " + "\n  ".join(failures))
     return 1 if failures else 0
@@ -189,7 +212,6 @@ def parse() -> argparse.Namespace:
     parser.add_argument("--api-key", help="по умолчанию API_KEY из .env")
     parser.add_argument("--videos", type=Path, default=VIDEOS_DIR)
     parser.add_argument("--parallel", type=int, default=5)
-    parser.add_argument("--rounds", type=int, default=1, help="сколько раз повторить пачку жюри")
     parser.add_argument("--stress", type=int, default=8, help="0 отключает стресс")
     parser.add_argument("--stress-seconds", type=int, default=145)
     parser.add_argument("--timeout", type=float, default=300.0, help="потолок ожидания одной задачи, с")

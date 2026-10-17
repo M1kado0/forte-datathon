@@ -49,7 +49,7 @@ tunnel-cloudflared:
 
 # Jury simulation against a running service: make jury-sim PUBLIC_URL=https://...
 jury-sim:
-	uv run python scripts/jury_sim.py --url $(PUBLIC_URL)
+	uv run python -m scripts.jury_sim --url $(PUBLIC_URL)
 
 screenshots:
 	cd web && npm run screenshots
