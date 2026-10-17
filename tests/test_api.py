@@ -1,9 +1,11 @@
 """Deterministic HTTP contract tests; no model or dataset required."""
 
 import base64
+import sys
 import time
 from io import BytesIO
 from threading import Event
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,8 +20,76 @@ from src.rules.describe import describe_violation, rule_catalog
 KEY = {"X-API-Key": "jury-key"}
 
 
+def test_default_app_warms_model_once_and_serves_its_results(monkeypatch):
+    warmed = []
+    paths = []
+
+    def analyze(path):
+        assert set(warmed) == {"classifier", "embedder"}
+        paths.append(path)
+        if len(paths) == 1:
+            return []
+        violation = analyze_stub(path)[0]
+        violation.timecode_sec = 12.5
+        violation.evidence_frames[0].timestamp_sec = 12.5
+        return [violation]
+
+    # Substitute the ML boundary: contract tests require neither weights nor ML imports.
+    monkeypatch.setitem(
+        sys.modules,
+        "src.models.analyze",
+        SimpleNamespace(
+            default_model=lambda: warmed.append("classifier"),
+            default_embedder=lambda: warmed.append("embedder"),
+            analyze=analyze,
+        ),
+    )
+    app = create_app(api_key="jury-key")
+    assert warmed == []
+    with TestClient(app) as client:
+        assert client.get("/api/health").json()["model_loaded"] is True
+        clean = finished(client, upload(client))
+        assert clean["status"] == "done"
+        assert clean["verdict"] == "no_violation"
+        assert clean["violations"] == []
+        violation = finished(client, upload(client))
+        assert violation["status"] == "done"
+        assert violation["verdict"] == "violation"
+        assert violation["violations"][0]["timecode_sec"] == 12.5
+        assert violation["violations"][0]["evidence_frames"][0]["timestamp_sec"] == 12.5
+        assert len(warmed) == 2
+        assert len(paths) == 2
+        assert all(not path.exists() for path in paths)
+
+
+@pytest.mark.parametrize("failing_loader", ["default_model", "default_embedder"])
+def test_model_load_failure_stops_startup_without_stub_fallback(monkeypatch, failing_loader):
+    def fail():
+        raise RuntimeError("Local model is unavailable")
+
+    def unexpected_analyze(path):
+        pytest.fail("Analyzer must not run after failed startup")
+
+    model_api = SimpleNamespace(
+        default_model=lambda: None,
+        default_embedder=lambda: None,
+        analyze=unexpected_analyze,
+    )
+    setattr(model_api, failing_loader, fail)
+    monkeypatch.setitem(sys.modules, "src.models.analyze", model_api)
+    with pytest.raises(RuntimeError, match="Local model is unavailable"), TestClient(create_app()):
+        pytest.fail("Application must not accept requests without the model")
+
+
+def test_injected_analyzer_does_not_load_model(monkeypatch):
+    monkeypatch.setitem(sys.modules, "src.models.analyze", None)
+    with TestClient(create_app(analyzer=analyze_stub, api_key="jury-key")) as client:
+        assert client.get("/api/health").json()["model_loaded"] is False
+        assert finished(client, upload(client))["status"] == "done"
+
+
 def test_ui_rule_catalog_has_russian_names_and_exact_sources_without_key():
-    with TestClient(create_app(api_key="jury-key")) as client:
+    with TestClient(create_app(api_key="jury-key", analyzer=analyze_stub)) as client:
         response = client.get("/api/ui/rules")
         assert response.status_code == 200
         catalog = {item["id"]: item for item in response.json()}
@@ -139,7 +209,7 @@ def test_worker_result_failure_and_recovery(outcome):
 
 
 def test_health_validation_and_removed_routes():
-    with TestClient(create_app(api_key="jury-key")) as client:
+    with TestClient(create_app(api_key="jury-key", analyzer=analyze_stub)) as client:
         health = client.get("/api/health").json()
         assert set(health) == {"status", "version", "model_loaded"}
         assert health["status"] == "ok" and health["model_loaded"] is False
@@ -153,7 +223,7 @@ def test_health_validation_and_removed_routes():
 
 def test_missing_server_key_fails_closed(monkeypatch):
     monkeypatch.delenv("API_KEY", raising=False)
-    with TestClient(create_app(api_key="")) as client:
+    with TestClient(create_app(api_key="", analyzer=analyze_stub)) as client:
         assert client.get("/api/v1/jobs/missing", headers=KEY).status_code == 401
 
 
@@ -173,7 +243,7 @@ def test_job_schema_rejects_inconsistent_results(body):
 
 
 def test_v1_requires_key_before_parsing_upload():
-    with TestClient(create_app(api_key="jury-key")) as client:
+    with TestClient(create_app(api_key="jury-key", analyzer=analyze_stub)) as client:
         for headers in ({}, {"X-API-Key": "wrong"}):
             assert client.post("/api/v1/analyze", headers=headers).status_code == 401
             assert client.get("/api/v1/jobs/missing", headers=headers).status_code == 401
