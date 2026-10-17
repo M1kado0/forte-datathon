@@ -9,11 +9,13 @@ from src.models.windows import (
     POSITIVE,
     UNLABELED,
     choose_threshold,
+    group_of,
     labels_by_video,
     lovo_folds,
     make_windows,
     timecode,
     video_metrics,
+    video_score,
 )
 
 
@@ -92,7 +94,7 @@ def test_threshold_needs_a_violation_video():
 def test_timecode_onset_and_peak():
     starts = [0.0, 0.5, 1.0, 1.5, 2.0]
     scores = [0.1, 0.6, 0.9, 0.7, 0.2]
-    assert timecode(starts, scores, 0.5, "onset") == 0.5
+    assert timecode(starts, scores, 0.5, "onset") == 2.5  # window [0.5, 2.5] ends at 2.5
     assert timecode(starts, scores, 0.5, "peak") == 2.0  # start 1.0 + half a window
     assert timecode(starts, scores, 0.95) is None
 
@@ -113,13 +115,21 @@ def test_median_abs_dt_uses_nearest_label():
 
 
 def test_windows_of_one_video_stay_on_one_side_of_every_fold():
-    ids = ["X-1", "X-4", "X-47", "X-5", "X-48", "X-3"]
     labels = {"X-1": [22], "X-4": [57], "X-47": [57], "X-5": [10], "X-48": [10], "X-3": []}
-    rows = pd.concat([make_windows(30.0, labels[v]).assign(video_id=v) for v in ids], ignore_index=True)
-    for train_vid, val_vid in lovo_folds(ids):
-        train_ids = {ids[i] for i in train_vid}
-        val_ids = {ids[i] for i in val_vid}
-        train_rows = rows[rows["video_id"].isin(train_ids)]
-        val_rows = rows[rows["video_id"].isin(val_ids)]
-        assert not set(train_rows["video_id"]) & set(val_rows["video_id"])
-        assert len(train_rows) + len(val_rows) == len(rows)
+    rows = pd.concat(
+        [make_windows(30.0, ns).assign(video_id=v) for v, ns in labels.items()], ignore_index=True
+    )
+    ids = rows["video_id"]  # one entry per window, ids repeat
+    folds = list(lovo_folds(ids))
+    assert len(folds) == 4  # X-1, X-4(+X-47), X-5(+X-48), X-3
+    for train, val in folds:
+        assert not {group_of(v) for v in ids.iloc[train]} & {group_of(v) for v in ids.iloc[val]}
+        assert len(train) + len(val) == len(rows)
+        # merged duplicates travel together, checked by name rather than via group_of
+        for a, b in [("X-4", "X-47"), ("X-5", "X-48")]:
+            assert (a in set(ids.iloc[val])) == (b in set(ids.iloc[val]))
+
+
+def test_video_score_is_worst_window():
+    assert video_score([0.1, 0.9, 0.4]) == 0.9
+    assert video_score([]) == 0.0

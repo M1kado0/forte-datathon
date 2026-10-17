@@ -45,7 +45,7 @@ def labels_by_video(labels: pd.DataFrame) -> dict[str, list[int]]:
         out.setdefault(video_id, [])
         if not pd.isna(second):
             out[video_id].append(int(second))
-    return dict(out)
+    return out
 
 
 def group_of(video_id: str) -> str:
@@ -62,8 +62,8 @@ def lovo_folds(video_ids: Sequence[str]) -> Iterator[tuple[np.ndarray, np.ndarra
 
 
 def video_score(window_scores: Sequence[float]) -> float:
-    """A video is as suspicious as its worst window."""
-    return float(np.max(window_scores))
+    """A video is as suspicious as its worst window; a clip with no windows (< 2 s) scores 0.0, not an error."""
+    return float(np.max(window_scores)) if len(window_scores) else 0.0
 
 
 def choose_threshold(scores: Sequence[float], is_violation: Sequence[bool]) -> float:
@@ -82,14 +82,14 @@ def choose_threshold(scores: Sequence[float], is_violation: Sequence[bool]) -> f
 def timecode(
     starts: Sequence[float], scores: Sequence[float], threshold: float, mode: str = "onset"
 ) -> float | None:
-    """Reported second: 'onset' = start of the first above-threshold window, 'peak' = centre of the best one."""
+    """Reported second: 'onset' = end of the first above-threshold window (the earliest it can see the event, ~N-1+WINDOW), 'peak' = centre of the best one."""
     s = np.asarray(scores, dtype=float)
     t = np.asarray(starts, dtype=float)
     above = np.flatnonzero(s >= threshold)
     if above.size == 0:
         return None
     if mode == "onset":
-        return float(t[above[0]])
+        return float(t[above[0]] + WINDOW_SEC)
     if mode == "peak":
         return float(t[int(np.argmax(s))] + WINDOW_SEC / 2)
     raise ValueError(f"unknown mode: {mode!r}")
