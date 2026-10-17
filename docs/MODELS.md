@@ -23,5 +23,19 @@
 | huggingface-hub | 2.2.0 | Apache-2.0 | |
 | safetensors | 0.8.0 | Apache-2.0 | |
 | opencv-python-headless | 5.0.0.93 | Apache-2.0 | колёса содержат FFmpeg под LGPLv2.1 (динамическая линковка, коммерческое использование допускается) |
+| sentencepiece | 0.2.2 | Apache-2.0 | токенайзер SigLIP |
+| protobuf | 7.36.2 | BSD-3-Clause | нужен токенайзеру SigLIP |
 | numpy | 2.5.4 | BSD-3-Clause | |
-| pillow | 12.3.0 | MIT-CMU (HPND, разрешающая, близка к MIT) | приходит транзитивно через transformers |
+| pillow | 12.3.0 | MIT-CMU (HPND, разрешающая, близка к MIT) | транзитивно через transformers, напрямую не объявлена |
+| nvidia-* (15 колёс CUDA: cublas, cudnn, nccl и др.) | 13.2.x | NVIDIA Software License / CUDA EULA (проприетарная, redistribution разрешён вместе с приложением) | транзитивно через torch cu132; на macOS не ставятся |
+
+## Исключения из правила лицензий: нужно решение команды
+
+Эти пакеты не входят в список Apache-2.0 / MIT / BSD, но без них нет ни CUDA, ни декодирования:
+
+1. nvidia-* (CUDA-колёса torch): проприетарная лицензия NVIDIA, обязательны для GPU.
+2. opencv-python-headless: сам код Apache-2.0, но колёса содержат FFmpeg под LGPLv2.1.
+3. pillow: HPND (MIT-CMU), по сути разрешающая.
+4. torch: в метаданных перечислена и BSL-1.0 (Boost) для части кода.
+
+Пока решения нет, это кандидаты на запись в AGENTS.md. Запись в AGENTS.md сделает владелец файла после решения.

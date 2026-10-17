@@ -1,4 +1,4 @@
-.PHONY: weights setup test lint web app dev demo all tunnel tunnel-ngrok screenshots clean
+.PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-ngrok screenshots clean
 
 PORT ?= 8000
 
@@ -10,6 +10,9 @@ setup:
 # Downloads model weights once into models/weights, then checks each loads with HF_HUB_OFFLINE=1.
 weights:
 	uv run python -m scripts.weights
+
+weights-check:
+	HF_HUB_OFFLINE=1 uv run python -m scripts.weights --check
 
 test:
 	uv run pytest

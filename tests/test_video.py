@@ -13,17 +13,27 @@ W, H = 96, 64
 
 @pytest.fixture
 def clip(tmp_path):
-    path = tmp_path / "tiny.mov"
-    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), SRC_FPS, (W, H))
-    for i in range(SRC_FPS * SECONDS):
+    return write_clip(tmp_path / "tiny.mov", SRC_FPS)
+
+
+def write_clip(path, src_fps):
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), src_fps, (W, H))
+    for i in range(src_fps * SECONDS):
         writer.write(np.full((H, W, 3), i * 4, dtype=np.uint8))
     writer.release()
     return path
 
 
 def test_samples_requested_rate_with_timestamps(clip):
-    out = list(iter_frames(clip))  # default rate is 4/s
-    assert [s for s, _ in out] == [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
+    seconds = [s for s, _ in iter_frames(clip)]  # default rate is 4/s
+    assert len(seconds) == 8
+    # each sample is the first source frame at or after the grid time, so within one frame of it
+    assert seconds == pytest.approx([0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75], abs=1 / SRC_FPS)
+
+
+def test_slow_source_keeps_true_frame_times(tmp_path):
+    slow = write_clip(tmp_path / "slow.mov", 2)
+    assert [s for s, _ in iter_frames(slow, fps=4)] == [0.0, 0.5, 1.0, 1.5]
 
 
 def test_frames_keep_native_resolution(clip):
@@ -39,3 +49,8 @@ def test_frames_follow_the_video_in_time(clip):
 def test_missing_file_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         list(iter_frames(tmp_path / "nope.mov"))
+
+
+def test_non_positive_fps_raises(clip):
+    with pytest.raises(ValueError):
+        list(iter_frames(clip, fps=0))
