@@ -1,15 +1,12 @@
 """Cashier-video labels: normalize the organizers' xlsx into data/labels.csv (TZ-8.5)."""
 
 import re
+from pathlib import Path
 
 import pandas as pd
 
 from contracts.data import LabelsSchema
-from src.config import DATA_RAW, ROOT
-
-XLSX = DATA_RAW / "open_labels.xlsx"
-VIDEOS_DIR = DATA_RAW / "videos"
-LABELS_CSV = ROOT / "data" / "labels.csv"
+from src.config import LABELS_CSV, LABELS_XLSX
 
 # Cyrillic Х and х look identical to Latin X, so they are built from code points, not typed.
 CYRILLIC_X = {chr(0x0425): "X", chr(0x0445): "X"}
@@ -49,7 +46,8 @@ def build_labels(raw: pd.DataFrame) -> pd.DataFrame:
     """
     ids = raw["file_name"].map(normalize_name)
     file_of = {i: f"{name.strip()}.mov" for i, name in zip(ids, raw["file_name"], strict=True)}
-    unknown = set(raw["verdict_ru"].str.strip().str.lower()) - VERDICTS.keys()
+    verdict_ru = raw["verdict_ru"].str.strip().str.lower()
+    unknown = set(verdict_ru) - VERDICTS.keys()
     if unknown:
         raise ValueError(f"unknown verdict text: {sorted(unknown)}")
     canonical = ids.map(lambda i: DUPLICATES.get(i, i))
@@ -57,7 +55,7 @@ def build_labels(raw: pd.DataFrame) -> pd.DataFrame:
         {
             "video_id": canonical,
             "file": canonical.map(file_of),
-            "verdict": raw["verdict_ru"].str.strip().str.lower().map(VERDICTS),
+            "verdict": verdict_ru.map(VERDICTS),
             "second": pd.array([parse_timecode(t) for t in raw["timestamp"]], dtype="Int64"),
         }
     ).drop_duplicates()
@@ -69,9 +67,14 @@ def build_labels(raw: pd.DataFrame) -> pd.DataFrame:
     return LabelsSchema.validate(out)
 
 
-def read_xlsx(path=XLSX) -> pd.DataFrame:
+def load_labels(path: Path = LABELS_CSV) -> pd.DataFrame:
+    """Read data/labels.csv and validate it against the contract."""
+    return LabelsSchema.validate(pd.read_csv(path, dtype={"second": "Int64"}))
+
+
+def read_xlsx() -> pd.DataFrame:
     """The organizers' sheet has three columns: file name, timestamp text, verdict text."""
-    raw = pd.read_excel(path, dtype=str)
+    raw = pd.read_excel(LABELS_XLSX, dtype=str)
     raw.columns = ["file_name", "timestamp", "verdict_ru"]
     return raw
 

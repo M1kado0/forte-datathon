@@ -7,8 +7,9 @@ import json
 
 import pandas as pd
 
+from contracts.data import StubSchema
 from src.config import DATA_PROCESSED, REPORTS, TARGET
-from src.data.stub import StubSchema, make_stub
+from src.data.stub import make_stub
 from src.models.train import train
 
 

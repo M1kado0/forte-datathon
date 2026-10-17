@@ -4,11 +4,11 @@ import pandas as pd
 import pandera.errors
 import pytest
 
-from contracts.data import LabelsSchema
+from contracts.data import LabelsSchema, StubSchema
 from src.config import FEATURES, ID_COL, TARGET
 from src.data.check_labels import check_labels, main
-from src.data.labels import LABELS_CSV, build_labels, normalize_name, parse_timecode
-from src.data.stub import StubSchema, make_stub
+from src.data.labels import build_labels, load_labels, normalize_name, parse_timecode
+from src.data.stub import make_stub
 from src.features.build import to_model_frame
 from src.models.explain import fmt_kzt
 
@@ -197,7 +197,7 @@ def test_check_labels_cli_prints_counts_and_exits_nonzero_on_missing_file(labels
 
 def test_committed_labels_csv_matches_the_issue():
     """Counts come from issue #21, not from the code: 40 videos, 21 violating (22 labels), 19 clean."""
-    labels = LabelsSchema.validate(pd.read_csv(LABELS_CSV, dtype={"second": "Int64"}))
+    labels = load_labels()
     violations = labels[labels["verdict"] == "violation"]
     assert labels["video_id"].nunique() == 40
     assert violations["video_id"].nunique() == 21 and len(violations) == 22

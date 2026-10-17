@@ -3,16 +3,15 @@
 import argparse
 from pathlib import Path
 
-import pandas as pd
 import pandera.errors
 
-from contracts.data import LabelsSchema
-from src.data.labels import LABELS_CSV, VIDEOS_DIR
+from src.config import LABELS_CSV, VIDEOS_DIR
+from src.data.labels import load_labels
 
 
 def check_labels(labels_csv: Path = LABELS_CSV, videos_dir: Path = VIDEOS_DIR) -> dict[str, int]:
     """Raises SchemaError on a contract breach and FileNotFoundError on a missing clip."""
-    labels = LabelsSchema.validate(pd.read_csv(labels_csv, dtype={"second": "Int64"}))
+    labels = load_labels(labels_csv)
     missing = sorted(name for name in labels["file"].unique() if not (videos_dir / name).is_file())
     if missing:
         raise FileNotFoundError(

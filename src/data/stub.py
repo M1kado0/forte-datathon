@@ -2,24 +2,8 @@
 
 import numpy as np
 import pandas as pd
-import pandera.pandas as pa
 
 from src.config import REGIONS, SEED
-
-StubSchema = pa.DataFrameSchema(
-    {
-        "client_id": pa.Column(str, unique=True),
-        "age": pa.Column(int, pa.Check.in_range(18, 90)),
-        "income_kzt": pa.Column(float, pa.Check.ge(0)),
-        "debt_ratio": pa.Column(float, pa.Check.in_range(0, 5)),
-        "days_overdue_max": pa.Column(int, pa.Check.ge(0)),
-        "tenure_months": pa.Column(int, pa.Check.ge(0)),
-        "region": pa.Column(str),
-        "target": pa.Column(int, pa.Check.isin([0, 1])),
-    },
-    strict=True,
-    coerce=True,
-)
 
 
 def make_stub(n: int = 5000, seed: int = SEED) -> pd.DataFrame:
