@@ -11,6 +11,7 @@ REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 WEB_DIST = ROOT / "web" / "dist"
 EXPERIMENTS = ROOT / "experiments.csv"  # append-only run log; tests redirect it to a tmp file
+RULES_YAML = ROOT / "src" / "rules" / "rules.yaml"  # violation type -> norm (T05)
 
 SEED = 42
 VERSION = "0.1.0-stub"
