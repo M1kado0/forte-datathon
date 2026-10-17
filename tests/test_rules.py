@@ -6,8 +6,9 @@ import string
 import pytest
 import yaml
 
-from src.config import RULES_YAML
+from src.config import RULES_MD, RULES_YAML
 from src.rules.describe import describe_violation
+from src.rules.verify_quotes import quote_matches, verify
 
 RULES = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))
 DOCS = RULES["documents"]
@@ -40,7 +41,6 @@ ADR_0005_TYPES = {
     "Иное подозрительное действие": [],
 }
 NORMS = {"точная", "ближайшая", "акт целиком"}
-RULES_MD = RULES_YAML.parents[2] / "docs" / "RULES.md"
 
 
 @pytest.mark.parametrize("doc", DOCS.values(), ids=list(DOCS))
@@ -111,6 +111,40 @@ def _rules_md_row(t):
 @pytest.mark.parametrize("t", TYPES, ids=[t["id"] for t in TYPES])
 def test_rules_md_lists_type_with_videos_punkts_and_norm(t):
     assert _rules_md_row(t) in RULES_MD.read_text(encoding="utf-8").splitlines()
+
+
+def test_rules_md_type_tables_have_no_row_without_a_type():
+    text = RULES_MD.read_text(encoding="utf-8")
+    section = text[text.index("## Типы нарушений и пункты") : text.index("## Только контекст")]
+    rows = [line for line in section.splitlines() if line.startswith("| ") and not line.startswith("| Тип |")]
+    assert sorted(rows) == sorted(_rules_md_row(t) for t in TYPES)
+
+
+# --- quotes vs the adilet texts in data/external/adilet (acceptance of #69) ---
+ACT = ["Постановление.", "1. Утвердить Правила.", "Глава 1. Общие положения", "5. Кассир делает:"]
+ACT += ["1) первое действие;", "", "2) второе действие;", "6. Другое.", "Глава 2. Конец"]
+
+
+def test_every_quote_matches_its_punkt_in_the_adilet_text():
+    assert verify() == 0
+
+
+def test_quote_inside_its_subpunkt_matches():
+    assert quote_matches("Кассир делает: 1) первое действие;", "п. 5 подп. 1)", ACT)
+    assert quote_matches("2) второе действие;", "п. 5 подп. 2)", ACT)
+
+
+def test_quote_from_another_subpunkt_does_not_match():
+    assert not quote_matches("1) первое ... второе действие;", "п. 5 подп. 1)", ACT)
+
+
+@pytest.mark.parametrize("punkt", ["п. 9", "п. 5 подп. 3)", "подп. 1)"])
+def test_missing_punkt_is_a_mismatch_not_a_crash(punkt):
+    assert not quote_matches("1) первое действие;", punkt, ACT)
+
+
+def test_act_without_chapter_heading_is_a_mismatch_not_a_crash():
+    assert not quote_matches("Другое.", "п. 6", ["6. Другое."])
 
 
 # --- describe_violation: the one place analyze(path) takes `type` and `description` from (TZ-4.6) ---

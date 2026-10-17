@@ -21,24 +21,46 @@ def _text_path(doc: dict, texts: Path) -> Path:
     return texts / (doc["url"].rsplit("/", 1)[1] + ".txt")
 
 
-def _punkt_block(lines: list[str], punkt: str) -> str:
-    """Text of one пункт; 'часть первая/вторая' keeps the first paragraph or the rest."""
-    n = int(re.match(r"п\. (\d+)", punkt).group(1))
+def _punkt_block(lines: list[str], punkt: str) -> str | None:
+    """Text of one пункт, or None if the act has no such пункт.
+
+    'часть первая/вторая' keeps the first paragraph or the rest. 'подп. 1), 2)' keeps the lead-in before
+    the first подпункт plus the named подпункты, so a fragment quoted from another подпункт does not match.
+    """
+    number = re.match(r"п\. (\d+)", punkt)
     # The act's own пункты come after the resolution, which ends before "Глава 1."
-    start = next(i for i, line in enumerate(lines) if re.match(r"\s*Глава 1\.", line))
-    i = next(k for k in range(start, len(lines)) if lines[k].startswith(f"{n}. "))
-    j = next(k for k in range(i + 1, len(lines)) if re.match(rf"({n + 1}\. |Глава )", lines[k]))
+    start = next((i for i, line in enumerate(lines) if re.match(r"\s*Глава 1\.", line)), None)
+    if number is None or start is None:
+        return None
+    n = int(number.group(1))
+    i = next((k for k in range(start, len(lines)) if lines[k].startswith(f"{n}. ")), None)
+    if i is None:
+        return None
+    j = next((k for k in range(i + 1, len(lines)) if re.match(rf"({n + 1}\. |Глава )", lines[k])), len(lines))
     block = [line for line in lines[i:j] if line.strip()]
     if "часть первая" in punkt:
         block = block[:1]
     elif "часть вторая" in punkt:
         block = block[1:]
+    subs = re.findall(r"(\d+)\)", punkt.partition("подп.")[2])
+    if subs:
+        kept, current = [], None
+        for line in block:
+            if marker := re.match(r"(\d+)\) ", line):
+                current = marker.group(1)
+            if current is None or current in subs:
+                kept.append(line)
+        if not any(re.match(rf"{s}\) ", line) for s in subs for line in kept):
+            return None
+        block = kept
     return _norm(" ".join(block))
 
 
 def quote_matches(quote: str, punkt: str, lines: list[str]) -> bool:
     """Fragments split by ' ... ' appear in order inside the пункт, and each подпункт number is quoted."""
     body, quote = _punkt_block(lines, punkt), _norm(quote)
+    if body is None:
+        return False
     pos = 0
     for fragment in quote.split(" ... "):
         k = body.find(fragment, pos)
