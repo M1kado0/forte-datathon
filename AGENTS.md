@@ -110,3 +110,17 @@ Test only deterministic code:
 
 ## Freeze
 After **06:00**: no new features, no number changes. Fixes only, reviewed by P1.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues in `M1kado0/forte-datathon` via `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` at the root, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
