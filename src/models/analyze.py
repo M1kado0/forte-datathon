@@ -3,8 +3,9 @@
     uv run python -m src.models.analyze data/raw/videos/X-14.mov
 
 Window scores come from the saved classifier (src/models/train.py). Each violation is a peak of the score
-above the threshold; at most MAX_VIOLATIONS, at least MIN_GAP_SEC apart. Until branch B types it, every
-violation gets the fallback type, its description from the rules reference and frames around the peak.
+above the threshold, at least MIN_GAP_SEC apart. Until branch B types it, a violation gets the fallback type,
+its description from the rules reference and frames around the peak; a fallback-typed result is one
+violation per video (ADR 0005), typed results will allow MAX_VIOLATIONS.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from src.models.windows import WINDOW_SEC, make_windows, timecode
 from src.rules.describe import describe_violation
 
 MAX_VIOLATIONS = 2
+MAX_FALLBACK_VIOLATIONS = 1  # ADR 0005: with no heuristic type, one neutral violation per video
 MIN_GAP_SEC = 5.0
 FALLBACK_TYPE = "other"  # rules.yaml `fallback: true`; branch B replaces it with a heuristic type
 EVIDENCE_KIND = "action"  # the timecode is a score peak, so frames are the peak, 1 s before and 1 s after
@@ -61,7 +63,7 @@ def analyze(
     seconds, emb, _ = embed_video(path, embedder or default_embedder())
     starts, scores = score_windows(seconds, emb, model["model"])
     violations: list[Violation] = []
-    for tc in pick_timecodes(starts, scores, model["threshold"]):
+    for tc in pick_timecodes(starts, scores, model["threshold"], max_n=MAX_FALLBACK_VIOLATIONS):
         frames = evidence_frames(path, tc, EVIDENCE_KIND)
         # report the second of the frame actually decoded, so timecode and first frame are equal
         second = frames[0].timestamp_sec
