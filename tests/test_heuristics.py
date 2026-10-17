@@ -7,7 +7,12 @@ from pandera.errors import SchemaError
 
 from src.config import RULES_YAML
 from src.heuristics import TRACKS_SCHEMA, Thresholds, detect, find_roles
-from src.heuristics.detect import CASH_ON_DESK_NEXT_CLIENT, COUNT_WITHOUT_CONTROLLER, WORKPLACE_LEFT
+from src.heuristics.detect import (
+    CASH_ON_DESK_NEXT_CLIENT,
+    COUNT_WITHOUT_CONTROLLER,
+    ID_NOT_PRESENTED,
+    WORKPLACE_LEFT,
+)
 
 FPS = 4
 SEAT = (200.0, 400.0)  # where the cashier sits in the 464x848 frame
@@ -18,7 +23,7 @@ DESK = (200.0, 450.0)  # where cash lies, next to the seat
 def part(track_id, kind, t0, t1, cx, cy, *, h=200.0, wobble=0.0, drop_every=0):
     """Rows of one track between t0 and t1 seconds; `wobble` moves the box +-wobble px each frame,
     `drop_every=8` leaves out every 8th frame (a detector miss)."""
-    label = "person" if kind == "person" else "cash"
+    label = kind  # in these scenes every kind carries its own name as the label
     rows = []
     for i in range(round(t0 * FPS), round(t1 * FPS)):
         if drop_every and i % drop_every == drop_every - 1:
@@ -196,6 +201,7 @@ def test_silent_during_normal_service():
         part(1, "person", 0, 30, *SEAT, wobble=3),
         part(2, "person", 5, 15, *COUNTER),
         part(10, "cash", 6, 12, *DESK, h=20),  # the client's money while being served
+        part(11, "document", 5, 7, *COUNTER, h=20),  # the client shows an identity document
     )
 
     assert detect(df) == []
@@ -208,7 +214,12 @@ def test_silent_when_nothing_is_tracked():
 def test_every_type_the_heuristics_can_report_exists_in_rules_yaml():
     known = {t["id"] for t in yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))["types"]}
 
-    assert {WORKPLACE_LEFT, CASH_ON_DESK_NEXT_CLIENT, COUNT_WITHOUT_CONTROLLER} <= known
+    assert {
+        WORKPLACE_LEFT,
+        CASH_ON_DESK_NEXT_CLIENT,
+        COUNT_WITHOUT_CONTROLLER,
+        ID_NOT_PRESENTED,
+    } <= known
 
 
 def test_type1_silent_when_the_only_other_person_is_far_from_the_counter():
@@ -311,8 +322,17 @@ def test_the_track_schema_rejects_a_box_without_area():
         ("cash_on_desk_next_client", lambda: client_change(), Thresholds(min_hold_sec=9.0)),
         ("count_without_controller", lambda: counting(), Thresholds(min_count_sec=16.0)),
         ("count_without_controller", lambda: counting(), Thresholds(desk_radius=0.1)),
+        ("id_not_presented", lambda: payout(), Thresholds(min_payout_sec=14.0)),
     ],
-    ids=["min_away_sec", "counter_radius", "gap_sec", "min_hold_sec", "min_count_sec", "desk_radius"],
+    ids=[
+        "min_away_sec",
+        "counter_radius",
+        "gap_sec",
+        "min_hold_sec",
+        "min_count_sec",
+        "desk_radius",
+        "min_payout_sec",
+    ],
 )
 def test_every_threshold_can_be_passed_in(type_id, scene, stricter):
     df = scene()
@@ -343,3 +363,49 @@ def test_the_seat_radius_decides_who_counts_as_standing_at_the_seat():
 
     assert default == []  # taken for the cashier's stand-in at the seat
     assert [(h.start_sec, h.end_sec) for h in narrow] == [(12.0, 17.75)]  # too far from the seat: a client
+
+
+def payout(*, client=(5, 20), cash=(6, 19), document=None, document_at=COUNTER):
+    """Cashier at the seat, one client at the counter, cash on the desk; `document` = (t0, t1) when shown."""
+    parts = [part(1, "person", 0, 30, *SEAT, wobble=3), part(2, "person", *client, *COUNTER)]
+    if cash:
+        parts.append(part(10, "cash", *cash, *DESK, h=20))
+    if document:
+        parts.append(part(11, "document", *document, *document_at, h=20))
+    return tracks(*parts)
+
+
+def test_type7_cash_in_front_of_a_client_and_no_document_shown():
+    hits = hits_of("id_not_presented", payout())
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(6.0, 18.75)]
+
+
+def test_type7_silent_when_the_client_shows_a_document():
+    assert hits_of("id_not_presented", payout(document=(7, 9))) == []
+
+
+def test_type7_silent_without_cash_because_p31_is_about_paying_out():
+    assert hits_of("id_not_presented", payout(cash=None)) == []
+
+
+def test_type7_silent_when_the_client_only_passes_by_the_counter():
+    assert hits_of("id_not_presented", payout(client=(5, 9), cash=(6, 9))) == []
+
+
+def test_type7_a_document_far_from_the_counter_does_not_count_as_shown():
+    df = payout(document=(7, 9), document_at=(440.0, 800.0))  # 2.3 cashier heights from the seat
+
+    assert [(h.start_sec, h.end_sec) for h in hits_of("id_not_presented", df)] == [(6.0, 18.75)]
+
+
+def test_type7_a_document_of_the_previous_client_does_not_cover_the_next_one():
+    df = tracks(
+        part(1, "person", 0, 30, *SEAT, wobble=3),
+        part(2, "person", 3, 12, *COUNTER),
+        part(11, "document", 4, 6, *COUNTER, h=20),  # only client A shows one
+        part(3, "person", 14, 26, *COUNTER),
+        part(10, "cash", 4, 26, *DESK, h=20),
+    )
+
+    assert [(h.start_sec, h.end_sec) for h in hits_of("id_not_presented", df)] == [(14.0, 25.75)]
