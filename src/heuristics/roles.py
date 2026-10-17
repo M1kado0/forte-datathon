@@ -25,8 +25,10 @@ class Roles:
 def find_roles(tracks: pd.DataFrame, thresholds: Thresholds = DEFAULT) -> Roles | None:
     """The seat is where person boxes pile up most over the clip, whoever they are; the stillest pile wins a tie.
 
-    The cashier is the track most present there. A cashier who leaves and returns under a new id still
-    gives one seat. None when no person is tracked.
+    Everyone at a spot counts, so clients who come one after another at the counter add up and can match or
+    outweigh the cashier's time at the seat; then the counter becomes the seat. The cashier is the track most
+    present there. A cashier who leaves and returns under a new id still gives one seat. None when no person
+    is tracked.
     """
     people = with_geometry(tracks[tracks["kind"] == "person"])
     if people.empty:

@@ -13,9 +13,8 @@ class Thresholds:
     min_hold_sec: float = 3.0  # type 2: cash must stay this long after the next person arrives
     min_count_sec: float = 3.0  # type 4: shorter handling of cash is not counting
     min_payout_sec: float = 5.0  # type 7: cash and a client together for less than this is not a payout
-    gap_sec: float = (
-        1.0  # a detector miss up to this long does not end an episode (a miss is the worst error)
-    )
+    # a detector miss up to this long does not end an episode (a missed violation is the worst error)
+    gap_sec: float = 1.0
 
 
 DEFAULT = Thresholds()
