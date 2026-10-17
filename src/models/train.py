@@ -34,6 +34,7 @@ from src.features.embeddings import (
 from src.models.windows import (
     NEGATIVE,
     POSITIVE,
+    TIMECODE_MODE,
     WINDOW_SEC,
     choose_threshold,
     labels_by_video,
@@ -119,13 +120,22 @@ def run() -> dict:
     is_violation = [c.is_violation for c in clips]
     # Threshold and metrics share the out-of-fold scores: recall 1.0 is by construction (ADR 0002).
     threshold = choose_threshold(video_scores, is_violation)
-    timecodes = [timecode(c.windows["start"], s, threshold) for c, s in zip(clips, scores, strict=True)]
-    metrics = video_metrics(
-        video_scores, is_violation, threshold, timecodes, [c.label_seconds for c in clips]
-    )
+
+    def metrics_for(mode: str) -> dict:
+        timecodes = [
+            timecode(c.windows["start"], s, threshold, mode) for c, s in zip(clips, scores, strict=True)
+        ]
+        return video_metrics(
+            video_scores, is_violation, threshold, timecodes, [c.label_seconds for c in clips]
+        )
+
+    metrics = metrics_for(TIMECODE_MODE)
 
     ref = min(range(len(clips)), key=lambda i: abs(clips[i].duration - REFERENCE_DURATION))
     metrics |= {
+        "timecode_mode": TIMECODE_MODE,  # median_abs_dt measures the timecode analyze() reports
+        # the mode is chosen by median |Δt| on LOVO (docs/acceptance.md, criterion 2)
+        "median_abs_dt_by_mode": {m: metrics_for(m)["median_abs_dt"] for m in ("onset", "peak")},
         "threshold": threshold,
         "n_videos": len(ids),
         "n_violation_videos": sum(is_violation),

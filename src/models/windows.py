@@ -15,6 +15,8 @@ STEP_SEC = 0.5
 POS_BEFORE = 1.0  # a window overlapping [N - POS_BEFORE, N + POS_AFTER] is positive
 POS_AFTER = 4.0
 NEG_BEFORE = 3.0  # a window ending before N - NEG_BEFORE is negative
+# The timecode analyze() reports and the metrics measure. Peak while the type is unknown (#28).
+TIMECODE_MODE = "peak"
 
 POSITIVE, NEGATIVE, UNLABELED = 1, 0, -1
 
@@ -80,7 +82,7 @@ def choose_threshold(scores: Sequence[float], is_violation: Sequence[bool]) -> f
 
 
 def timecode(
-    starts: Sequence[float], scores: Sequence[float], threshold: float, mode: str = "onset"
+    starts: Sequence[float], scores: Sequence[float], threshold: float, mode: str = TIMECODE_MODE
 ) -> float | None:
     """Reported second: 'onset' = end of the first above-threshold window (the earliest it can see the event, ~N-1+WINDOW), 'peak' = centre of the best one."""
     s = np.asarray(scores, dtype=float)

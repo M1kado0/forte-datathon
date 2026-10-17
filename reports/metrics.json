@@ -1,7 +1,12 @@
 {
   "video_recall": 1.0,
   "fp_rate": 0.9473684210526315,
-  "median_abs_dt": 9.5,
+  "median_abs_dt": 5.0,
+  "timecode_mode": "peak",
+  "median_abs_dt_by_mode": {
+    "onset": 9.5,
+    "peak": 5.0
+  },
   "threshold": 0.007924697361886501,
   "n_videos": 40,
   "n_violation_videos": 21,

@@ -65,13 +65,15 @@ def analyze(
     violations: list[Violation] = []
     for tc in pick_timecodes(starts, scores, model["threshold"], max_n=MAX_FALLBACK_VIOLATIONS):
         frames = evidence_frames(path, tc, EVIDENCE_KIND)
-        # report the second of the frame actually decoded, so timecode and first frame are equal
-        second = frames[0].timestamp_sec
-        if any(abs(second - v.timecode_sec) < MIN_GAP_SEC for v in violations):
-            continue  # snapping to a frame pulled two peaks closer than the gap
         name, description = describe_violation(FALLBACK_TYPE, {})
+        # report the second of the frame actually decoded, so timecode and first frame are equal
         violations.append(
-            Violation(type=name, timecode_sec=second, description=description, evidence_frames=frames)
+            Violation(
+                type=name,
+                timecode_sec=frames[0].timestamp_sec,
+                description=description,
+                evidence_frames=frames,
+            )
         )
     return violations
 
@@ -93,23 +95,23 @@ def pick_timecodes(
     max_n: int = MAX_VIOLATIONS,
     min_gap: float = MIN_GAP_SEC,
 ) -> list[float]:
-    """Peak seconds of above-threshold windows, best first; each next peak is min_gap from those before."""
+    """Timecodes (TIMECODE_MODE) of above-threshold windows, best first; each is min_gap from those before."""
     starts = np.asarray(starts, dtype=float)
-    left = np.asarray(scores, dtype=float).copy()
+    remaining = np.asarray(scores, dtype=float).copy()  # windows not yet picked or masked by a pick
     centres = starts + WINDOW_SEC / 2
     out: list[float] = []
     while len(out) < max_n:
-        tc = timecode(starts, left, threshold, mode="peak")
+        tc = timecode(starts, remaining, threshold)
         if tc is None:
             break
         out.append(tc)
-        left[np.abs(centres - tc) < min_gap] = -np.inf
+        remaining[np.abs(centres - tc) < min_gap] = -np.inf
     return out
 
 
 def main(argv: list[str]) -> None:
     start = time.perf_counter()
-    default_embedder(), default_model()
+    default_embedder(), default_model()  # warm the caches, so load and analysis are timed apart
     loaded = time.perf_counter()
     violations = analyze(argv[0])
     done = time.perf_counter()
