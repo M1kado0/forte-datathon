@@ -3,9 +3,10 @@
 import pandas as pd
 import pandera.errors
 import pytest
+import yaml
 
 from contracts.data import LabelsSchema, StubSchema
-from src.config import FEATURES, ID_COL, TARGET
+from src.config import FEATURES, ID_COL, RULES_YAML, TARGET
 from src.data.check_labels import check_labels, main
 from src.data.labels import build_labels, load_labels, normalize_name, parse_timecode, read_types
 from src.data.stub import make_stub
@@ -303,3 +304,12 @@ def test_committed_types_file_is_what_labels_csv_holds():
     assert set(zip(types["video_id"], types["second"], types["violation_type"], strict=True)) == set(
         zip(violations["video_id"], violations["second"], violations["violation_type"], strict=True)
     )
+
+
+def test_labelled_types_match_the_videos_of_each_rules_type():
+    """Every violation label carries the type whose `videos` lists its clip, and every listed clip is labelled so."""
+    rules = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))
+    by_rules = {(v, t["id"]) for t in rules["types"] for v in t.get("videos", [])}
+    labels = load_labels()
+    violations = labels[labels["verdict"] == "violation"]
+    assert set(zip(violations["video_id"], violations["violation_type"], strict=True)) == by_rules
