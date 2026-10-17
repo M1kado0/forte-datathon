@@ -6,13 +6,19 @@ Labels contract (data/labels.csv), one row per label, 40 videos / 41 rows:
   file      name of the clip as distributed, in data/raw/videos (may start with Cyrillic Х)
   verdict   "violation" | "no_violation" (same words as the API)
   second    whole second of the violation; empty exactly when verdict is "no_violation"
-  violation_type  type id from rules.yaml or the scenario in plain words, set by the team after review (ADR 0005);
-            empty exactly when verdict is "no_violation". Optional: build_labels() output has no types
+  violation_type  type id from rules.yaml, set by the team after review (ADR 0005); the type whose `videos`
+            lists the clip (tests/test_data.py checks both sides).
+            Empty exactly when verdict is "no_violation". Optional: build_labels() output has no types
 A video with two violations has two rows, with different seconds.
 """
 
 import pandas as pd
 import pandera.pandas as pa
+import yaml
+
+from src.config import RULES_YAML
+
+VIOLATION_TYPE_IDS = [t["id"] for t in yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))["types"]]
 
 LabelsSchema = pa.DataFrameSchema(
     {
@@ -20,7 +26,7 @@ LabelsSchema = pa.DataFrameSchema(
         "file": pa.Column(str, pa.Check.str_matches(f"^[X{chr(0x0425)}]-\\d+\\.mov$")),
         "verdict": pa.Column(str, pa.Check.isin(["violation", "no_violation"])),
         "second": pa.Column("Int64", pa.Check.ge(0), nullable=True),
-        "violation_type": pa.Column(str, pa.Check.str_matches(r"^\S(.*\S)?$"), nullable=True, required=False),
+        "violation_type": pa.Column(str, pa.Check.isin(VIOLATION_TYPE_IDS), nullable=True, required=False),
     },
     checks=[
         pa.Check(

@@ -3,9 +3,10 @@
 import pandas as pd
 import pandera.errors
 import pytest
+import yaml
 
 from contracts.data import LabelsSchema, StubSchema
-from src.config import FEATURES, ID_COL, TARGET
+from src.config import FEATURES, ID_COL, RULES_YAML, TARGET
 from src.data.check_labels import check_labels, main
 from src.data.labels import build_labels, load_labels, normalize_name, parse_timecode
 from src.data.stub import make_stub
@@ -157,7 +158,7 @@ def test_labels_contract_rejects_bad_rows(row, column, value):
 
 def typed_labels():
     types = [
-        "cash partially given to client",
+        "cash_partially_given",
         None,
         "cash_on_desk_next_client",
         "cash_on_desk_next_client",
@@ -175,7 +176,8 @@ def test_labels_contract_accepts_violation_type():
         (0, None),  # violation without a type
         (1, "cash_on_desk_next_client"),  # no_violation with a type
         (0, " "),  # blank type
-        (0, " cash on desk"),  # leading space
+        (0, " cash_partially_given"),  # leading space
+        (0, "cash partially given to client"),  # scenario in plain words, not a rules.yaml id
     ],
 )
 def test_labels_contract_rejects_bad_violation_type(row, value):
@@ -183,6 +185,16 @@ def test_labels_contract_rejects_bad_violation_type(row, value):
     df.loc[row, "violation_type"] = value
     with pytest.raises(pandera.errors.SchemaError):
         LabelsSchema.validate(df)
+
+
+def test_labelled_types_match_the_videos_of_each_rules_type():
+    """Every violation label carries the type whose `videos` lists its clip, and every listed clip is labelled so."""
+    rules = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))
+    by_rules = {(v, t["id"]) for t in rules["types"] for v in t.get("videos", [])}
+    labels = load_labels()
+    violations = labels[labels["verdict"] == "violation"]
+    by_labels = set(zip(violations["video_id"], violations["violation_type"], strict=True))
+    assert by_labels == by_rules
 
 
 @pytest.fixture
