@@ -71,7 +71,7 @@ types:
   - id: keys_left_on_safe
     name: Ключи оставлены на сейфе
     videos: [X-11, X-22]
-    norm: точная
+    norm: ближайшая
     rules:
       - doc: pravila_231
         punkt: п. 80
