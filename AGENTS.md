@@ -17,7 +17,7 @@ The jury scores our **API automatically** on hidden videos (85/100 pts); only th
 | `api/` | P1 | FastAPI app; serves `web/dist` on the same port |
 | `web/` | P1 (+P4 design QA) | Vite + React + TS + Tailwind v4, Forte tokens in `web/src/index.css` |
 | `src/data/`, `data/labels.csv` | P3 | video decoding, labels, checks |
-| `src/features/` | P3 | embeddings, person/pose/object features, evidence frames |
+| `src/features/` | P3 | embeddings, person/object/cash features, evidence frames (no pose) |
 | `src/models/` | P2 | train / threshold / `analyze(path)`; writes `models/` and `reports/metrics.json` |
 | `src/rules/rules.yaml`, `docs/RULES.md`, `docs/TYPES.md` | P4 | type → НБРК document, пункт, quote, URL, description template |
 | `reports/figures/` | P3 | every figure has a takeaway title |
