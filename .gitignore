@@ -14,3 +14,5 @@ reports/screens/
 *.ipynb_checkpoints
 .DS_Store
 .claude/settings.local.json
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

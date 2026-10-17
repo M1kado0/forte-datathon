@@ -14,7 +14,7 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 from sklearn.model_selection import train_test_split
 
-from src.config import MODELS, REPORTS, ROOT, SEED, TARGET
+from src.config import EXPERIMENTS, MODELS, REPORTS, SEED, TARGET
 from src.features.build import to_model_frame
 
 PARAMS = dict(
@@ -51,9 +51,8 @@ def train(df: pd.DataFrame, note: str = "baseline") -> dict:
 
 
 def _log_experiment(note: str, metrics: dict) -> None:
-    path = ROOT / "experiments.csv"
-    new = not path.exists()
-    with open(path, "a", newline="") as f:
+    new = not EXPERIMENTS.exists()
+    with open(EXPERIMENTS, "a", newline="") as f:
         w = csv.writer(f)
         if new:
             w.writerow(["ts", "note", "roc_auc", "pr_auc", "brier", "n_train", "n_valid", "params"])

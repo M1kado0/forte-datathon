@@ -20,8 +20,12 @@ npx skills add vercel-labs/agent-skills --skill web-design-guidelines -a claude-
 
 # 4) MCP servers (project scope for Claude; Codex users run the codex lines on their own laptop)
 (cd web && npx shadcn@latest mcp init --client claude)
-claude mcp add --scope project playwright npx @playwright/mcp@latest
-# Codex: npx shadcn@latest mcp init --client codex ; codex mcp add playwright npx "@playwright/mcp@latest"
+# Codex: npx shadcn@latest mcp init --client codex
+
+# 5) Browser: playwright-cli (no Playwright MCP). Skill lands in .agents/skills/playwright-cli
+npm i -g @playwright/cli
+playwright-cli install --skills agents
+[ -e .claude/skills/playwright-cli ] || ln -s ../../.agents/skills/playwright-cli .claude/skills/playwright-cli
 # Codex: open /hooks and approve Impeccable's hooks.
 
 echo "Done. Now: claude → /context (check AGENTS.md loads) → type / and confirm the skills are listed."
