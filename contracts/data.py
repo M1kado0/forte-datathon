@@ -8,6 +8,9 @@ Labels contract (data/labels.csv), one row per label, 40 videos / 41 rows:
   second    whole second of the violation; empty exactly when verdict is "no_violation"
   violation_type  type id from src/rules/rules.yaml, set by the team after review (ADR 0005, data/violation_types.csv);
             empty exactly when verdict is "no_violation". Optional: build_labels() without a types table has none
+  arrangement  how the desk and safe stand and which way the cashier sits, set by the team after watching the video
+            (docs/DATA_CARD.md, data/arrangements.csv): one of ARRANGEMENTS, the same on every row of a video.
+            Optional: build_labels() without an arrangements table has none
 A video with two violations has two rows, with different seconds.
 """
 
@@ -19,6 +22,8 @@ from src.config import RULES_YAML
 
 TYPE_IDS = tuple(t["id"] for t in yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))["types"])
 
+ARRANGEMENTS = ("back", "facing")  # cashier sits with the back / the face to the camera
+
 LabelsSchema = pa.DataFrameSchema(
     {
         "video_id": pa.Column(str, pa.Check.str_matches(r"^X-\d+$")),
@@ -26,6 +31,7 @@ LabelsSchema = pa.DataFrameSchema(
         "verdict": pa.Column(str, pa.Check.isin(["violation", "no_violation"])),
         "second": pa.Column("Int64", pa.Check.ge(0), nullable=True),
         "violation_type": pa.Column(str, pa.Check.isin(TYPE_IDS), nullable=True, required=False),
+        "arrangement": pa.Column(str, pa.Check.isin(ARRANGEMENTS), required=False),
     },
     checks=[
         pa.Check(
@@ -38,6 +44,12 @@ LabelsSchema = pa.DataFrameSchema(
                 or (df["violation_type"].notna() == (df["verdict"] == "violation")).all()
             ),
             error="violation_type must be set exactly when verdict is violation",
+        ),
+        pa.Check(
+            lambda df: (
+                "arrangement" not in df or (df.groupby("video_id")["arrangement"].nunique() == 1).all()
+            ),
+            error="arrangement must be the same on every row of a video",
         ),
     ],
     unique=["video_id", "second"],

@@ -6,7 +6,7 @@ from pathlib import Path
 import pandera.errors
 
 from src.config import LABELS_CSV, VIDEOS_DIR
-from src.data.labels import count_types, load_labels
+from src.data.labels import count_arrangements, count_types, load_labels
 
 
 def check_labels(labels_csv: Path = LABELS_CSV, videos_dir: Path = VIDEOS_DIR) -> dict[str, int]:
@@ -41,6 +41,10 @@ def main(argv: list[str] | None = None) -> None:
         f"{c['clean_videos']} без нарушений"
     )
     labels = load_labels(args.labels_csv)
+    if "arrangement" in labels:
+        print("видео по расстановкам (нарушение / без нарушения):")
+        for name, n in count_arrangements(labels).items():
+            print(f"{name}: {n['violation'] + n['no_violation']} ({n['violation']} / {n['no_violation']})")
     if "violation_type" in labels:
         print("нарушения по типам:")
         for type_id, n in count_types(labels).items():

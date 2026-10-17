@@ -24,6 +24,9 @@ LABELS_CSV = ROOT / "data" / "labels.csv"  # cleaned labels, contract in contrac
 TYPES_CSV = (
     ROOT / "data" / "violation_types.csv"
 )  # team-set type per violation label, kept apart so a rebuild keeps it (#26)
+ARRANGEMENTS_CSV = (
+    ROOT / "data" / "arrangements.csv"
+)  # team-set furniture arrangement per video, kept apart so a rebuild keeps it (#26)
 
 SEED = 42
 VERSION = "0.1.0-stub"

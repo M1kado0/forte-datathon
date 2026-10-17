@@ -8,7 +8,15 @@ import yaml
 from contracts.data import LabelsSchema, StubSchema
 from src.config import FEATURES, ID_COL, RULES_YAML, TARGET
 from src.data.check_labels import check_labels, main
-from src.data.labels import build_labels, load_labels, normalize_name, parse_timecode, read_types
+from src.data.labels import (
+    build_labels,
+    count_arrangements,
+    load_labels,
+    normalize_name,
+    parse_timecode,
+    read_arrangements,
+    read_types,
+)
 from src.data.stub import make_stub
 from src.features.build import to_model_frame
 from src.models.explain import fmt_kzt
@@ -235,6 +243,73 @@ def test_build_labels_rejects_unknown_type_id():
         build_labels(tiny_xlsx_rows(), tiny_types().assign(violation_type="left the door open"))
 
 
+def arranged_labels():
+    return good_labels().assign(arrangement=["back", "back", "facing", "facing"])
+
+
+def test_labels_contract_accepts_arrangement():
+    LabelsSchema.validate(arranged_labels())
+
+
+@pytest.mark.parametrize(
+    ("row", "value"),
+    [
+        (0, None),  # no arrangement
+        (0, "sideways"),  # not one of the two values
+        (0, "Back"),  # wrong case
+        (3, "back"),  # X-4 has two rows with two arrangements
+    ],
+)
+def test_labels_contract_rejects_bad_arrangement(row, value):
+    df = arranged_labels()
+    df.loc[row, "arrangement"] = value
+    with pytest.raises(pandera.errors.SchemaError):
+        LabelsSchema.validate(df)
+
+
+def tiny_arrangements():
+    return pd.DataFrame(
+        {"video_id": ["X-1", "X-3", "X-4", "X-5"], "arrangement": ["back", "back", "facing", "facing"]}
+    )
+
+
+def test_build_labels_adds_arrangement_to_every_row_of_a_video():
+    out = build_labels(tiny_xlsx_rows(), tiny_types(), tiny_arrangements())
+    assert list(out.columns)[-2:] == ["violation_type", "arrangement"]
+    assert out["video_id"].tolist() == ["X-1", "X-3", "X-4", "X-4", "X-5"]
+    assert out["arrangement"].tolist() == ["back", "back", "facing", "facing", "facing"]
+
+
+def test_build_labels_rejects_video_without_arrangement():
+    with pytest.raises(ValueError, match=r"without an arrangement.*X-5"):
+        build_labels(tiny_xlsx_rows(), tiny_types(), tiny_arrangements().iloc[:3])
+
+
+def test_build_labels_rejects_arrangement_for_no_video():
+    orphan = pd.concat([tiny_arrangements(), pd.DataFrame({"video_id": ["X-47"], "arrangement": ["back"]})])
+    with pytest.raises(ValueError, match=r"match no video.*X-47"):  # alias ids are merged away
+        build_labels(tiny_xlsx_rows(), tiny_types(), orphan)
+
+
+def test_build_labels_rejects_two_arrangements_for_one_video():
+    twice = pd.concat([tiny_arrangements(), pd.DataFrame({"video_id": ["X-1"], "arrangement": ["facing"]})])
+    with pytest.raises(ValueError, match=r"two arrangements.*X-1"):
+        build_labels(tiny_xlsx_rows(), tiny_types(), twice)
+
+
+def test_build_labels_rejects_unknown_arrangement():
+    with pytest.raises(pandera.errors.SchemaError):
+        build_labels(tiny_xlsx_rows(), tiny_types(), tiny_arrangements().assign(arrangement="sideways"))
+
+
+def test_count_arrangements_counts_videos_not_label_rows():
+    # X-4 has two violation rows but is one video
+    assert count_arrangements(arranged_labels()) == {
+        "back": {"violation": 1, "no_violation": 1},
+        "facing": {"violation": 1, "no_violation": 0},
+    }
+
+
 @pytest.fixture
 def labels_dir(tmp_path):
     """A labels.csv plus a videos folder holding exactly the files it names."""
@@ -282,6 +357,22 @@ def test_check_labels_cli_prints_violations_per_type_with_zeros(labels_dir, caps
     assert "cash_on_desk_next_client: 2" in lines
     assert "cash_partially_given: 1" in lines
     assert "other: 0" in lines  # a type with no label is still listed
+
+
+def test_check_labels_cli_prints_videos_per_arrangement_and_verdict(labels_dir, capsys):
+    arranged_labels().to_csv(labels_dir / "labels.csv", index=False)
+    main([str(labels_dir / "labels.csv"), str(labels_dir / "videos")])
+    lines = capsys.readouterr().out.splitlines()
+    assert "back: 2 (1 / 1)" in lines
+    assert "facing: 1 (1 / 0)" in lines
+
+
+def test_committed_arrangements_cover_the_committed_labels_exactly():
+    """data/arrangements.csv is what a rebuild reads; labels.csv must carry exactly it (hand-checked: 14 back, 26 facing)."""
+    arrangements = read_arrangements()
+    per_video = load_labels().groupby("video_id")["arrangement"].first()
+    assert per_video.to_dict() == arrangements.set_index("video_id")["arrangement"].to_dict()
+    assert arrangements["arrangement"].value_counts().to_dict() == {"facing": 26, "back": 14}
 
 
 def test_committed_labels_csv_matches_the_issue():
