@@ -1,0 +1,8 @@
+{
+  "roc_auc": 0.7487,
+  "pr_auc": 0.3368,
+  "brier": 0.105,
+  "base_rate": 0.14,
+  "n_train": 3750,
+  "n_valid": 1250
+}

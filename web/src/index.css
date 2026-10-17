@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Forte brand tokens — the ONLY place colours/fonts are defined.
+   Official (forte.kz/logo): magenta, dark magenta, sky blue, coral, Open Sans, Dark Magenta → Coral gradient.
+   Mapped onto shadcn variable names so `npx shadcn add <component>` picks them up.
+   ============================================================ */
+:root {
+  /* official */
+  --forte-magenta: #a31551;
+  --forte-dark-magenta: #4a0221;
+  --forte-sky-blue: #61cfff;
+  --forte-coral: #fc9385;
+  --grad-hero: linear-gradient(135deg, #4a0221 0%, #fc9385 100%); /* official Dark Magenta → Coral (angle ours) */
+
+  /* our defaults */
+  --bg: #ffffff;
+  --bg-muted: #f6f5f7;
+  --text: #1a1a1a;
+  --text-muted: #6b6b70;
+  --border-c: #e7e5ea;
+  --success: #1f9d63;
+  --warning: #e8a317;
+  --danger: #d93025;
+  --chart-grey: #c9c6cf;
+
+  /* shadcn mapping */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--bg);
+  --card-foreground: var(--text);
+  --popover: var(--bg);
+  --popover-foreground: var(--text);
+  --primary: var(--forte-magenta);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-muted);
+  --secondary-foreground: var(--forte-dark-magenta);
+  --muted: var(--bg-muted);
+  --muted-foreground: var(--text-muted);
+  --accent: #f8e9ef;
+  --accent-foreground: var(--forte-dark-magenta);
+  --destructive: var(--danger);
+  --border: var(--border-c);
+  --input: var(--border-c);
+  --ring: var(--forte-magenta);
+  --chart-1: var(--forte-magenta);
+  --chart-2: var(--chart-grey);
+  --chart-3: var(--forte-sky-blue);
+  --chart-4: var(--forte-coral);
+  --chart-5: var(--forte-dark-magenta);
+  --radius: 12px;
+}
+
+@theme inline {
+  --font-sans: "Open Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-forte: var(--forte-magenta);
+  --color-forte-dark: var(--forte-dark-magenta);
+  --color-forte-sky: var(--forte-sky-blue);
+  --color-forte-coral: var(--forte-coral);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --radius-card: 16px;
+  --radius-btn: 12px;
+  --shadow-card: 0 4px 16px rgba(74, 2, 33, 0.08);
+}
+
+@layer base {
+  * { border-color: var(--border); }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--bg-muted);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1;
+  }
+  :focus-visible { outline: 2px solid var(--forte-magenta); outline-offset: 2px; }
+}
+
+.bg-hero { background: var(--grad-hero); }
+
+@keyframes shimmer { 0% { background-position: -400px 0 } 100% { background-position: 400px 0 } }
+.skeleton {
+  background: linear-gradient(90deg, #eeecf0 0px, #f7f6f8 120px, #eeecf0 240px);
+  background-size: 800px 100%;
+  animation: shimmer 1.2s infinite linear;
+  border-radius: 8px;
+}
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+input[type="range"] { accent-color: var(--forte-magenta); }
