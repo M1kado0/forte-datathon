@@ -49,3 +49,9 @@ def test_committed_types_md_counts_the_22_labels():
 
 def test_committed_types_md_is_what_the_build_command_writes():
     assert TYPES_MD.read_text(encoding="utf-8") == build_types_md(load_labels())
+
+
+def test_description_placeholder_reads_as_a_word_not_an_ellipsis():
+    row = table_rows(build_types_md(tiny_labels()))["valuables_left_on_desk"]
+    assert "предмет: [предмет]." in row[2]
+    assert "…" not in row[2]

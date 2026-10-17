@@ -1,17 +1,17 @@
 """`python -m src.rules.types_doc`: write docs/TYPES.md, one row per type of rules.yaml with its label count (TZ-8.5)."""
 
-from collections import defaultdict
-
 import pandas as pd
 import yaml
 
 from src.config import RULES_YAML, TYPES_MD
 from src.data.labels import count_types, load_labels
 
+# rules.yaml allows exactly one placeholder, {object}; an unknown one raises instead of printing garbage.
+OBJECT_PLACEHOLDER = "[предмет]"
 HEADER = """# Типы нарушений
 
 Собрано командой `uv run python -m src.rules.types_doc` (входит в `make all`) из `src/rules/rules.yaml` и `data/labels.csv` (типы в нём берутся из `data/violation_types.csv`). Руками не правим.
-Тип называем словами сценария из видео, норма идёт в пункт (ADR 0005). В описании стоит только то, что видно в кадре; `…` вместо предмета, который эвристика подставляет сама.
+Тип называем словами сценария из видео, норма идёт в пункт (ADR 0005). В описании стоит только то, что видно в кадре; `[предмет]` стоит там, где эвристика подставляет название предмета, найденного в кадре.
 Число меток считается по {total} меткам нарушений в `data/labels.csv`, у типа без примеров стоит 0.
 
 | id | Название | Описание | Пункт | Меток |
@@ -32,7 +32,7 @@ def build_types_md(labels: pd.DataFrame) -> str:
     counts = count_types(labels)
     rows = []
     for t in rules["types"]:
-        description = " ".join(t["description"].split()).format_map(defaultdict(lambda: "…"))
+        description = " ".join(t["description"].split()).format(object=OBJECT_PLACEHOLDER)
         cells = [
             f"`{t['id']}`",
             t["name"],

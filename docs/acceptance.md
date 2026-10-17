@@ -38,7 +38,7 @@ IDs follow the brief's sections (TZ-4.x = section 4, TZ-F.x = FAQ). Quote the br
 | TZ-8.2 | Инструкция по запуску и использованию | deliverable | P4 | T11 | README | 🟥 |
 | TZ-8.3 | Архитектура, подход, модели | deliverable | P4 | T11 | README | 🟥 |
 | TZ-8.4 | Нормативные источники и принцип сопоставления правил с видео | deliverable | P4 | T05 | `docs/RULES.md` | 🟥 |
-| TZ-8.5 | Перечень распознаваемых типов нарушений с описанием | deliverable | P4 | T04 | `docs/TYPES.md` | 🟥 |
+| TZ-8.5 | Перечень распознаваемых типов нарушений с описанием | deliverable | P4 | T04 | `docs/TYPES.md` | 🟩 |
 | TZ-8.6 | Ограничения и известные случаи ошибок | deliverable | P2 | T12 | README | 🟥 |
 | TZ-10.1 | Ключ в заголовке `X-API-Key`; без верного ключа запрос отклоняется | API | P1 | T01 | 401 | 🟥 |
 | TZ-10.2 | `POST /api/v1/analyze`, .mov в поле `file` → `job_id` | API | P1 | T01 | curl | 🟥 |
