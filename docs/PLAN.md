@@ -75,7 +75,7 @@ Our output tells them where to look and which rule applies. It is a hint, never 
 | T07 | UI: upload → status → result list with frames, rule, disclaimer | 4.1–4.7, 7.2 | P1 (+P4 QA) | `web/` | `make app`, upload a clip, Playwright screenshots 1440/390 | mvp1 |
 | T08 | Person/object/cash features + 1–3 evidence frames | 4.5, 10.4, F.1 | P2 features, P3 evidence frames | `src/features/`, `src/data/` | `uv run pytest tests/test_features.py` (frame count 1–3, valid JPEG) | mvp1 |
 | T09 | Template descriptions linked to rules | 4.6, 5.6, 6.2 | P4 | `src/rules/` | `uv run pytest tests/test_rules.py` (no template claims invisible data) | mvp1 |
-| T10 | Public URL + jury simulation (5 parallel jobs) | 8.1, 10.5, F.4 | P3 | `scripts/` | `uv run python scripts/jury_sim.py --url $PUBLIC_URL` → p95 < 240 s for 5 parallel jobs, ≤ 45 s per 145-s clip, 0 schema errors | mvp0 |
+| T10 | Public URL + jury simulation (5 parallel jobs) | 8.1, 10.5, F.4 | P3 | `scripts/` | `make jury-sim PUBLIC_URL=$PUBLIC_URL` → p95 < 240 s for 5 parallel jobs, ≤ 45 s per 145-s clip, 0 schema errors | mvp0 |
 | T11 | README: run, use, architecture, models | 8.2, 8.3 | P4 | `README.md` | a teammate follows it on a clean clone | mvp1 |
 | T12 | Error analysis + limitations | 8.6 | P2 | `README.md`, `reports/` | FP/FN table with clip names | mvp1 |
 | T13 | Robustness: angle augmentation + own recordings | F.8 | P3 | `src/features/`, `data/external/` | eval script prints metrics on warped clips | stretch |

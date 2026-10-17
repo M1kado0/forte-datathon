@@ -1,4 +1,4 @@
-.PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-ngrok screenshots clean
+.PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-cloudflared jury-sim screenshots clean
 
 PORT ?= 8000
 
@@ -38,11 +38,18 @@ demo:
 all:
 	uv run python -m src.pipeline
 
+# Public URL for the jury via ngrok (outbound 443; cloudflared is blocked on our networks). Start `make app` first.
+# The URL is printed in the ngrok UI and at http://localhost:4040.
 tunnel:
-	cloudflared tunnel --url http://localhost:$(PORT)
-
-tunnel-ngrok:
 	ngrok http $(PORT)
+
+# Fallback quick tunnel; needs outbound 7844, which our networks reset. URL changes every run.
+tunnel-cloudflared:
+	cloudflared tunnel --no-autoupdate --url http://localhost:$(PORT)
+
+# Jury simulation against a running service: make jury-sim PUBLIC_URL=https://...
+jury-sim:
+	uv run python -m scripts.jury_sim --url $(PUBLIC_URL)
 
 screenshots:
 	cd web && npm run screenshots

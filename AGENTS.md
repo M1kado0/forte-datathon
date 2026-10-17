@@ -43,7 +43,7 @@ make app        # build web, run API on http://localhost:8000
 make dev        # API with reload on :8000 + Vite dev server on :5173 (proxy /api)
 make demo       # stub pipeline -> artifacts -> app
 make all        # rebuild every number from raw data (source of truth for slides)
-make tunnel     # public URL via cloudflared quick tunnel
+make tunnel     # public URL via ngrok (cloudflared fallback: make tunnel-cloudflared; stable URL: docs/SERVING.md)
 ```
 
 ## Workflow per ticket
