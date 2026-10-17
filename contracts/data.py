@@ -6,7 +6,7 @@ Labels contract (data/labels.csv), one row per label, 40 videos / 41 rows:
   file      name of the clip as distributed, in data/raw/videos (may start with Cyrillic Х)
   verdict   "violation" | "no_violation" (same words as the API)
   second    whole second of the violation; empty exactly when verdict is "no_violation"
-  violation_type  type id from rules.yaml or "[<scenario>]", set by the team after review (ADR 0005);
+  violation_type  type id from rules.yaml or the scenario in plain words, set by the team after review (ADR 0005);
             empty exactly when verdict is "no_violation". Optional: build_labels() output has no types
 A video with two violations has two rows, with different seconds.
 """
@@ -20,9 +20,7 @@ LabelsSchema = pa.DataFrameSchema(
         "file": pa.Column(str, pa.Check.str_matches(f"^[X{chr(0x0425)}]-\\d+\\.mov$")),
         "verdict": pa.Column(str, pa.Check.isin(["violation", "no_violation"])),
         "second": pa.Column("Int64", pa.Check.ge(0), nullable=True),
-        "violation_type": pa.Column(
-            str, pa.Check.str_matches(r"^([a-z_]+|\[.+\])$"), nullable=True, required=False
-        ),
+        "violation_type": pa.Column(str, pa.Check.str_matches(r"^\S(.*\S)?$"), nullable=True, required=False),
     },
     checks=[
         pa.Check(
