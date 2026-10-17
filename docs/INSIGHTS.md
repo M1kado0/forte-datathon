@@ -1,4 +1,4 @@
-# Insights (P3) — one row per hypothesis tested, including rejected ones
+# Insights (P4, numbers from P2's runs) — one row per hypothesis tested, including rejected ones
 
 Gate: ① size ② stability (both time halves + holdout) ③ not artifact/leakage ④ bootstrap CI + BH-FDR ⑤ banker nods
 

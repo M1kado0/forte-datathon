@@ -10,20 +10,30 @@ The jury scores our **API automatically** on hidden videos (85/100 pts); only th
 **Never build what the brief didn't ask for.** A ticket without a `TZ-x.y` ID is out of scope.
 **Cloud AI is forbidden (disqualification):** no OpenAI/Gemini/Claude/any remote model call anywhere in `src/` or `api/`.
 
+## Team (slot = branch prefix and ticket owner)
+| Slot | Person | Role |
+|---|---|---|
+| P1 | Тамерлан | Fullstack: API contract, job queue, UI |
+| P2 | Алдияр С. | ML + CV: embeddings, detectors, training, threshold, `analyze(path)`. Owns the serving machine (Ubuntu, RTX 5080) |
+| P3 | Ескендир | Infra + heuristics: deps, weights, decoding, evidence frames, tunnel and systemd on P2's machine, jury simulation, type heuristics |
+| P4 | Алдияр М. | Data, rules, docs: labels, types, НБРК пункты, descriptions, README, insights, pitch |
+
 ## Layout and ownership (touch only your folders unless the ticket says otherwise)
 | Path | Owner | What |
 |---|---|---|
 | `contracts/` | P1 | Pydantic API schemas + pandera data schemas. Change = tell everyone |
-| `api/` | P1 | FastAPI app; serves `web/dist` on the same port |
+| `api/` | P1 | FastAPI app, job queue; serves `web/dist` on the same port |
 | `web/` | P1 (+P4 design QA) | Vite + React + TS + Tailwind v4, Forte tokens in `web/src/index.css` |
-| `src/data/`, `data/labels.csv` | P3 | video decoding, labels, checks |
-| `src/features/` | P3 | embeddings, person/pose/object features, evidence frames |
+| `src/features/` | P2 | embeddings, person/object/cash detections and tracks (no pose) |
 | `src/models/` | P2 | train / threshold / `analyze(path)`; writes `models/` and `reports/metrics.json` |
-| `src/rules/rules.yaml`, `docs/RULES.md`, `docs/TYPES.md` | P4 | type → НБРК document, пункт, quote, URL, description template |
-| `reports/figures/` | P3 | every figure has a takeaway title |
-| `docs/INSIGHTS.md` | P3 | one row per hypothesis with verdict |
-| `docs/acceptance.md`, `docs/PITCH.md`, `deck/` | P4 | brief checklist, script, slides |
 | `experiments.csv` | P2 | one row per run, append-only |
+| `src/data/video.py`, `src/data/evidence.py` | P3 | video decoding at native resolution, 1–3 evidence frames as JPEG |
+| `src/heuristics/` | P3 | type heuristics over tracks, `conditions` from `rules.yaml`, heuristic verdict vote |
+| `scripts/`, `pyproject.toml` deps, `docs/MODELS.md` | P3 | torch index, `make weights`, tunnel, systemd, jury simulation, license table |
+| `src/data/` (rest), `data/labels.csv`, `docs/DATA_CARD.md` | P4 | labels, angle column, merged duplicates, label checks |
+| `src/rules/`, `docs/RULES.md`, `docs/TYPES.md` | P4 | type → НБРК document, пункт, quote, URL, description template and its filling |
+| `reports/figures/`, `docs/INSIGHTS.md` | P4 | takeaway-titled figures, one row per hypothesis with verdict |
+| `docs/acceptance.md`, `docs/PITCH.md`, `deck/`, `README.md` | P4 | brief checklist, script, slides, README |
 
 ## Commands (all must work from a clean clone)
 ```bash
@@ -74,6 +84,8 @@ Test only deterministic code:
 - Licenses: open source that allows commercial use only (Apache-2.0, MIT, BSD). **No Ultralytics YOLO (AGPL).**
   Add each model to `docs/MODELS.md` with its license before `uv add`.
 - No face recognition or identification. No audio. Uploaded videos are deleted after the job, never used for training.
+- Never send dataset frames, crops or clips to a cloud model (Claude, Codex, any chat), not even to "look at" them (FAQ 6).
+  Inspect frames locally yourself; give agents only numbers and text you wrote.
 - Descriptions come from templates in `src/rules/rules.yaml`, filled with observed facts. No generated legal claims.
 
 ## API contract (from brief section 10; field names are fixed, the jury parses them automatically)
