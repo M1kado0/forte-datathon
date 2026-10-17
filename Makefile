@@ -1,4 +1,4 @@
-.PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-ngrok screenshots clean
+.PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-ngrok jury-sim screenshots clean
 
 PORT ?= 8000
 
@@ -38,11 +38,16 @@ demo:
 all:
 	uv run python -m src.pipeline
 
+# Quick tunnel: prints https://<random>.trycloudflare.com; start `make app` first, URL changes every run.
 tunnel:
-	cloudflared tunnel --url http://localhost:$(PORT)
+	cloudflared tunnel --no-autoupdate --url http://localhost:$(PORT)
 
 tunnel-ngrok:
 	ngrok http $(PORT)
+
+# Jury simulation against a running service: make jury-sim PUBLIC_URL=https://...
+jury-sim:
+	uv run python scripts/jury_sim.py --url $(PUBLIC_URL)
 
 screenshots:
 	cd web && npm run screenshots
