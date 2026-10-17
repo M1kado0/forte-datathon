@@ -80,8 +80,8 @@ def test_no_person_tracks_means_no_roles():
     assert find_roles(df) is None
 
 
-def hits_of(type_id, df):
-    return [h for h in detect(df) if h.type_id == type_id]
+def hits_of(type_id, df, **kwargs):
+    return [h for h in detect(df, **kwargs) if h.type_id == type_id]
 
 
 def workplace_left(*, away=(10, 20), client=(5, 20), client_at=COUNTER, cash=(2, 20), cash_drop=0):
@@ -502,24 +502,30 @@ def test_missed_detections_of_the_cashier_do_not_hand_the_seat_to_a_client():
 
 
 @pytest.mark.parametrize(
-    ("fragments", "client_until"),
+    ("fragments", "client_until", "seat_by"),
     [
-        # The client waits less than the cashier's longest fragment; a longer wait takes the seat.
-        ([(1, 0, 12), (5, 12, 30)], 15),  # fragments of 12 s and 18 s, the client waits 15 s
-        ([(1, 0, 10), (5, 10, 20), (6, 20, 30)], 8),  # three fragments of 10 s, the client waits 8 s
+        # With "track" the client waits less than the cashier's longest fragment; a longer wait takes the seat.
+        ([(1, 0, 12), (5, 12, 30)], 15, "track"),  # fragments of 12 s and 18 s, the client waits 15 s
+        ([(1, 0, 10), (5, 10, 20), (6, 20, 30)], 8, "track"),  # three fragments of 10 s, the client waits 8 s
+        # "boxes" keeps the seat through the longer waits from the review of #58.
+        ([(1, 0, 12), (5, 12, 30)], 20, "boxes"),
+        ([(1, 0, 10), (5, 10, 20), (6, 20, 30)], 15, "boxes"),
     ],
-    ids=["two ids", "three ids"],
+    ids=["two ids", "three ids", "two ids, long wait, boxes", "three ids, long wait, boxes"],
 )
-def test_a_cashier_split_into_several_ids_keeps_the_seat_while_a_client_waits(fragments, client_until):
+def test_a_cashier_split_into_several_ids_keeps_the_seat_while_a_client_waits(
+    fragments, client_until, seat_by
+):
     df = tracks(
         *(part(i, "person", a, b, *SEAT, wobble=3) for i, a, b in fragments),
         part(2, "person", 0, client_until, *COUNTER),
         part(10, "cash", 2, 30, *DESK, h=20),
     )
+    th = Thresholds(seat_by=seat_by)
 
-    roles = find_roles(df)
+    roles = find_roles(df, th)
 
     assert roles.seat == SEAT
     assert roles.cashier != 2
-    assert hits_of("workplace_left", df) == []
-    assert hits_of("cash_on_desk_next_client", df) == []
+    assert hits_of("workplace_left", df, thresholds=th) == []
+    assert hits_of("cash_on_desk_next_client", df, thresholds=th) == []

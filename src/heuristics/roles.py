@@ -29,13 +29,16 @@ def find_roles(
 ) -> Roles | None:
     """The seat is the spot where one track stays longest, so clients who come one after another at the
     counter do not add up. A tie goes to the spot with more person boxes, then to the stillest one.
+    Thresholds.seat_by="boxes" swaps the first two keys: the spot with the most person boxes wins.
 
     A track's time at a spot counts detector misses up to Thresholds.gap_sec as present, as `detect` does,
     so a half-hidden cashier is not outweighed by a fully visible client.
 
-    The cashier is that longest track. A client who stays at the counter longer than the cashier's longest
-    track at the seat takes the seat. That happens when the cashier is away for much of the clip, or when the
-    tracker splits the cashier into short ids (stable ids are #32's job). None when no person is tracked.
+    The cashier is the longest track at the seat. By default a client who stays at the counter longer than
+    the cashier's longest track at the seat takes the seat. That happens when the cashier is away for much of
+    the clip, or when the tracker splits the cashier into short ids (stable ids are #32's job). With "boxes"
+    the split cashier keeps the seat, but clients who come one after another can add up to it. None when no
+    person is tracked.
     """
     people = with_geometry(tracks[tracks["kind"] == "person"])
     if people.empty:
@@ -54,7 +57,10 @@ def find_roles(
     var_x = (near * cx**2).sum(axis=1) / count - ((near * cx).sum(axis=1) / count) ** 2
     var_y = (near * cy**2).sum(axis=1) / count - ((near * cy).sum(axis=1) / count) ** 2
     spread = np.sqrt(np.clip(var_x + var_y, 0, None)) / h[seeds]
-    best = np.lexsort((spread, -count, -per_track.max(axis=1)))[0]
+    longest = per_track.max(axis=1)
+    # lexsort sorts by the last key first; an unknown seat_by is a KeyError, not a silent fallback
+    keys = {"track": (-count, -longest), "boxes": (-longest, -count)}[thresholds.seat_by]
+    best = np.lexsort((spread, *keys))[0]
     members = near[best]
     return Roles(
         cashier=int(ids[per_track[best].argmax()]),
