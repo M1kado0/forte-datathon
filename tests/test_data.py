@@ -157,7 +157,7 @@ def test_labels_contract_rejects_bad_rows(row, column, value):
 
 def typed_labels():
     types = [
-        "other[cash partially given to client]",
+        "[cash partially given to client]",
         None,
         "cash_on_desk_next_client",
         "cash_on_desk_next_client",
@@ -174,8 +174,8 @@ def test_labels_contract_accepts_violation_type():
     [
         (0, None),  # violation without a type
         (1, "cash_on_desk_next_client"),  # no_violation with a type
-        (0, "Cash on desk"),  # neither an id nor other[...]
-        (0, "other[]"),  # other without a scenario
+        (0, "Cash on desk"),  # neither an id nor [...]
+        (0, "[]"),  # brackets without a scenario
     ],
 )
 def test_labels_contract_rejects_bad_violation_type(row, value):
