@@ -1,42 +1,72 @@
-// Playwright screenshots at 1440 and 390 px. Needs the app running: `make app` (port 8000).
-// First time on a laptop: `npx playwright install chromium`.
+// Synthetic upload only: never capture private dataset frames for agent review.
+// Run against `make app`: npm run screenshots (APP_URL overrides the origin).
 import { chromium } from "playwright";
+import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.APP_URL ?? "http://localhost:8000";
-const OUT = "../reports/screens";
-const DEMO_ID = process.env.DEMO_ID ?? "KZ-100077";
-mkdirSync(OUT, { recursive: true });
-
-const browser = await chromium.launch(
-  process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
-);
-for (const [name, width, height] of [["desktop", 1440, 900], ["mobile", 390, 844]]) {
-  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2 });
-  await page.goto(BASE);
-  await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: `${OUT}/${name}-1-empty.png`, fullPage: true });
-
-  await page.fill("#cid", "NO-SUCH-ID");
-  await page.click("button[type=submit]");
-  await page.waitForSelector("[role=alert]");
-  await page.screenshot({ path: `${OUT}/${name}-2-error.png`, fullPage: true });
-
-  await page.fill("#cid", DEMO_ID);
-  await page.click("button[type=submit]");
-  await page.waitForSelector("text=Почему такой результат");
-  await page.screenshot({ path: `${OUT}/${name}-3-result.png`, fullPage: true });
-
-  // what-if flip: drag the slider to the minimum
-  await page.fill("input[type=range]", "0");
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: `${OUT}/${name}-3b-whatif.png`, fullPage: true });
-
-  await page.goto(`${BASE}/#insights`);
-  await page.waitForSelector("text=Вывод");
-  await page.waitForTimeout(400);
-  await page.screenshot({ path: `${OUT}/${name}-4-insights.png`, fullPage: true });
-  await page.close();
-}
-await browser.close();
-console.log(`saved to ${OUT}`);
+const base = process.env.APP_URL ?? "http://localhost:8000";
+const out = "../reports/screens";
+mkdirSync(out, { recursive: true });
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+try {
+  for (const [name, width, height] of [["desktop", 1440, 900], ["mobile", 390, 844]]) {
+    const page = await browser.newPage({ viewport: { width, height } });
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.goto(base);
+    await page.getByText("Выберите видео, чтобы начать проверку.").waitFor();
+    await page.screenshot({ path: `${out}/${name}-empty.png`, fullPage: true });
+    await page.locator('input[type="file"]').setInputFiles(process.env.TEST_VIDEO ?? { name: "synthetic.mov", mimeType: "video/quicktime", buffer: Buffer.from("synthetic fixture") });
+    await page.getByRole("button", { name: "Проверить видео", exact: true }).click();
+    await page.getByRole("heading", { name: "Обнаружены признаки возможных нарушений" }).waitFor();
+    await page.getByRole("link", { name: /акт в целом/ }).waitFor();
+    await page.screenshot({ path: `${out}/${name}-result.png`, fullPage: true });
+    assert.equal(await page.locator("img[alt^='Кадр-доказательство']").count(), 1);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+    const jpeg = (await page.locator("img[alt^='Кадр-доказательство']").getAttribute("src")).split(",")[1];
+    const catalog = await (await page.request.get(`${base}/api/ui/rules`)).json();
+    const metadata = catalog.find(item => item.id === "count_without_controller");
+    let mode = "processing";
+    await page.route("**/api/ui/jobs/*", route => route.fulfill({ json: mode === "clean"
+      ? { job_id: "fixture", status: "done", verdict: "no_violation", violations: [] }
+      : mode === "violation" ? { job_id: "fixture", status: "done", verdict: "violation", violations: [{
+        type: "count_without_controller", timecode_sec: 42.5,
+        description: `Синтетический пример для проверки интерфейса. ${metadata.citation_suffix}`,
+        evidence_frames: [42.5, 43, 44].map(timestamp_sec => ({ timestamp_sec, image_base64: jpeg })),
+      }] } : { job_id: "fixture", status: mode, verdict: null, violations: [] } }));
+    await page.getByRole("button", { name: "Проверить видео", exact: true }).click();
+    await page.getByRole("status").filter({ hasText: "Обрабатываем видео" }).waitFor();
+    await page.screenshot({ path: `${out}/${name}-processing.png`, fullPage: true });
+    mode = "failed";
+    await page.getByRole("alert").waitFor();
+    await page.screenshot({ path: `${out}/${name}-error.png`, fullPage: true });
+    mode = "clean";
+    await page.getByRole("button", { name: "Повторить", exact: true }).click();
+    await page.getByRole("heading", { name: "Нарушение не обнаружено", exact: true }).waitFor();
+    await page.getByText("Результат — подсказка для проверки человеком, а не заключение.").waitFor();
+    await page.screenshot({ path: `${out}/${name}-clean.png`, fullPage: true });
+    assert.equal(await page.locator("article").count(), 0);
+    mode = "violation";
+    await page.getByRole("button", { name: "Проверить видео", exact: true }).click();
+    await page.getByRole("heading", { name: "Пересчёт наличных без контролирующего работника", exact: true }).waitFor();
+    await page.getByRole("link", { name: /п\. 42/ }).waitFor();
+    assert.equal(await page.locator("article p").filter({ hasText: metadata.citation_suffix }).count(), 0);
+    assert.equal(await page.locator("img[alt^='Кадр-доказательство']").count(), 3);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+    await page.screenshot({ path: `${out}/${name}-three-frames.png`, fullPage: true });
+    await page.route("**/api/ui/rules", route => route.fulfill({ status: 503, json: { detail: "test failure" } }));
+    await page.reload();
+    await page.locator('input[type="file"]').setInputFiles({ name: "synthetic.mov", mimeType: "video/quicktime", buffer: Buffer.from("synthetic fixture") });
+    await page.getByRole("button", { name: "Проверить видео", exact: true }).click();
+    await page.getByRole("alert").filter({ hasText: "Не удалось загрузить нормативные источники" }).waitFor();
+    assert.equal(await page.locator("article").count(), 0, "Do not show unresolved type IDs while metadata is unavailable");
+    await page.unroute("**/api/ui/rules");
+    await page.getByRole("button", { name: "Повторить", exact: true }).click();
+    await page.getByRole("heading", { name: metadata.name, exact: true }).waitFor();
+    await page.getByRole("link", { name: /п\. 42/ }).waitFor();
+    assert.deepEqual(errors, []);
+    await page.close();
+    console.log(`${width}px: synthetic upload, result, processing, failed, retry, clean, overflow — PASS`);
+  }
+} finally { await browser.close(); }
+console.log(`Screenshots: ${out}`);

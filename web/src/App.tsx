@@ -1,24 +1,39 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type Job } from "@/api";
+import { api, type Job, type RuleType } from "@/api";
 import { Button, ErrorBox, Skeleton } from "@/components/ui";
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [rules, setRules] = useState<RuleType[]>([]);
+  const [rulesLoading, setRulesLoading] = useState(true);
+  const [rulesError, setRulesError] = useState("");
   const [error, setError] = useState("");
   const [logoAvailable, setLogoAvailable] = useState(true);
   const active = useRef(0);
   useEffect(() => () => { active.current += 1; }, []);
+  async function loadRules() {
+    setRulesLoading(true);
+    setRulesError("");
+    try { setRules(await api.rules()); }
+    catch { setRulesError("Не удалось загрузить нормативные источники. Повторите загрузку."); }
+    finally { setRulesLoading(false); }
+  }
+  useEffect(() => { void loadRules(); }, []);
 
   async function analyze() {
     if (!file || busy) return;
     const run = ++active.current;
     setBusy(true);
+    setUploading(true);
     setError("");
     setJob(null);
     try {
       const { job_id } = await api.analyze(file);
+      if (active.current !== run) return;
+      setUploading(false);
       const deadline = Date.now() + 300_000;
       while (active.current === run) {
         const result = await api.job(job_id);
@@ -30,37 +45,60 @@ export default function App() {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (cause) {
-      if (active.current === run) setError(cause instanceof Error ? cause.message : "Повторите проверку.");
+      if (active.current === run) setError(cause instanceof Error ? cause.message : "Не удалось связаться с сервисом. Повторите проверку.");
     } finally {
-      if (active.current === run) setBusy(false);
+      if (active.current === run) { setBusy(false); setUploading(false); }
     }
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-8 sm:py-16">
+    <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-16">
       {logoAvailable && <img src="/forte-logo.svg" alt="ForteBank" onError={() => setLogoAvailable(false)} className="mb-12 h-10 w-auto" />}
-      <h1 className="mb-8 text-3xl font-extrabold text-forte-dark sm:text-4xl">Проверьте кассовую дисциплину</h1>
+      <div className="mb-8">
+        <h1 className="max-w-xl text-3xl font-extrabold text-forte-dark sm:text-4xl">Проверьте кассовую дисциплину</h1>
+      </div>
       <form onSubmit={event => { event.preventDefault(); void analyze(); }} className="space-y-5">
         <label className="block font-semibold">Загрузите видео .mov
           <input type="file" accept=".mov,video/quicktime" disabled={busy} onChange={event => {
             setFile(event.target.files?.[0] ?? null); setJob(null); setError("");
           }} className="mt-3 block w-full rounded-btn border bg-background p-4 text-sm file:mr-4 file:font-semibold" />
         </label>
-        <Button type="submit" disabled={!file || busy}>{busy ? "Проверяем видео…" : "Проверить видео"}</Button>
+        <Button type="submit" className="w-full sm:w-auto" disabled={!file || busy}>{uploading ? "Загружаем видео…" : busy ? "Проверяем видео…" : "Проверить видео"}</Button>
       </form>
       <section aria-live="polite" aria-busy={busy} className="mt-10 space-y-5">
         <p className="text-sm text-muted-foreground">Демонстрационная заглушка: результат и сплошной кадр не связаны с содержимым видео.</p>
         {!file && <p>Выберите видео, чтобы начать проверку.</p>}
-        {busy && <><p role="status">Обрабатываем видео…</p><Skeleton className="h-20 w-full rounded-btn" /></>}
+        {busy && <><p role="status">{uploading ? "Загружаем видео…" : "Обрабатываем видео…"}</p><Skeleton className="h-20 w-full rounded-btn" /></>}
         {error && <ErrorBox message={error} onRetry={() => { void analyze(); }} />}
         {job?.status === "done" && <>
           <h2 className="text-2xl font-bold text-forte-dark">{job.verdict === "violation" ? "Обнаружены признаки возможных нарушений" : "Нарушение не обнаружено"}</h2>
           <p>Результат — подсказка для проверки человеком, а не заключение.</p>
-          {job.violations.map((violation, index) => <article key={index} className="space-y-3 border-t pt-5">
-            <h3 className="font-bold">{violation.type}</h3>
-            <p>Таймкод: {violation.timecode_sec} с</p><p className="break-words">{violation.description}</p>
-            {violation.evidence_frames.map((frame, frameIndex) => <img key={frameIndex} src={`data:image/jpeg;base64,${frame.image_base64}`} alt={`Демонстрационный кадр, ${frame.timestamp_sec} с`} className="h-32 w-32 border object-contain" />)}
-          </article>)}
+          {job.violations.length > 0 && rulesLoading && <p role="status">Загружаем нормативные источники…</p>}
+          {job.violations.length > 0 && rulesError && <ErrorBox message={rulesError} onRetry={() => { void loadRules(); }} />}
+          {!rulesLoading && !rulesError && job.violations.map((violation, index) => {
+            const metadata = rules.find(rule => rule.id === violation.type || rule.name === violation.type);
+            const suffix = metadata?.citation_suffix ? ` ${metadata.citation_suffix}` : "";
+            const description = suffix && violation.description.endsWith(suffix)
+              ? violation.description.slice(0, -suffix.length) : violation.description;
+            return <article key={index} className="space-y-4 rounded-card bg-card p-5 sm:p-8">
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <h3 className="min-w-0 break-words text-xl font-bold text-forte-dark">{metadata?.name ?? violation.type}</h3>
+                <p className="shrink-0 font-semibold">Таймкод: {violation.timecode_sec} с</p>
+              </div>
+              <p className="max-w-prose break-words leading-relaxed">{description}</p>
+              {metadata ? <ul className="space-y-3 text-sm">
+                {metadata.rules.map((rule, ruleIndex) => <li key={ruleIndex}>
+                  <a href={rule.url} target="_blank" rel="noopener noreferrer" className="break-words font-semibold text-primary underline underline-offset-4">{rule.citation}{rule.punkt ? "" : " (акт в целом; конкретный пункт не указан)"}</a>
+                </li>)}
+              </ul> : <p className="text-sm text-muted-foreground">Нормативный источник не получен. Проверьте ссылку в описании.</p>}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {violation.evidence_frames.map((frame, frameIndex) => <figure key={frameIndex} className="min-w-0">
+                  <img src={`data:image/jpeg;base64,${frame.image_base64}`} alt={`Кадр-доказательство, ${frame.timestamp_sec} с`} className="max-h-96 w-full rounded-btn bg-muted object-contain" />
+                  <figcaption className="mt-2 text-sm text-muted-foreground">{frame.timestamp_sec} с</figcaption>
+                </figure>)}
+              </div>
+            </article>;
+          })}
         </>}
       </section>
     </main>

@@ -17,8 +17,9 @@ from starlette.concurrency import run_in_threadpool
 
 from api.analyzer import analyze_stub
 from api.jobs import Analyzer, JobQueue
-from contracts.schemas import AnalyzeResponse, Health, JobResponse
+from contracts.schemas import AnalyzeResponse, Health, JobResponse, RuleType
 from src.config import ROOT, VERSION, WEB_DIST
+from src.rules.describe import rule_catalog
 
 
 def create_app(*, analyzer: Analyzer = analyze_stub, api_key: str | None = None) -> FastAPI:
@@ -81,6 +82,11 @@ def create_app(*, analyzer: Analyzer = analyze_stub, api_key: str | None = None)
 
     app.include_router(router, prefix="/api/v1")
     app.include_router(router, prefix="/api/ui")
+
+    @app.get("/api/ui/rules", response_model=list[RuleType])
+    def rules():
+        """Display metadata only; the jury's job response stays unchanged."""
+        return rule_catalog()
 
     # API misses must never become a successful SPA response.
     @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])

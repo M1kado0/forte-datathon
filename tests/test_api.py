@@ -13,8 +13,32 @@ from pydantic import ValidationError
 from api.analyzer import analyze_stub
 from api.main import create_app
 from contracts.schemas import JobResponse
+from src.rules.describe import describe_violation, rule_catalog
 
 KEY = {"X-API-Key": "jury-key"}
+
+
+def test_ui_rule_catalog_has_russian_names_and_exact_sources_without_key():
+    with TestClient(create_app(api_key="jury-key")) as client:
+        response = client.get("/api/ui/rules")
+        assert response.status_code == 200
+        catalog = {item["id"]: item for item in response.json()}
+        assert (
+            catalog["count_without_controller"]["name"] == "Пересчёт наличных без контролирующего работника"
+        )
+        rule = catalog["count_without_controller"]["rules"][0]
+        assert rule["punkt"] == "п. 42"
+        assert rule["url"] == "https://adilet.zan.kz/rus/docs/V1900019680"
+        assert "№ 231" in rule["approved_by"]
+        assert rule["title"].startswith("Правила осуществления кассовых операций")
+        assert catalog["other"]["rules"][0]["punkt"] is None
+        for item in catalog.values():
+            citations = [rule["citation"] for rule in item["rules"]]
+            assert len(citations) == len(set(citations))
+            description = describe_violation(item["id"], {"object": "предмет"}).description
+            assert description.endswith(" " + item["citation_suffix"])
+        assert rule_catalog() is rule_catalog()
+        assert client.get("/api/v1/rules", headers=KEY).status_code == 404
 
 
 def upload(client, prefix="/api/v1"):
