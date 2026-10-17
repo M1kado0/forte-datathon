@@ -74,6 +74,8 @@ Test only deterministic code:
 - Licenses: open source that allows commercial use only (Apache-2.0, MIT, BSD). **No Ultralytics YOLO (AGPL).**
   Add each model to `docs/MODELS.md` with its license before `uv add`.
 - No face recognition or identification. No audio. Uploaded videos are deleted after the job, never used for training.
+- Never send dataset frames, crops or clips to a cloud model (Claude, Codex, any chat), not even to "look at" them (FAQ 6).
+  Inspect frames locally yourself; give agents only numbers and text you wrote.
 - Descriptions come from templates in `src/rules/rules.yaml`, filled with observed facts. No generated legal claims.
 
 ## API contract (from brief section 10; field names are fixed, the jury parses them automatically)
