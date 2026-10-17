@@ -1,7 +1,8 @@
 """analyze(path) seam: video -> violations that satisfy the wire contract and the ticket's invariants (#28).
 
 Fast tests use a fake embedder (frame brightness) and a fake classifier (brightness / 255), so bright
-seconds of a synthetic clip become score peaks. One smoke test runs the real DINOv2 + saved classifier.
+seconds of a synthetic clip become score peaks. One smoke test runs the real DINOv2 + saved classifier
+on the shortest real clip.
 """
 
 import base64
@@ -12,7 +13,7 @@ import numpy as np
 import pytest
 
 from contracts.schemas import JobResponse
-from src.config import WEIGHTS
+from src.config import VIDEOS_DIR, WEIGHTS
 from src.features.embeddings import MODEL_NAME
 from src.models import analyze as analyze_mod
 from src.models.analyze import (
@@ -130,10 +131,32 @@ def test_model_from_other_embeddings_is_refused(monkeypatch):
         analyze_mod.default_model.cache_clear()
 
 
+def shortest_real_clip(limit_sec: float = 30.0):
+    """The shortest dataset clip of at most limit_sec, read from container headers; None without videos."""
+    best = None
+    for path in sorted(VIDEOS_DIR.glob("*.mov")):
+        cap = cv2.VideoCapture(str(path))
+        fps, frames = cap.get(cv2.CAP_PROP_FPS), cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        cap.release()
+        if fps > 0 and frames / fps <= limit_sec and (best is None or frames / fps < best[0]):
+            best = (frames / fps, path)
+    return best[1] if best else None
+
+
+REAL_CLIP = shortest_real_clip()
+
+
 @pytest.mark.skipif(
-    not (WEIGHTS / MODEL_NAME).exists() or not MODEL_PATH.exists(),
-    reason="needs `make weights` and models/window_clf.pkl from `uv run python -m src.models.train`",
+    not (WEIGHTS / MODEL_NAME).exists() or not MODEL_PATH.exists() or REAL_CLIP is None,
+    reason="needs `make weights`, models/window_clf.pkl and a ≤ 30 s clip in data/raw/videos",
 )
-def test_smoke_real_model_on_short_clip(tmp_path):
-    """DINOv2 + saved classifier on a 20 s clip: whatever the verdict, the result keeps the contract."""
-    assert_contract(analyze(make_clip(tmp_path / "clip.mov", {4: BRIGHT, 14: BRIGHT})))
+def test_smoke_real_model_on_shortest_real_clip():
+    """DINOv2 + saved classifier on a real camera clip (native size, h264); no score is asserted.
+
+    With the saved threshold the contract holds whatever the verdict. Threshold 0 flags every video, so
+    the violation path (evidence frames, type, description) also runs on real frames.
+    """
+    assert_contract(analyze(REAL_CLIP))
+    forced = analyze(REAL_CLIP, model={**analyze_mod.default_model(), "threshold": 0.0})
+    assert len(forced) == MAX_FALLBACK_VIOLATIONS
+    assert_contract(forced)
