@@ -17,6 +17,23 @@ from contracts.schemas import JobResponse
 KEY = {"X-API-Key": "jury-key"}
 
 
+def test_ui_rule_catalog_has_russian_names_and_exact_sources_without_key():
+    with TestClient(create_app(api_key="jury-key")) as client:
+        response = client.get("/api/ui/rules")
+        assert response.status_code == 200
+        catalog = {item["id"]: item for item in response.json()}
+        assert (
+            catalog["count_without_controller"]["name"] == "Пересчёт наличных без контролирующего работника"
+        )
+        rule = catalog["count_without_controller"]["rules"][0]
+        assert rule["punkt"] == "п. 42"
+        assert rule["url"] == "https://adilet.zan.kz/rus/docs/V1900019680"
+        assert "№ 231" in rule["approved_by"]
+        assert rule["title"].startswith("Правила осуществления кассовых операций")
+        assert catalog["other"]["rules"][0]["punkt"] is None
+        assert client.get("/api/v1/rules", headers=KEY).status_code == 404
+
+
 def upload(client, prefix="/api/v1"):
     response = client.post(
         f"{prefix}/analyze",

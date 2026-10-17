@@ -9,6 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
+import yaml
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -18,7 +19,7 @@ from starlette.concurrency import run_in_threadpool
 from api.analyzer import analyze_stub
 from api.jobs import Analyzer, JobQueue
 from contracts.schemas import AnalyzeResponse, Health, JobResponse
-from src.config import ROOT, VERSION, WEB_DIST
+from src.config import ROOT, RULES_YAML, VERSION, WEB_DIST
 
 
 def create_app(*, analyzer: Analyzer = analyze_stub, api_key: str | None = None) -> FastAPI:
@@ -81,6 +82,27 @@ def create_app(*, analyzer: Analyzer = analyze_stub, api_key: str | None = None)
 
     app.include_router(router, prefix="/api/v1")
     app.include_router(router, prefix="/api/ui")
+
+    @app.get("/api/ui/rules")
+    def rules():
+        """Display metadata only; the jury's job response stays unchanged."""
+        catalog = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))
+        return [
+            {
+                "id": item["id"],
+                "name": item["name"],
+                "rules": [
+                    {
+                        "title": catalog["documents"][rule["doc"]]["title"],
+                        "approved_by": catalog["documents"][rule["doc"]]["approved_by"],
+                        "punkt": rule.get("punkt"),
+                        "url": catalog["documents"][rule["doc"]]["url"],
+                    }
+                    for rule in item["rules"]
+                ],
+            }
+            for item in catalog["types"]
+        ]
 
     # API misses must never become a successful SPA response.
     @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
