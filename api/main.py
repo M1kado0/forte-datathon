@@ -1,126 +1,110 @@
-"""FastAPI app. Serves the API under /api and the built front-end (web/dist) on the same port."""
+"""Video API and same-origin web app. Run one uvicorn process for the in-memory queue."""
 
-from __future__ import annotations
+import asyncio
+import os
+import secrets
+import shutil
+from contextlib import asynccontextmanager
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from uuid import uuid4
 
-import json
-
-import pandas as pd
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from dotenv import load_dotenv
+from fastapi import APIRouter, FastAPI, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
-from contracts.schemas import (
-    FieldMeta,
-    Health,
-    Insight,
-    Meta,
-    PredictRequest,
-    PredictResponse,
-    Reason,
-)
-from src.config import (
-    DATA_PROCESSED,
-    FEATURE_LABELS,
-    FEATURES,
-    ID_COL,
-    PRODUCT_NAME,
-    REGIONS,
-    REPORTS,
-    VERSION,
-    WEB_DIST,
-)
-from src.features.build import to_model_frame
-from src.models.explain import impact_kzt, reason_text, verdict
-from src.models.train import load_artifacts, predict_with_reasons
-
-app = FastAPI(title=PRODUCT_NAME, version=VERSION)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-STATE: dict = {"art": None, "clients": None}
+from api.analyzer import analyze_stub
+from api.jobs import Analyzer, JobQueue
+from contracts.schemas import AnalyzeResponse, Health, JobResponse, RuleType
+from src.config import ROOT, VERSION, WEB_DIST
+from src.rules.describe import rule_catalog
 
 
-@app.on_event("startup")
-def _load() -> None:
-    STATE["art"] = load_artifacts()
-    path = DATA_PROCESSED / "train.parquet"
-    if path.exists():
-        STATE["clients"] = pd.read_parquet(path).set_index(ID_COL)
+def create_app(*, analyzer: Analyzer = analyze_stub, api_key: str | None = None) -> FastAPI:
+    load_dotenv(ROOT / ".env")
+    key = api_key if api_key is not None else os.getenv("API_KEY", "")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        with TemporaryDirectory(prefix="forte-upload-") as directory:
+            app.state.upload_dir = Path(directory)
+            app.state.jobs = JobQueue(analyzer)
+            worker = asyncio.create_task(app.state.jobs.run())
+            try:
+                yield
+            finally:
+                app.state.jobs.queue.put_nowait(None)
+                await worker
+
+    app = FastAPI(title="Forte: проверка кассовой дисциплины", version=VERSION, lifespan=lifespan)
+
+    @app.middleware("http")
+    async def authenticate(request: Request, call_next):
+        if request.url.path == "/api/v1" or request.url.path.startswith("/api/v1/"):
+            supplied = request.headers.get("X-API-Key", "")
+            if not key or not secrets.compare_digest(supplied.encode(), key.encode()):
+                return JSONResponse(status_code=401, content={"detail": "Неверный API-ключ"})
+        return await call_next(request)
+
+    @app.get("/api/health", response_model=Health)
+    def health():
+        return Health(version=VERSION, model_loaded=False)
+
+    router = APIRouter()
+
+    @router.post("/analyze", response_model=AnalyzeResponse)
+    async def analyze(request: Request, file: UploadFile):
+        path = None
+        submitted = False
+        try:
+            if Path(file.filename or "").suffix.lower() != ".mov":
+                raise HTTPException(422, "Загрузите видео в формате .mov")
+            job_id = uuid4().hex
+            path = request.app.state.upload_dir / f"{job_id}.mov"
+            with path.open("wb") as target:
+                await run_in_threadpool(shutil.copyfileobj, file.file, target)
+            request.app.state.jobs.submit(job_id, path)
+            submitted = True
+            return AnalyzeResponse(job_id=job_id)
+        finally:
+            await file.close()
+            if path is not None and not submitted:
+                path.unlink(missing_ok=True)
+
+    @router.get("/jobs/{job_id}", response_model=JobResponse)
+    def job(request: Request, job_id: str):
+        result = request.app.state.jobs.jobs.get(job_id)
+        if result is None:
+            raise HTTPException(404, "Задача не найдена")
+        return result
+
+    app.include_router(router, prefix="/api/v1")
+    app.include_router(router, prefix="/api/ui")
+
+    @app.get("/api/ui/rules", response_model=list[RuleType])
+    def rules():
+        """Display metadata only; the jury's job response stays unchanged."""
+        return rule_catalog()
+
+    # API misses must never become a successful SPA response.
+    @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def missing_api(path: str):
+        raise HTTPException(404, "Маршрут не найден")
+
+    if (WEB_DIST / "index.html").exists():
+        if (WEB_DIST / "assets").is_dir():
+            app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
+
+        @app.get("/{path:path}", include_in_schema=False)
+        def spa(path: str):
+            candidate = (WEB_DIST / path).resolve()
+            if not candidate.is_relative_to(WEB_DIST.resolve()):
+                raise HTTPException(404)
+            return FileResponse(candidate if path and candidate.is_file() else WEB_DIST / "index.html")
+
+    return app
 
 
-DEFAULTS = {
-    "age": 35, "income_kzt": 450_000.0, "debt_ratio": 0.4,
-    "days_overdue_max": 0, "tenure_months": 24, "region": "Алматы",
-}
-
-
-@app.get("/api/health", response_model=Health)
-def health() -> Health:
-    return Health(version=VERSION, model_loaded=STATE["art"] is not None)
-
-
-@app.get("/api/meta", response_model=Meta)
-def meta() -> Meta:
-    fields = [
-        FieldMeta(name="age", label=FEATURE_LABELS["age"], type="number", min=18, max=90, step=1),
-        FieldMeta(name="income_kzt", label=FEATURE_LABELS["income_kzt"], type="number", min=0, max=5_000_000, step=10_000),
-        FieldMeta(name="debt_ratio", label=FEATURE_LABELS["debt_ratio"], type="number", min=0, max=3, step=0.05),
-        FieldMeta(name="days_overdue_max", label=FEATURE_LABELS["days_overdue_max"], type="number", min=0, max=120, step=1, whatif=True),
-        FieldMeta(name="tenure_months", label=FEATURE_LABELS["tenure_months"], type="number", min=0, max=240, step=1),
-        FieldMeta(name="region", label=FEATURE_LABELS["region"], type="category", options=REGIONS),
-    ]
-    for f in fields:
-        f.default = DEFAULTS[f.name]
-    return Meta(product_name=PRODUCT_NAME, primary_field=ID_COL, fields=fields)
-
-
-@app.get("/api/clients/{client_id}")
-def client(client_id: str) -> dict:
-    df = STATE["clients"]
-    if df is None or client_id not in df.index:
-        raise HTTPException(404, "Клиент не найден")
-    row = df.loc[client_id, FEATURES].to_dict()
-    return {k: (v.item() if hasattr(v, "item") else v) for k, v in row.items()}
-
-
-@app.post("/api/predict", response_model=PredictResponse)
-def predict(req: PredictRequest) -> PredictResponse:
-    art = STATE["art"]
-    if art is None:
-        raise HTTPException(503, "Модель не загружена: запустите `make demo`")
-    data = dict(DEFAULTS)
-    cid = req.input.get(ID_COL)
-    if cid:
-        data.update(client(str(cid)))
-    data.update({k: v for k, v in req.input.items() if k in FEATURES and v is not None})
-
-    X = to_model_frame(pd.DataFrame([data]))
-    p, contrib = predict_with_reasons(art, X)
-    p0 = float(p[0])
-    order = sorted(range(len(FEATURES)), key=lambda i: -abs(contrib[0, i]))[:5]
-    reasons = [
-        Reason(feature=FEATURES[i], effect=round(float(contrib[0, i]), 4),
-               text=reason_text(FEATURES[i], data[FEATURES[i]], float(contrib[0, i])))
-        for i in order
-    ]
-    label, action = verdict(p0)
-    return PredictResponse(
-        result=round(p0, 4), label=label, confidence=round(max(p0, 1 - p0), 4),
-        reasons=reasons, action=action, impact_kzt=round(impact_kzt(p0, float(data["income_kzt"])), 0),
-    )
-
-
-@app.get("/api/insights", response_model=list[Insight])
-def insights() -> list[Insight]:
-    path = REPORTS / "insights.json"
-    return json.loads(path.read_text()) if path.exists() else []
-
-
-# ---- front-end (must be last) ----
-if (WEB_DIST / "index.html").exists():
-    app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
-
-    @app.get("/{path:path}", include_in_schema=False)
-    def spa(path: str):
-        f = WEB_DIST / path
-        return FileResponse(f if path and f.is_file() else WEB_DIST / "index.html")
+app = create_app()

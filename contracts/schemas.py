@@ -1,64 +1,66 @@
-"""API contract. Change this file first, then tell P1 — the front-end mirrors it in web/src/api.ts."""
+"""Video-analysis wire contract from brief section 10."""
 
-from __future__ import annotations
+from typing import Literal
 
-from typing import Any, Literal
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-class Health(BaseModel):
+class Contract(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class Health(Contract):
     status: Literal["ok"] = "ok"
     version: str
     model_loaded: bool
 
 
-class PredictRequest(BaseModel):
-    input: dict[str, Any] = Field(..., description="Feature name -> value, or {'client_id': ...}")
+class RuleReference(Contract):
+    title: str
+    approved_by: str
+    punkt: str | None
+    url: str
+    citation: str
 
 
-class Reason(BaseModel):
-    feature: str
-    effect: float = Field(..., description="Signed contribution (e.g. SHAP value); >0 pushes towards the label")
-    text: str = Field(..., description="Plain-language Russian explanation for the UI")
-
-
-class PredictResponse(BaseModel):
-    result: float = Field(..., description="Main score, e.g. probability 0..1")
-    label: str = Field(..., description="Human verdict, e.g. 'Высокий риск'")
-    confidence: float = Field(..., ge=0, le=1)
-    reasons: list[Reason] = Field(default_factory=list, max_length=5)
-    action: str = Field(..., description="Recommended next step for the employee")
-    impact_kzt: float = Field(..., description="Expected ₸ effect of the action")
-
-
-class ChartPoint(BaseModel):
-    x: str | float
-    y: float
-    highlight: bool = False
-
-
-class Insight(BaseModel):
+class RuleType(Contract):
     id: str
-    title: str = Field(..., description="Takeaway title, not a variable name")
-    number: str = Field(..., description="The big number, already formatted")
-    chart_data: list[ChartPoint] = Field(default_factory=list)
-    takeaway: str
-
-
-class FieldMeta(BaseModel):
     name: str
-    label: str
-    type: Literal["number", "category", "text"]
-    min: float | None = None
-    max: float | None = None
-    step: float | None = None
-    options: list[str] | None = None
-    default: Any = None
-    whatif: bool = False
+    citation_suffix: str
+    rules: list[RuleReference]
 
 
-class Meta(BaseModel):
-    product_name: str
-    primary_field: str
-    fields: list[FieldMeta]
+class EvidenceFrame(Contract):
+    timestamp_sec: float = Field(ge=0, allow_inf_nan=False)
+    image_base64: str = Field(min_length=1)
+
+
+class Violation(Contract):
+    type: str = Field(min_length=1)
+    timecode_sec: float = Field(ge=0, allow_inf_nan=False)
+    description: str = Field(min_length=1)
+    evidence_frames: list[EvidenceFrame] = Field(min_length=1, max_length=3)
+
+    @model_validator(mode="after")
+    def matching_timecode(self):
+        # Decoding snaps evidence to an actual frame; allow sub-second rounding.
+        if abs(self.timecode_sec - self.evidence_frames[0].timestamp_sec) >= 1.0:
+            raise ValueError("First evidence frame must be less than one second from the violation timecode")
+        return self
+
+
+class AnalyzeResponse(Contract):
+    job_id: str
+
+
+class JobResponse(AnalyzeResponse):
+    status: Literal["processing", "done", "failed"]
+    verdict: Literal["violation", "no_violation"] | None = None
+    violations: list[Violation] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def consistent_result(self):
+        expected = ("violation" if self.violations else "no_violation") if self.status == "done" else None
+        if self.verdict != expected or (self.status != "done" and self.violations):
+            raise ValueError("Verdict and violations must match job status")
+        return self

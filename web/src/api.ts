@@ -1,49 +1,38 @@
-// Mirrors contracts/schemas.py. Change the Python contract first, then this file.
-
-export type Reason = { feature: string; effect: number; text: string };
-export type PredictResponse = {
-  result: number;
-  label: string;
-  confidence: number;
-  reasons: Reason[];
-  action: string;
-  impact_kzt: number;
+﻿// Mirrors contracts/schemas.py; UI uses the same handlers without a jury API key.
+export type EvidenceFrame = { timestamp_sec: number; image_base64: string };
+export type RuleType = { id: string; name: string; citation_suffix: string; rules: { title: string; approved_by: string; punkt: string | null; url: string; citation: string }[] };
+export type Violation = { type: string; timecode_sec: number; description: string; evidence_frames: EvidenceFrame[] };
+export type Job = {
+  job_id: string;
+  status: "processing" | "done" | "failed";
+  verdict: "violation" | "no_violation" | null;
+  violations: Violation[];
 };
-export type ChartPoint = { x: string | number; y: number; highlight?: boolean };
-export type Insight = { id: string; title: string; number: string; chart_data: ChartPoint[]; takeaway: string };
-export type FieldMeta = {
-  name: string;
-  label: string;
-  type: "number" | "category" | "text";
-  min?: number | null;
-  max?: number | null;
-  step?: number | null;
-  options?: string[] | null;
-  default?: unknown;
-  whatif: boolean;
-};
-export type Meta = { product_name: string; primary_field: string; fields: FieldMeta[] };
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(`/api${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!r.ok) {
-    let msg = `Ошибка ${r.status}`;
-    try {
-      const j = await r.json();
-      if (j?.detail) msg = typeof j.detail === "string" ? j.detail : msg;
-    } catch { /* ignore */ }
-    throw new Error(msg);
+  let response: Response;
+  try {
+    response = await fetch(`/api/ui${path}`, init);
+  } catch {
+    throw new Error("Сервис не ответил. Проверьте соединение и повторите проверку.");
   }
-  return r.json() as Promise<T>;
+  if (!response.ok) {
+    let message = `Ошибка ${response.status}. Повторите проверку.`;
+    try {
+      const body = await response.json();
+      if (typeof body.detail === "string") message = body.detail;
+    } catch { /* keep the HTTP error */ }
+    throw new Error(message);
+  }
+  return response.json() as Promise<T>;
 }
 
 export const api = {
-  meta: () => req<Meta>("/meta"),
-  client: (id: string) => req<Record<string, number | string>>(`/clients/${encodeURIComponent(id)}`),
-  predict: (input: Record<string, unknown>) =>
-    req<PredictResponse>("/predict", { method: "POST", body: JSON.stringify({ input }) }),
-  insights: () => req<Insight[]>("/insights"),
+  rules: () => req<RuleType[]>("/rules"),
+  analyze(file: File) {
+    const body = new FormData();
+    body.append("file", file);
+    return req<{ job_id: string }>("/analyze", { method: "POST", body });
+  },
+  job: (id: string) => req<Job>(`/jobs/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(60_000) }),
 };

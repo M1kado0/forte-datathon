@@ -1,10 +1,12 @@
 """Roles from tracks, with no hand-drawn zones (the jury's camera angle has none)."""
 
 from dataclasses import dataclass
+from math import ceil
 
 import numpy as np
 import pandas as pd
 
+from src.data.video import DEFAULT_FPS
 from src.heuristics.thresholds import DEFAULT, Thresholds
 from src.heuristics.tracks import with_geometry
 
@@ -22,32 +24,52 @@ class Roles:
         return np.hypot(cx - self.seat[0], cy - self.seat[1]) / self.scale
 
 
-def find_roles(tracks: pd.DataFrame, thresholds: Thresholds = DEFAULT) -> Roles | None:
-    """The seat is the place where one track has the most frames near it, whoever it is; the stillest place wins a tie.
+def find_roles(
+    tracks: pd.DataFrame, thresholds: Thresholds = DEFAULT, fps: float = DEFAULT_FPS
+) -> Roles | None:
+    """The seat is the spot where one track stays longest, so clients who come one after another at the
+    counter do not add up. A tie goes to the spot with more person boxes, then to the stillest one.
 
-    Ranking by a single track, not by everyone at the spot, keeps clients who arrive one after another at
-    the counter from adding up to a seat. The cost: a cashier who returns under a new id loses the seat to a
-    client with more frames there than either fragment, so stable ids are #32's job. The cashier is the track most
-    present at the seat. None when no person is tracked.
+    A track's time at a spot counts detector misses up to Thresholds.gap_sec as present, as `detect` does,
+    so a half-hidden cashier is not outweighed by a fully visible client.
+
+    The cashier is that longest track. A client who stays at the counter longer than the cashier's longest
+    track at the seat takes the seat. That happens when the cashier is away for much of the clip, or when the
+    tracker splits the cashier into short ids (stable ids are #32's job). None when no person is tracked.
     """
     people = with_geometry(tracks[tracks["kind"] == "person"])
     if people.empty:
         return None
+    people = people.sort_values(["track_id", "t"], kind="stable")  # one block per track, in time order
     cx, cy, h = (people[c].to_numpy() for c in ("cx", "cy", "h"))
-    ids, codes = np.unique(people["track_id"].to_numpy(), return_inverse=True)
+    track = people["track_id"].to_numpy()
+    frame = (people["t"].to_numpy() * fps).round().astype(np.int32)
+    ids, track_starts = np.unique(track, return_index=True)
     seeds = np.unique(np.linspace(0, len(people) - 1, num=min(len(people), MAX_SEEDS)).astype(int))
     from_seed = np.hypot(cx[seeds, None] - cx, cy[seeds, None] - cy) / h[seeds, None]  # seeds x boxes
     near = from_seed <= thresholds.seat_radius
-    # for each seed: boxes of the single track that is most present around it
-    longest = np.array([np.bincount(codes[row]).max() for row in near])
-    n_near = near.sum(axis=1)
-    var_x = (near * cx**2).sum(axis=1) / n_near - ((near * cx).sum(axis=1) / n_near) ** 2
-    var_y = (near * cy**2).sum(axis=1) / n_near - ((near * cy).sum(axis=1) / n_near) ** 2
+    held = near + _missed_frames(near, track, frame, ceil(thresholds.gap_sec * fps))  # seeds x boxes
+    per_track = np.add.reduceat(held, track_starts, axis=1)  # seeds x tracks: frames a track is near a seed
+    count = near.sum(axis=1)
+    var_x = (near * cx**2).sum(axis=1) / count - ((near * cx).sum(axis=1) / count) ** 2
+    var_y = (near * cy**2).sum(axis=1) / count - ((near * cy).sum(axis=1) / count) ** 2
     spread = np.sqrt(np.clip(var_x + var_y, 0, None)) / h[seeds]
-    best = np.lexsort((spread, -longest))[0]
+    best = np.lexsort((spread, -count, -per_track.max(axis=1)))[0]
     members = near[best]
     return Roles(
-        cashier=int(ids[np.bincount(codes[members]).argmax()]),
+        cashier=int(ids[per_track[best].argmax()]),
         seat=(float(np.median(cx[members])), float(np.median(cy[members]))),
         scale=float(np.median(h[members])),
     )
+
+
+def _missed_frames(near: np.ndarray, track: np.ndarray, frame: np.ndarray, max_gap: int) -> np.ndarray:
+    """Per seed and box, the frames missed just before the box, when the same track was near the seed on both
+    sides of a gap of at most max_gap frames. Boxes are sorted by track, then time."""
+    index = np.arange(near.shape[1], dtype=np.int32)
+    last_near = np.maximum.accumulate(np.where(near, index, -1), axis=1)
+    # The last near box before each box, -1 when there is none.
+    previous = np.pad(last_near[:, :-1], ((0, 0), (1, 0)), constant_values=-1)
+    gap = frame - frame[previous] - 1
+    closed = near & (previous >= 0) & (track[previous] == track) & (gap <= max_gap)
+    return np.where(closed, gap, 0)

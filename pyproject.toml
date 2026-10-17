@@ -17,7 +17,17 @@ dependencies = [
   "matplotlib>=3.8",
   "openpyxl>=3.1",
   "python-dotenv>=1.0",
+  "torch>=2.12",
+  "torchvision>=0.27",
+  "transformers>=5.0",
+  "huggingface-hub>=1.0",
+  "opencv-python-headless>=4.10",
+  "safetensors>=0.4",
+  "sentencepiece>=0.2",
+  "protobuf>=5",
   "pyyaml>=6.0.3",
+  "python-multipart>=0.0.32",
+  "pillow>=12.3.0",
 ]
 
 [dependency-groups]
@@ -35,6 +45,16 @@ eda = [
 
 [tool.uv]
 default-groups = ["dev", "eda"]
+
+# CUDA 13.2 build on Linux/Windows (RTX 50xx needs it); macOS keeps the CPU/MPS build from PyPI.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu132", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
+torchvision = [{ index = "pytorch-cu132", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
