@@ -26,6 +26,8 @@ dependencies = [
   "sentencepiece>=0.2",
   "protobuf>=5",
   "pyyaml>=6.0.3",
+  "python-multipart>=0.0.32",
+  "pillow>=12.3.0",
 ]
 
 [dependency-groups]
