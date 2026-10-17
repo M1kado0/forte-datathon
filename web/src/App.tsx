@@ -8,11 +8,20 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [rules, setRules] = useState<RuleType[]>([]);
+  const [rulesLoading, setRulesLoading] = useState(true);
+  const [rulesError, setRulesError] = useState("");
   const [error, setError] = useState("");
   const [logoAvailable, setLogoAvailable] = useState(true);
   const active = useRef(0);
   useEffect(() => () => { active.current += 1; }, []);
-  useEffect(() => { void api.rules().then(setRules).catch(() => {}); }, []);
+  async function loadRules() {
+    setRulesLoading(true);
+    setRulesError("");
+    try { setRules(await api.rules()); }
+    catch { setRulesError("Не удалось загрузить нормативные источники. Повторите загрузку."); }
+    finally { setRulesLoading(false); }
+  }
+  useEffect(() => { void loadRules(); }, []);
 
   async function analyze() {
     if (!file || busy) return;
@@ -21,7 +30,6 @@ export default function App() {
     setUploading(true);
     setError("");
     setJob(null);
-    if (!rules.length) void api.rules().then(setRules).catch(() => {});
     try {
       const { job_id } = await api.analyze(file);
       if (active.current !== run) return;
@@ -46,8 +54,8 @@ export default function App() {
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-16">
       {logoAvailable && <img src="/forte-logo.svg" alt="ForteBank" onError={() => setLogoAvailable(false)} className="mb-12 h-10 w-auto" />}
-      <div className="bg-hero mb-8 rounded-card px-5 py-8 sm:px-8 sm:py-12">
-        <h1 className="max-w-xl text-3xl font-extrabold text-primary-foreground sm:text-4xl">Проверьте кассовую дисциплину</h1>
+      <div className="mb-8">
+        <h1 className="max-w-xl text-3xl font-extrabold text-forte-dark sm:text-4xl">Проверьте кассовую дисциплину</h1>
       </div>
       <form onSubmit={event => { event.preventDefault(); void analyze(); }} className="space-y-5">
         <label className="block font-semibold">Загрузите видео .mov
@@ -65,25 +73,28 @@ export default function App() {
         {job?.status === "done" && <>
           <h2 className="text-2xl font-bold text-forte-dark">{job.verdict === "violation" ? "Обнаружены признаки возможных нарушений" : "Нарушение не обнаружено"}</h2>
           <p>Результат — подсказка для проверки человеком, а не заключение.</p>
-          {job.violations.map((violation, index) => {
+          {job.violations.length > 0 && rulesLoading && <p role="status">Загружаем нормативные источники…</p>}
+          {job.violations.length > 0 && rulesError && <ErrorBox message={rulesError} onRetry={() => { void loadRules(); }} />}
+          {!rulesLoading && !rulesError && job.violations.map((violation, index) => {
             const metadata = rules.find(rule => rule.id === violation.type || rule.name === violation.type);
+            const suffix = metadata?.citation_suffix ? ` ${metadata.citation_suffix}` : "";
+            const description = suffix && violation.description.endsWith(suffix)
+              ? violation.description.slice(0, -suffix.length) : violation.description;
             return <article key={index} className="space-y-4 rounded-card bg-card p-5 sm:p-8">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h3 className="min-w-0 break-words text-xl font-bold text-forte-dark">{metadata?.name ?? (/^[\x00-\x7F]+$/.test(violation.type) ? "Тип требует уточнения" : violation.type)}</h3>
+                <h3 className="min-w-0 break-words text-xl font-bold text-forte-dark">{metadata?.name ?? violation.type}</h3>
                 <p className="shrink-0 font-semibold">Таймкод: {violation.timecode_sec} с</p>
               </div>
-              <p className="max-w-prose break-words leading-relaxed">{violation.description}</p>
+              <p className="max-w-prose break-words leading-relaxed">{description}</p>
               {metadata ? <ul className="space-y-3 text-sm">
                 {metadata.rules.map((rule, ruleIndex) => <li key={ruleIndex}>
-                  <a href={rule.url} target="_blank" rel="noopener noreferrer" className="break-words font-semibold text-primary underline underline-offset-4">{rule.title}, утв. {rule.approved_by}{rule.punkt ? `, ${rule.punkt}` : " (акт в целом; конкретный пункт не указан)"}</a>
+                  <a href={rule.url} target="_blank" rel="noopener noreferrer" className="break-words font-semibold text-primary underline underline-offset-4">{rule.citation}{rule.punkt ? "" : " (акт в целом; конкретный пункт не указан)"}</a>
                 </li>)}
               </ul> : <p className="text-sm text-muted-foreground">Нормативный источник не получен. Проверьте ссылку в описании.</p>}
               <div className="grid gap-4 sm:grid-cols-2">
                 {violation.evidence_frames.map((frame, frameIndex) => <figure key={frameIndex} className="min-w-0">
-                  <a href={`data:image/jpeg;base64,${frame.image_base64}`} download={`evidence-${index + 1}-${frameIndex + 1}.jpg`} aria-label={`Скачать кадр ${frame.timestamp_sec} с`} className="block rounded-btn focus-visible:outline-primary">
-                    <img src={`data:image/jpeg;base64,${frame.image_base64}`} alt={`Кадр-доказательство, ${frame.timestamp_sec} с`} className="max-h-96 w-full rounded-btn bg-muted object-contain" />
-                  </a>
-                  <figcaption className="mt-2 text-sm text-muted-foreground">{frame.timestamp_sec} с · Нажмите, чтобы скачать кадр</figcaption>
+                  <img src={`data:image/jpeg;base64,${frame.image_base64}`} alt={`Кадр-доказательство, ${frame.timestamp_sec} с`} className="max-h-96 w-full rounded-btn bg-muted object-contain" />
+                  <figcaption className="mt-2 text-sm text-muted-foreground">{frame.timestamp_sec} с</figcaption>
                 </figure>)}
               </div>
             </article>;

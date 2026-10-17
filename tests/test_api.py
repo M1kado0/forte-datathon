@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from api.analyzer import analyze_stub
 from api.main import create_app
 from contracts.schemas import JobResponse
+from src.rules.describe import describe_violation, rule_catalog
 
 KEY = {"X-API-Key": "jury-key"}
 
@@ -31,6 +32,12 @@ def test_ui_rule_catalog_has_russian_names_and_exact_sources_without_key():
         assert "№ 231" in rule["approved_by"]
         assert rule["title"].startswith("Правила осуществления кассовых операций")
         assert catalog["other"]["rules"][0]["punkt"] is None
+        for item in catalog.values():
+            citations = [rule["citation"] for rule in item["rules"]]
+            assert len(citations) == len(set(citations))
+            description = describe_violation(item["id"], {"object": "предмет"}).description
+            assert description.endswith(" " + item["citation_suffix"])
+        assert rule_catalog() is rule_catalog()
         assert client.get("/api/v1/rules", headers=KEY).status_code == 404
 
 

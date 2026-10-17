@@ -15,6 +15,21 @@ class Health(Contract):
     model_loaded: bool
 
 
+class RuleReference(Contract):
+    title: str
+    approved_by: str
+    punkt: str | None
+    url: str
+    citation: str
+
+
+class RuleType(Contract):
+    id: str
+    name: str
+    citation_suffix: str
+    rules: list[RuleReference]
+
+
 class EvidenceFrame(Contract):
     timestamp_sec: float = Field(ge=0, allow_inf_nan=False)
     image_base64: str = Field(min_length=1)

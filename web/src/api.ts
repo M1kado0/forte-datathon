@@ -1,6 +1,6 @@
 ﻿// Mirrors contracts/schemas.py; UI uses the same handlers without a jury API key.
 export type EvidenceFrame = { timestamp_sec: number; image_base64: string };
-export type RuleType = { id: string; name: string; rules: { title: string; approved_by: string; punkt: string | null; url: string }[] };
+export type RuleType = { id: string; name: string; citation_suffix: string; rules: { title: string; approved_by: string; punkt: string | null; url: string; citation: string }[] };
 export type Violation = { type: string; timecode_sec: number; description: string; evidence_frames: EvidenceFrame[] };
 export type Job = {
   job_id: string;
@@ -12,7 +12,7 @@ export type Job = {
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`/api/ui${path}`, { signal: AbortSignal.timeout(60_000), ...init });
+    response = await fetch(`/api/ui${path}`, init);
   } catch {
     throw new Error("Сервис не ответил. Проверьте соединение и повторите проверку.");
   }
@@ -34,5 +34,5 @@ export const api = {
     body.append("file", file);
     return req<{ job_id: string }>("/analyze", { method: "POST", body });
   },
-  job: (id: string) => req<Job>(`/jobs/${encodeURIComponent(id)}`),
+  job: (id: string) => req<Job>(`/jobs/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(60_000) }),
 };

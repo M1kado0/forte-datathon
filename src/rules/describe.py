@@ -1,6 +1,7 @@
 """One lookup for the API's `type` and `description`: name and cited description of a violation type (TZ-4.6)."""
 
 import logging
+from functools import cache
 from typing import NamedTuple
 
 import yaml
@@ -27,6 +28,37 @@ def _format_citation(rule: dict) -> str:
     if rule.get("punkt"):
         parts.append(rule["punkt"])
     return ", ".join(parts)
+
+
+@cache
+def rule_catalog() -> list[dict]:
+    """UI metadata from the same cached rules and citation formatter as descriptions."""
+    catalog = []
+    for item in _TYPES.values():
+        rules = []
+        for rule in item["rules"]:
+            citation = _format_citation(rule)
+            if any(existing["citation"] == citation for existing in rules):
+                continue
+            doc = _DOCS[rule["doc"]]
+            rules.append(
+                {
+                    "title": _one_line(doc["title"]),
+                    "approved_by": _one_line(doc["approved_by"]),
+                    "punkt": rule.get("punkt"),
+                    "url": doc["url"],
+                    "citation": citation,
+                }
+            )
+        catalog.append(
+            {
+                "id": item["id"],
+                "name": item["name"],
+                "rules": rules,
+                "citation_suffix": "; ".join(dict.fromkeys(rule["citation"] for rule in rules)),
+            }
+        )
+    return catalog
 
 
 class TypeDescription(NamedTuple):
