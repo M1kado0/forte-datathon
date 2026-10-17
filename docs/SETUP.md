@@ -23,10 +23,10 @@ Python отдельно ставить не нужно: uv сам скачает
 
 | Инструмент | Кому | Зачем | Установка |
 |---|---|---|---|
-| cloudflared | тот, кто сервит (P1 или владелец RTX) | публичный URL для жюри (`make tunnel`) | `brew install cloudflared` / `winget install Cloudflare.cloudflared` |
-| NVIDIA driver 595+ (CUDA 13.2) | владелец RTX 5080 (Ubuntu, сервинг) | torch cu132 на GPU | `nvidia-driver-595-open` + `linux-modules-nvidia-595-open-$(uname -r)`, проверка `nvidia-smi`. CUDA Toolkit ставить не нужно |
+| cloudflared | P3 (Ескендир) на машине P2 | публичный URL для жюри (`make tunnel`) | `brew install cloudflared` / `winget install Cloudflare.cloudflared` |
+| NVIDIA driver 595+ (CUDA 13.2) | P2 (Алдияр С.), владелец RTX 5080 (Ubuntu, сервинг) | torch cu132 на GPU | `nvidia-driver-595-open` + `linux-modules-nvidia-595-open-$(uname -r)`, проверка `nvidia-smi`. CUDA Toolkit ставить не нужно |
 | Playwright Chromium | P1, P4 | скриншоты UI 1440/390 (`make screenshots`) | `cd web && npx playwright install chromium` |
-| ffmpeg | P3 (по желанию) | `ffprobe` для кодека и fps клипов | `brew install ffmpeg` / `winget install Gyan.FFmpeg` |
+| ffmpeg | P2, P3 (по желанию) | `ffprobe` для кодека и fps клипов | `brew install ffmpeg` / `winget install Gyan.FFmpeg` |
 
 Не нужно: pandoc (бриф уже лежит в `docs/BRIEF.md`), ngrok (запасной вариант туннеля).
 
