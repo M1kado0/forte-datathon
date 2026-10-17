@@ -11,8 +11,9 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   the cashier, so type 4 can fire with "no second worker in the frame". This is the price of tolerating a
   cashier who returns under a new track id.
 - If the tracker splits one person into two ids away from the seat, the second id reads as a new person.
-- The seat is where person boxes pile up most. If the cashier is at the seat for less of the clip than
-  another person stands anywhere else, that other place becomes the seat.
+- The seat is where person boxes pile up most, counting everyone at the spot. Clients who come one after
+  another at the counter add up: if their combined time matches or exceeds the cashier's at the seat, the
+  counter becomes the seat and a real type 1 is reported as type 4.
 - A detector miss on the cashier longer than Thresholds.gap_sec reads as "left".
 - Type 7 does not see the identification itself, only whether a document shows up at the counter while
   cash is there. A document held below the counter, out of frame or shown as a digital document on a

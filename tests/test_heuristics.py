@@ -409,3 +409,46 @@ def test_type7_a_document_of_the_previous_client_does_not_cover_the_next_one():
     )
 
     assert [(h.start_sec, h.end_sec) for h in hits_of("id_not_presented", df)] == [(14.0, 25.75)]
+
+
+@pytest.mark.parametrize(("collapsed", "to"), [("y2", "y1"), ("x2", "x1")], ids=["no height", "no width"])
+def test_a_box_without_area_that_skipped_the_schema_is_ignored_not_a_crash(collapsed, to):
+    broken = tracks(part(99, "person", 5, 6, *COUNTER))
+    broken[collapsed] = broken[to]  # as if TRACKS_SCHEMA.validate had not run
+    mixed = pd.concat([workplace_left(), broken])
+
+    assert find_roles(broken) is None
+    assert detect(broken) == []
+    assert detect(mixed) == detect(workplace_left())
+
+
+def test_the_cashier_is_the_track_most_present_at_the_seat_not_the_lowest_id():
+    df = tracks(
+        part(1, "person", 0, 5, *SEAT, wobble=3),  # a short earlier fragment
+        part(7, "person", 10, 30, *SEAT, wobble=3),
+    )
+
+    assert find_roles(df).cashier == 7
+
+
+@pytest.mark.parametrize(
+    ("fragments", "client_until"),
+    [
+        ([(1, 0, 12), (5, 12, 30)], 20),  # the client waits longer than the cashier's longest fragment (18 s)
+        ([(1, 0, 10), (5, 10, 20), (6, 20, 30)], 15),  # three fragments of 10 s, the client waits 15 s
+    ],
+    ids=["two ids", "three ids"],
+)
+def test_a_cashier_split_into_several_ids_keeps_the_seat_while_a_client_waits(fragments, client_until):
+    df = tracks(
+        *(part(i, "person", a, b, *SEAT, wobble=3) for i, a, b in fragments),
+        part(2, "person", 0, client_until, *COUNTER),
+        part(10, "cash", 2, 30, *DESK, h=20),
+    )
+
+    roles = find_roles(df)
+
+    assert roles.seat == SEAT
+    assert roles.cashier != 2
+    assert hits_of("workplace_left", df) == []
+    assert hits_of("cash_on_desk_next_client", df) == []
