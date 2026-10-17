@@ -48,8 +48,8 @@ def describe(type_id: str, facts: Mapping[str, str] | None = None) -> TypeDescri
         t for t in types if t.get("fallback")
     )
     template = " ".join(type_["description"].split())
-    facts = facts or {}
-    missing = [f for _, f, _, _ in Formatter().parse(template) if f and not str(facts.get(f, "")).strip()]
+    facts = {k: v.strip() for k, v in (facts or {}).items() if isinstance(v, str)}
+    missing = [f for _, f, _, _ in Formatter().parse(template) if f and not facts.get(f)]
     if missing:
         raise ValueError(f"type {type_['id']!r} needs facts: {', '.join(missing)}")
     body = template.format_map(facts)

@@ -84,7 +84,9 @@ def test_object_placeholder_is_filled():
     assert "{" not in text
 
 
-@pytest.mark.parametrize("facts", [None, {}, {"object": ""}, {"object": "  "}, {"thing": "сумка"}])
+@pytest.mark.parametrize(
+    "facts", [None, {}, {"object": None}, {"object": ""}, {"object": "  "}, {"thing": "сумка"}]
+)
 def test_unfilled_placeholder_is_an_error(facts):
     with pytest.raises(ValueError, match="object"):
         describe("foreign_object_at_desk", facts)
@@ -108,3 +110,8 @@ def test_finished_description_states_only_visible_facts(t):
 
 def test_same_punkt_is_cited_once():
     assert "п. 12, п. 12" not in describe("foreign_object_at_desk", FACTS).description
+
+
+def test_fact_is_trimmed_before_substitution():
+    text = describe("foreign_object_at_desk", {"object": " сумка "}).description
+    assert "посторонний предмет: сумка." in text
