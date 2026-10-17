@@ -432,14 +432,17 @@ def test_the_cashier_is_the_track_most_present_at_the_seat_not_the_lowest_id():
 
 
 @pytest.mark.parametrize(
-    "fragments",
-    [[(1, 0, 12), (5, 12, 30)], [(1, 0, 10), (5, 10, 20), (6, 20, 30)]],
+    ("fragments", "client_until"),
+    [
+        ([(1, 0, 12), (5, 12, 30)], 20),  # the client waits longer than the cashier's longest fragment (18 s)
+        ([(1, 0, 10), (5, 10, 20), (6, 20, 30)], 15),  # three fragments of 10 s, the client waits 15 s
+    ],
     ids=["two ids", "three ids"],
 )
-def test_a_cashier_split_into_several_ids_keeps_the_seat_while_a_client_waits(fragments):
+def test_a_cashier_split_into_several_ids_keeps_the_seat_while_a_client_waits(fragments, client_until):
     df = tracks(
         *(part(i, "person", a, b, *SEAT, wobble=3) for i, a, b in fragments),
-        part(2, "person", 0, 15, *COUNTER),  # the client is there as long as the longest cashier fragment
+        part(2, "person", 0, client_until, *COUNTER),
         part(10, "cash", 2, 30, *DESK, h=20),
     )
 
