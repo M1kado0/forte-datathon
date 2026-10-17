@@ -20,6 +20,23 @@ On 2026-10-17 `cloudflared` 2026.10.1 never connected on two different networks:
 handshake to the edge on port 7844 was reset (also with `--protocol http2`; Cloudflare answers 1033/530).
 `make tunnel-cloudflared` stays as a fallback, e.g. from a phone hotspot. Binary: `~/.local/bin/cloudflared`.
 
-## Stage 2: by 21:00 (not yet applied)
-- Tailscale Funnel on :8000, systemd units for the API and the tunnel/Funnel, sleep and unattended-upgrades off.
-- To be written and applied on the serving machine with sudo; reboot test: the address must answer with no manual steps.
+## Stage 2: Tailscale Funnel + systemd (by 21:00)
+Tailscale is installed and logged in on the serving machine (tailnet name `yeskendir-x870-gaming-x-wifi7.tail8f157f.ts.net`).
+Funnel is **not enabled on the tailnet yet**: the owner must open the link that `tailscale funnel --bg 8000` prints
+(`https://login.tailscale.com/f/funnel?node=...`) and approve it once.
+
+Then, on the serving machine (needs sudo and your password):
+```bash
+bash scripts/serve_install.sh          # creates .env with an API_KEY if missing, builds web/dist, installs units
+bash scripts/serve_install.sh check    # statuses + public /api/health; rerun after a reboot
+make jury-sim PUBLIC_URL=https://yeskendir-x870-gaming-x-wifi7.tail8f157f.ts.net
+```
+What the script sets up:
+- `forte-api.service`: uvicorn on `127.0.0.1:8000` from `.venv`, `Restart=always`, `HF_HUB_OFFLINE=1`.
+- `forte-funnel.service`: `tailscale funnel --bg 8000` after `tailscaled` (the Funnel config also persists inside tailscaled).
+- Sleep: `sleep/suspend/hibernate/hybrid-sleep.target` masked (GNOME idle suspend on AC was already `nothing`).
+- Updates: `unattended-upgrades`, `apt-daily*.timer` disabled, `20auto-upgrades` zeroed, tailscale auto-update off,
+  `snap refresh --hold`.
+
+Reboot test (acceptance): reboot, wait about a minute, run `bash scripts/serve_install.sh check` without starting anything by hand.
+The public URL is stable, so give the jury this one instead of the ngrok address.
