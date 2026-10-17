@@ -28,3 +28,14 @@ def test_log_experiment_widens_old_header(tmp_path, monkeypatch):
     rows = list(csv.DictReader(log.open()))
     assert [r["note"] for r in rows] == ["old", "new"]
     assert rows[1]["video_recall"] == "1.0" and rows[0]["fp_rate"] == ""
+
+
+def test_log_experiment_appends_without_rewriting(tmp_path, monkeypatch):
+    log = tmp_path / "experiments.csv"
+    monkeypatch.setattr(train, "EXPERIMENTS", log)
+    m = {"video_recall": 1.0, "fp_rate": 0.5, "median_abs_dt": 3.0}
+    train.log_experiment("a", m)
+    first = log.read_text()
+    train.log_experiment("b", m)
+    assert log.read_text().startswith(first)
+    assert [r["note"] for r in csv.DictReader(log.open())] == ["a", "b"]

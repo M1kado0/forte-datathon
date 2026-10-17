@@ -24,8 +24,8 @@ EMBED_FPS = 4.0
 BATCH = 8  # native 854x854 frames are 3721 tokens each
 PATCH = 14
 MODEL_NAME = "dinov2-small"
-EMBED_DIM = 768  # CLS (384) ++ mean patch token (384)
-FINGERPRINT = f"{MODEL_NAME}|cls+meanpatch|fps={EMBED_FPS}|pad-to-multiple-of-{PATCH}"
+EMBED_DIM = 768  # CLS (384) ++ mean of the patch tokens that cover the frame (384)
+FINGERPRINT = f"{MODEL_NAME}|cls+meanpatch-on-frame|fps={EMBED_FPS}|pad-to-multiple-of-{PATCH}"
 CACHE_DIR = DATA_PROCESSED / "embeddings"
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
@@ -37,6 +37,17 @@ def pad_to_square(frame: np.ndarray, multiple: int = 1) -> np.ndarray:
     side = -(-max(h, w) // multiple) * multiple
     top, left = (side - h) // 2, (side - w) // 2
     return cv2.copyMakeBorder(frame, top, side - h - top, left, side - w - left, cv2.BORDER_CONSTANT, value=0)
+
+
+def frame_patch_mask(h: int, w: int, multiple: int = PATCH) -> np.ndarray:
+    """Flat bool mask over the padded square's patch grid: True where a patch overlaps the real frame."""
+    side = -(-max(h, w) // multiple) * multiple
+    top, left = (side - h) // 2, (side - w) // 2
+    grid = side // multiple
+    rows = np.arange(grid)
+    in_rows = (rows * multiple < top + h) & ((rows + 1) * multiple > top)
+    in_cols = (rows * multiple < left + w) & ((rows + 1) * multiple > left)
+    return (in_rows[:, None] & in_cols[None, :]).ravel()
 
 
 def preprocess(frame_bgr: np.ndarray) -> np.ndarray:
@@ -66,7 +77,9 @@ class Embedder:
         x = torch.from_numpy(np.stack([preprocess(f) for f in frames_bgr])).to(self.device)
         with torch.inference_mode():
             h = self.model(pixel_values=x).last_hidden_state
-        return torch.cat([h[:, 0], h[:, 1:].mean(1)], dim=1).float().cpu().numpy()
+        # frames of one video share a size, so one mask serves the batch; black padding is left out of the mean
+        mask = torch.from_numpy(frame_patch_mask(*frames_bgr[0].shape[:2])).to(self.device)
+        return torch.cat([h[:, 0], h[:, 1:][:, mask].mean(1)], dim=1).float().cpu().numpy()
 
 
 def embed_video(
@@ -96,7 +109,7 @@ def load_or_embed(
     file = cache_path(video_id, cache_dir)
     if file.exists():
         z = np.load(file)
-        if str(z["fingerprint"]) == FINGERPRINT:
+        if "fingerprint" in z.files and str(z["fingerprint"]) == FINGERPRINT:
             return z["seconds"], z["embeddings"], float(z["elapsed"])
     seconds, emb, elapsed = embed_video(path, embedder_factory())
     cache_dir.mkdir(parents=True, exist_ok=True)

@@ -72,3 +72,20 @@ def test_stale_cache_is_recomputed(tmp_path):
 
     with pytest.raises(RuntimeError, match="rebuilt"):
         load_or_embed("v", tmp_path / "missing.mov", embedder_factory=factory, cache_dir=tmp_path)
+
+
+def test_patch_mask_excludes_padding():
+    from src.features.embeddings import frame_patch_mask
+
+    mask = frame_patch_mask(28, 56, 14)  # 56x56 square, 28 px tall frame centred -> rows 1 and 2 of 4
+    assert mask.reshape(4, 4).sum(axis=1).tolist() == [0, 4, 4, 0]
+
+
+def test_cache_without_fingerprint_is_recomputed(tmp_path):
+    np.savez(tmp_path / "v.npz", seconds=np.array([0.0]), embeddings=np.ones((1, 3)), elapsed=1.5)
+
+    def factory():
+        raise RuntimeError("rebuilt")
+
+    with pytest.raises(RuntimeError, match="rebuilt"):
+        load_or_embed("v", tmp_path / "missing.mov", embedder_factory=factory, cache_dir=tmp_path)

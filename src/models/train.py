@@ -152,30 +152,36 @@ def run() -> dict:
 
 
 def log_experiment(note: str, metrics: dict) -> None:
-    """Append one row; an older file with fewer columns is widened first (old rows keep blanks)."""
-    rows = []
-    if EXPERIMENTS.exists():
-        with open(EXPERIMENTS, newline="") as f:
-            rows = list(csv.DictReader(f))
+    """Append one row. A file with an older, narrower header is widened once; rows are never dropped."""
     params = {
         k: v
         for k, v in metrics.items()
         if k not in ("video_scores", "video_recall", "fp_rate", "median_abs_dt")
     }
-    rows.append(
-        {
-            "ts": datetime.now().isoformat(timespec="seconds"),
-            "note": note,
-            "params": json.dumps(params | {"logreg_c": LOGREG_C}, ensure_ascii=False),
-            "video_recall": metrics["video_recall"],
-            "fp_rate": metrics["fp_rate"],
-            "median_abs_dt": metrics["median_abs_dt"],
-        }
-    )
+    row = {
+        "ts": datetime.now().isoformat(timespec="seconds"),
+        "note": note,
+        "params": json.dumps(params | {"logreg_c": LOGREG_C}, ensure_ascii=False),
+        "video_recall": metrics["video_recall"],
+        "fp_rate": metrics["fp_rate"],
+        "median_abs_dt": metrics["median_abs_dt"],
+    }
+    kept = []
+    if EXPERIMENTS.exists():
+        with open(EXPERIMENTS, newline="") as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames == EXPERIMENT_COLUMNS:
+                kept = None  # header is current: plain append below
+            else:
+                kept = list(reader)
+    if kept is None:
+        with open(EXPERIMENTS, "a", newline="") as f:
+            csv.DictWriter(f, EXPERIMENT_COLUMNS).writerow(row)
+        return
     with open(EXPERIMENTS, "w", newline="") as f:
         w = csv.DictWriter(f, EXPERIMENT_COLUMNS)
         w.writeheader()
-        w.writerows(rows)
+        w.writerows([*kept, row])
 
 
 def load_model() -> dict:
