@@ -7,7 +7,7 @@ IDs follow the brief's sections (TZ-4.x = section 4, TZ-F.x = FAQ). Quote the br
 | # | Criterion | Pts | What moves it |
 |---|---|---|---|
 | 1 | Detection: violation yes/no per whole video | 25 | window classifier + threshold tuned for recall (FAQ 16) |
-| 2 | Localization: timecode + relevant evidence frame | 15 | peak-score frame, not window start |
+| 2 | Localization: timecode + relevant evidence frame | 15 | onset of the above-threshold run for lasting states, peak for short actions; chosen by median \|Δt\| on LOVO |
 | 3 | Classification: event type | 15 | our own type taxonomy from the 40 videos |
 | 4 | Rule grounding: exact source, no invented links | 15 | verified НБРК/adilet table, quotes checked by a human |
 | 5 | Robustness: unseen videos, other camera angle | 10 | angle-free features, augmentation, own recordings |
@@ -51,8 +51,8 @@ IDs follow the brief's sections (TZ-4.x = section 4, TZ-F.x = FAQ). Quote the br
 | TZ-F.4 | Публичный URL обязателен (FAQ 23) | rule | P1 | T10 | tunnel URL | 🟥 |
 | TZ-F.5 | Тестовые видео не для обучения, не публиковать, не хранить (раздел 10, FAQ 6) | rule | P1 | T01 | uploads deleted after job | 🟥 |
 | TZ-F.6 | Ложных срабатываний минимум, пропуск недопустим (FAQ 16) | model | P2 | T06 | threshold note in `reports/metrics.json` | 🟥 |
-| TZ-F.7 | Конкретный кадр и таймкод (FAQ 17) | model | P2 | T06 | `timecode_sec` = peak frame | 🟥 |
-| TZ-F.8 | Финальное видео снято под другим углом (FAQ 4) | model | P3 | T13 | angle-aug eval | 🟥 |
+| TZ-F.7 | Конкретный кадр и таймкод (FAQ 17) | model | P2 | T06 | `timecode_sec` = onset (states) or peak (actions), first evidence frame at the same second | 🟥 |
+| TZ-F.8 | Финальное видео снято под другим углом (FAQ 4) | model | P3 | T03 | leave-one-angle-out metrics next to LOVO | 🟥 |
 | TZ-F.9 | В тесте возможны типы, которых нет в обучении (FAQ 9) | model | P2 | T06 | fallback type | 🟥 |
 | TZ-F.10 | Дедлайн 12:00 (FAQ 33) | rule | P4 | — | submit by 11:00 | 🟥 |
 | TZ-P.1 | Питч только для шортлиста: 5 мин + 2 мин вопросы, презентация по желанию (FAQ 19) | pitch | P4 | T14 | — | 🟥 |

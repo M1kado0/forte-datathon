@@ -17,10 +17,10 @@
 The reviewer (внутренний контроль) decides which video fragment to watch and whether to open a case.
 Our output tells them where to look and which rule applies. It is a hint, never a verdict (TZ-7.2).
 
-## Approach (lock at 14:00 after T04)
-1. **Decode.** OpenCV, 4 fps, short side 384 px. A 145-s clip gives ~580 frames.
-2. **Branch A: "something is wrong here, at second X".** Frame embeddings (DINOv2-small or SigLIP-base, Apache-2.0) → 2-s windows → logistic regression / LightGBM. A window is positive if it contains the labeled timecode ± 1.5 s. Video verdict = max window score ≥ threshold. Timecode = peak frame.
-3. **Branch B: "what exactly happened".** Person detector (RT-DETR or D-FINE, Apache-2.0) + pose (RTMPose via rtmlib or MediaPipe, Apache-2.0) + COCO objects (phone, bag) → zone and hand features. Rules give the type; kNN on labeled windows is the fallback; "Иное подозрительное действие" when both are unsure (TZ-F.9).
+## Approach (locked by the grill 17 Oct; decisions in `GLOSSARY.md`, `docs/adr/0001`–`0003`)
+1. **Decode.** OpenCV, 4 fps, native 464×848, no downscale. A 145-s clip gives ~580 frames.
+2. **Branch A: "something is wrong here, at second X".** Frame embeddings (DINOv2-small, center crop off, padded to square; SigLIP-base as backup) → 2-s windows, 0.5-s step → logistic regression. In a violation video a window is positive if it overlaps [N−1, N+4] s around label N, negative if it ends before N−3 s, and unlabeled after N+4 s (lasting states). Videos without a violation give negatives over their full length. Timecode = onset of the above-threshold run for lasting states, peak for short actions (T06 measures both). At most 2 violations per video, ≥ 5 s apart.
+3. **Branch B: "what exactly happened".** D-FINE-S people and COCO objects (phone, bag, cup) + ByteTrack tracks + cash detection (OWLv2 zero-shot → desk-zone change → D-FINE fine-tune) → zone features. No pose: RTMPose and default rtmlib weights are trained on non-commercial data (`docs/research/models.md` §8). Heuristics give the type; kNN on labeled windows is the fallback; "Иное подозрительное действие" when both are unsure (TZ-F.9). A heuristic firing ≥ N s in a row can also raise the verdict (ADR 0003).
 4. **Explain.** Template description per type from `src/rules/rules.yaml`: what the features saw + document + пункт. No free text generation (TZ-5.6, criterion 4).
 5. **Threshold.** Pick it on leave-one-video-out CV so recall = 1.0 at the lowest FP rate (FAQ 16).
 
@@ -28,12 +28,12 @@ Our output tells them where to look and which rule applies. It is a hint, never 
 - ASSUMPTION: the labels give one timecode per violation; we check in T04 whether some videos have several.
 - RISK: Ultralytics YOLO is AGPL-3.0. Do not use it. Check every LICENSE before `uv add` (TZ-F.3).
 - RISK: a local VLM (Qwen2.5-VL-7B, Apache-2.0) needs ~6.9 GB in 4-bit (AWQ); it likely fits on the 16 GB RTX 5080 next to the detector, to be measured. Qwen2.5-VL-3B has a non-commercial license, so it is out. Stretch only, and only on the RTX machine.
-- RISK: the test angle differs (FAQ 4). Branch A on embeddings is angle-sensitive. T13 measures it with perspective-warp augmentation and our own phone recordings (FAQ 7 allows).
+- RISK: the test angle differs (FAQ 4). The training set already has 7 camera angles. T03 reports leave-one-angle-out next to LOVO; T13 (warps, own recordings) stays stretch.
 
 ## Grill agenda (path lock 13:30, 25 min hard stop)
 1. Serving machine. **Decided in ADR 0001: Ubuntu + RTX 5080 16 GB, torch on `cu132`.** Original agenda: P1 has a Mac (M1, 8 GB); one teammate has an RTX 5070 on Windows. Default: the RTX machine serves via `cloudflared` and runs embedding extraction; the Mac is the CPU fallback. It is a laptop; we plan for 8 GB VRAM (worst case), so no VLM in the base plan. The RTX owner should take P2 (ML) if not already.
    - RISK: RTX 50xx (Blackwell) needs PyTorch ≥ 2.7. The `cu128` index stops at torch 2.11; torch 2.14.x ships on `cu132`, which the serving driver 595.99.02 supports. Plain `uv add torch` may not pick the CUDA build. T02 pins torch to the `cu132` index for Linux (`docs/research/models.md`, section 3).
-   - RISK: the serving laptop must not sleep: power plan "never sleep" on charger, lid-close action "do nothing", Windows Update paused until 19 Oct.
+   - RISK: the serving box must not sleep or update from 11:00 until results: disable suspend and unattended-upgrades; API and tunnel run under systemd.
 2. Laptop + tunnel or our own VM? Brief: models must run inside our service, public URL required, teams use own resources. ASSUMPTION: a self-rented VM running our own models is allowed. Default: laptop + tunnel; ask organizers before paying for a VM (QUESTIONS #8).
 3. Windows dev setup: `make` is not native. Default: P2–P4 use Git Bash or WSL; every Makefile target also has a plain `uv run ...` line in README.
 4. Git repo: this folder is not a git repo yet. Who creates the remote, and when?
@@ -73,9 +73,9 @@ Our output tells them where to look and which rule applies. It is a hint, never 
 | T05 | Normative research: type → document, пункт, quote, URL | 4.7, 6.1, 6.2, 7.1, 8.4 | P4 (P3 verifies links) | `src/rules/rules.yaml`, `docs/RULES.md` | `uv run pytest tests/test_rules.py` (every type has doc, пункт, URL, quote) | mvp0 |
 | T06 | Types, multi-event split, threshold policy, fallback type | 4.4, F.6, F.7, F.9 | P2 | `src/models/` | `uv run python -m src.models.train` shows recall, FP, type acc | mvp1 |
 | T07 | UI: upload → status → result list with frames, rule, disclaimer | 4.1–4.7, 7.2 | P1 (+P4 QA) | `web/` | `make app`, upload a clip, Playwright screenshots 1440/390 | mvp1 |
-| T08 | Person/pose/object features + 1–3 evidence frames | 4.5, 10.4, F.1 | P3 | `src/features/` | `uv run pytest tests/test_features.py` (frame count 1–3, valid JPEG) | mvp1 |
+| T08 | Person/object/cash features + 1–3 evidence frames | 4.5, 10.4, F.1 | P3 | `src/features/` | `uv run pytest tests/test_features.py` (frame count 1–3, valid JPEG) | mvp1 |
 | T09 | Template descriptions linked to rules | 4.6, 5.6, 6.2 | P4 content, P2 code | `src/rules/` | `uv run pytest tests/test_rules.py` (no template claims invisible data) | mvp1 |
-| T10 | Public URL + jury simulation (5 parallel jobs) | 8.1, 10.5, F.4 | P1 | `scripts/` | `uv run python scripts/jury_sim.py --url $PUBLIC_URL` → p95 < 120 s, 0 schema errors | mvp0 |
+| T10 | Public URL + jury simulation (5 parallel jobs) | 8.1, 10.5, F.4 | P1 | `scripts/` | `uv run python scripts/jury_sim.py --url $PUBLIC_URL` → p95 < 240 s for 5 parallel jobs, ≤ 45 s per 145-s clip, 0 schema errors | mvp0 |
 | T11 | README: run, use, architecture, models | 8.2, 8.3 | P4 | `README.md` | a teammate follows it on a clean clone | mvp1 |
 | T12 | Error analysis + limitations | 8.6 | P2 | `README.md`, `reports/` | FP/FN table with clip names | mvp1 |
 | T13 | Robustness: angle augmentation + own recordings | F.8 | P3 | `src/features/`, `data/external/` | eval script prints metrics on warped clips | stretch |
