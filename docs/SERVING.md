@@ -14,6 +14,18 @@ make jury-sim PUBLIC_URL=https://<random>.trycloudflare.com
 every answer validated with `contracts.schemas.JobResponse`) and 8 parallel ~145 s videos (built locally
 from our clips with ffmpeg, all within 300 s). Exit code 1 on any failure. `--stress 0` skips the stress phase.
 
+### If cloudflared cannot connect
+On the 2026-10-17 office network `cloudflared` (2026.10.1, installed without sudo as `~/.local/bin/cloudflared`)
+never came up: QUIC timed out and the TLS handshake to the edge on port 7844 was reset (`--protocol http2`
+did not help; Cloudflare answers 1033/530). Use the fallback, which goes out over 443:
+```bash
+make app            # or: API_KEY=... uv run uvicorn api.main:app --port 8000
+make tunnel-ngrok   # needs an ngrok authtoken; public URL on http://localhost:4040
+make jury-sim PUBLIC_URL=https://<name>.ngrok-free.dev
+```
+Measured on the stub through ngrok: 5 parallel jobs p95 9.5 s, 8 parallel 145 s videos 37.0 s, 0 schema errors.
+The stub never decodes video, so these only show transfer overhead; rerun with the real analyzer.
+
 Quick tunnels have no SSE and no uptime guarantee: the job API polls, so this is fine.
 
 ## Stage 2: by 21:00 (not yet applied)
