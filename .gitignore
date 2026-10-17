@@ -14,12 +14,3 @@ reports/screens/
 *.ipynb_checkpoints
 .DS_Store
 .claude/settings.local.json
-AGENTS.md
-CLAUDE.md
-experiments.csv
-skills-lock.json
-.agents/
-.claude/
-.codex/
-docs/
-.mcp.json
