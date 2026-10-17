@@ -15,6 +15,13 @@ class Thresholds:
     min_hold_sec: float = 3.0  # type 2: cash must stay this long after the next person arrives
     min_count_sec: float = 3.0  # type 4: shorter handling of cash is not counting
     min_payout_sec: float = 5.0  # type 7: cash and a client together for less than this is not a payout
+    # type 3: a person other than the cashier, farther than seat_radius but no farther than this from the seat,
+    # is behind the desk, in the cash room; clients stand beyond it. The seat itself is the cashier's.
+    room_radius: float = 1.25
+    min_outsider_sec: float = 3.0  # type 3: shorter presence behind the desk is passing through, not a stay
+    min_object_sec: float = 3.0  # types 5 and 6: an object on the desk for less than this is a passing hand
+    phone_conf: float = 0.5  # type 5: below this a "cell phone" box is dropped, never called a phone
+    min_left_sec: float = 3.0  # type 8: cash that stays on the desk this long after the client left
     # a detector miss up to this long does not end an episode (a missed violation is the worst error)
     gap_sec: float = 1.0
     # how find_roles ranks candidate seats: "track" puts the spot where one track stays longest first, so

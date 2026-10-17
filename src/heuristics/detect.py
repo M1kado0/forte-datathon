@@ -18,6 +18,12 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   cashier is away for much of the clip, or when the tracker splits the cashier into short ids (stable ids
   are #32's job).
 - A detector miss on the cashier longer than Thresholds.gap_sec reads as "left".
+- Type 3 is "a non-cashier behind the desk, closer than Thresholds.room_radius". An incassator or a client who
+  leans over the desk reads as an outsider. room_radius is a guess until it is tuned on X-18 and X-30 (#34).
+- Types 5 and 6 see an object within desk_radius of the seat, so a client's cup at the counter counts. Type 6
+  is a book on the desk: the safe is not detected, so "outside the safe" is the same thing.
+- Type 8 fires on cash left on the desk after the client went, with the cashier at the seat and nobody next
+  at the counter. A cashier who forgets cash on the desk reads as that too (X-26, which has no heuristic).
 - Type 7 does not see the identification itself, only whether a document shows up at the counter while
   cash is there. A document held below the counter, out of frame or shown as a digital document on a
   phone fires it too, and so does a document prompt missing from #32. It needs the closest look on LOVO.
@@ -38,6 +44,16 @@ WORKPLACE_LEFT = "workplace_left"  # type 1, ids match src/rules/rules.yaml
 CASH_ON_DESK_NEXT_CLIENT = "cash_on_desk_next_client"  # type 2
 COUNT_WITHOUT_CONTROLLER = "count_without_controller"  # type 4
 ID_NOT_PRESENTED = "id_not_presented"  # type 7
+OUTSIDER_IN_CASH_ROOM = "outsider_in_cash_room"  # type 3
+FOREIGN_OBJECT_AT_DESK = "foreign_object_at_desk"  # type 5
+VALUABLES_LEFT_ON_DESK = "valuables_left_on_desk"  # type 6
+CLIENT_LEFT_DURING_COUNT = "client_left_during_count"  # type 8
+
+# COCO classes looked for on the desk, and the Russian name a description gets for {object}.
+# The name of the object only: whose it is and what it is worth is not visible (src/rules/rules.yaml).
+OBJECT_NAMES = {"cup": "чашка", "cell phone": "телефон", "bottle": "бутылка", "book": "книга"}
+FOREIGN_OBJECTS = ("cup", "cell phone", "bottle")
+VALUABLES_OBJECTS = ("book",)
 
 
 @dataclass(frozen=True)
@@ -45,6 +61,7 @@ class Hit:
     type_id: str
     start_sec: float
     end_sec: float
+    label: str | None = None  # COCO class of the object, for the types about an object on the desk
 
 
 @dataclass(frozen=True)
@@ -58,6 +75,8 @@ class _Timeline:
     cash: np.ndarray  # cash lies on the cashier's desk
     document: np.ndarray  # an identity document or paper is visible at the counter
     visits: list[tuple[int, int]]  # (first, last) frame of each person at the counter, by arrival
+    outsider: np.ndarray  # a person other than the cashier is behind the desk, not at the seat
+    objects: dict[str, np.ndarray]  # per COCO class: an object of it lies on the cashier's desk
 
     def runs(self, mask: np.ndarray, min_sec: float) -> list[tuple[int, int]]:
         """Inclusive (first, last) frame indices of each run of True lasting at least min_sec."""
@@ -67,8 +86,34 @@ class _Timeline:
         )
         return [(a, b) for a, b in found if (b - a + 1) / self.fps >= min_sec]
 
-    def hit(self, type_id: str, run: tuple[int, int]) -> Hit:
-        return Hit(type_id, run[0] / self.fps, run[1] / self.fps)
+    def hit(self, type_id: str, run: tuple[int, int], label: str | None = None) -> Hit:
+        return Hit(type_id, run[0] / self.fps, run[1] / self.fps, label)
+
+    def objects_on_desk(self, type_id: str, labels: tuple[str, ...], min_sec: float) -> list[Hit]:
+        """Each run of at least min_sec with an object of the class on the desk, one hit per class."""
+        return [
+            self.hit(type_id, run, label)
+            for label in labels
+            if label in self.objects
+            for run in self.runs(self.objects[label], min_sec)
+        ]
+
+    def client_left_during_count(self, min_sec: float) -> list[Hit]:
+        """Cash lies on the desk with the cashier at the seat, the person at the counter leaves, and the cash
+        stays at least min_sec with nobody at the counter (п. 20, часть первая). If the next person steps up
+        before the cash is gone, it is a client change and type 2's business.
+        """
+        alone = self.cash & self.at_seat & ~self.at_counter
+        served = self.cash & self.at_seat & self.at_counter
+        hits = []
+        for _, last in self.visits:
+            if not served[last]:
+                continue
+            for first, end in self.runs(alone, min_sec):
+                next_stepped_up = end + 1 < len(alone) and self.at_counter[end + 1]
+                if first == last + 1 and not next_stepped_up:
+                    hits.append(self.hit(CLIENT_LEFT_DURING_COUNT, (first, end)))
+        return hits
 
     def cash_left_for_next_client(self, hold_sec: float) -> list[Hit]:
         """The previous person left, the next one arrived, and the cash never left the desk (п. 20).
@@ -120,6 +165,10 @@ def detect(tracks: pd.DataFrame, fps: float = DEFAULT_FPS, thresholds: Threshold
         *tl.cash_left_for_next_client(thresholds.min_hold_sec),
         *(tl.hit(COUNT_WITHOUT_CONTROLLER, run) for run in tl.runs(counting, thresholds.min_count_sec)),
         *tl.id_not_presented(thresholds.min_payout_sec),
+        *(tl.hit(OUTSIDER_IN_CASH_ROOM, run) for run in tl.runs(tl.outsider, thresholds.min_outsider_sec)),
+        *tl.objects_on_desk(FOREIGN_OBJECT_AT_DESK, FOREIGN_OBJECTS, thresholds.min_object_sec),
+        *tl.objects_on_desk(VALUABLES_LEFT_ON_DESK, VALUABLES_OBJECTS, thresholds.min_object_sec),
+        *tl.client_left_during_count(thresholds.min_left_sec),
     ]
 
 
@@ -139,6 +188,10 @@ def _timeline(tracks: pd.DataFrame, roles: Roles, fps: float, th: Thresholds) ->
     at_counter = others[others["from_seat"] <= th.counter_radius]
     money = d[d["kind"] == "cash"]
     papers = d[d["kind"] == "document"]
+    # The seat is the cashier's. A non-cashier behind the desk, closer than clients stand, is an outsider.
+    behind = people[~is_cashier & ~near & (people["from_seat"] <= th.room_radius)]
+    things = d[(d["kind"] == "object") & d["label"].isin(OBJECT_NAMES) & (d["from_seat"] <= th.desk_radius)]
+    things = things[(things["label"] != "cell phone") | (things["conf"] >= th.phone_conf)]
     span = at_counter.groupby("track_id")["frame"].agg(["min", "max"]).sort_values("min")
     gap = ceil(th.gap_sec * fps)
     return _Timeline(
@@ -151,6 +204,11 @@ def _timeline(tracks: pd.DataFrame, roles: Roles, fps: float, th: Thresholds) ->
             _frames_to_mask(n, papers["frame"][papers["from_seat"] <= th.counter_radius]), gap
         ),
         visits=list(zip(span["min"].tolist(), span["max"].tolist(), strict=True)),
+        outsider=_close_gaps(_frames_to_mask(n, behind["frame"]), gap),
+        objects={
+            label: _close_gaps(_frames_to_mask(n, rows["frame"]), gap)
+            for label, rows in things.groupby("label")
+        },
     )
 
 

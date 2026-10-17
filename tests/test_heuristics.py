@@ -9,10 +9,18 @@ from src.config import RULES_YAML
 from src.heuristics import TRACKS_SCHEMA, Thresholds, detect, find_roles
 from src.heuristics.detect import (
     CASH_ON_DESK_NEXT_CLIENT,
+    CLIENT_LEFT_DURING_COUNT,
     COUNT_WITHOUT_CONTROLLER,
+    FOREIGN_OBJECT_AT_DESK,
     ID_NOT_PRESENTED,
+    OBJECT_NAMES,
+    OUTSIDER_IN_CASH_ROOM,
+    VALUABLES_LEFT_ON_DESK,
     WORKPLACE_LEFT,
+    Hit,
 )
+from src.heuristics.voice import voice
+from src.rules.describe import describe_violation
 
 FPS = 4
 SEAT = (200.0, 400.0)  # where the cashier sits in the 464x848 frame
@@ -20,10 +28,11 @@ COUNTER = (200.0, 700.0)  # where a client stands, one body height or more away 
 DESK = (200.0, 450.0)  # where cash lies, next to the seat
 
 
-def part(track_id, kind, t0, t1, cx, cy, *, h=200.0, wobble=0.0, drop_every=0):
+def part(track_id, kind, t0, t1, cx, cy, *, h=200.0, wobble=0.0, drop_every=0, label=None, conf=0.9):
     """Rows of one track between t0 and t1 seconds; `wobble` moves the box +-wobble px each frame,
-    `drop_every=8` leaves out every 8th frame (a detector miss)."""
-    label = kind  # in these scenes every kind carries its own name as the label
+    `drop_every=8` leaves out every 8th frame (a detector miss). The label is the kind unless given
+    (a COCO class for kind "object")."""
+    label = label or kind
     rows = []
     for i in range(round(t0 * FPS), round(t1 * FPS)):
         if drop_every and i % drop_every == drop_every - 1:
@@ -39,7 +48,7 @@ def part(track_id, kind, t0, t1, cx, cy, *, h=200.0, wobble=0.0, drop_every=0):
                 "y1": cy - h / 2,
                 "x2": cx + dx + h / 4,
                 "y2": cy + h / 2,
-                "conf": 0.9,
+                "conf": conf,
             }
         )
     return rows
@@ -247,6 +256,10 @@ def test_every_type_the_heuristics_can_report_exists_in_rules_yaml():
         CASH_ON_DESK_NEXT_CLIENT,
         COUNT_WITHOUT_CONTROLLER,
         ID_NOT_PRESENTED,
+        OUTSIDER_IN_CASH_ROOM,
+        FOREIGN_OBJECT_AT_DESK,
+        VALUABLES_LEFT_ON_DESK,
+        CLIENT_LEFT_DURING_COUNT,
     } <= known
 
 
@@ -529,3 +542,194 @@ def test_a_cashier_split_into_several_ids_keeps_the_seat_while_a_client_waits(
     assert roles.cashier != 2
     assert hits_of("workplace_left", df, thresholds=th) == []
     assert hits_of("cash_on_desk_next_client", df, thresholds=th) == []
+
+
+# --- part 2 (#33): types 3, 5, 6, 8 and the heuristics' vote -------------------------------------------
+
+BEHIND = (200.0, 580.0)  # 0.9 cashier heights from the seat: behind the desk, where no client stands
+
+
+def outsider(*, who=BEHIND, t=(5, 15)):
+    return tracks(part(1, "person", 0, 30, *SEAT, wobble=3), part(2, "person", *t, *who))
+
+
+def test_type3_a_person_other_than_the_cashier_stays_behind_the_desk():
+    hits = hits_of(OUTSIDER_IN_CASH_ROOM, outsider())
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(5.0, 14.75)]
+
+
+def test_type3_silent_for_a_single_frame_behind_the_desk():
+    assert hits_of(OUTSIDER_IN_CASH_ROOM, outsider(t=(5, 5.25))) == []
+
+
+def test_type3_silent_for_a_client_at_the_counter():
+    assert hits_of(OUTSIDER_IN_CASH_ROOM, outsider(who=COUNTER)) == []
+
+
+def test_type3_silent_for_the_cashier_alone_at_the_seat():
+    assert hits_of(OUTSIDER_IN_CASH_ROOM, tracks(part(1, "person", 0, 30, *SEAT, wobble=3))) == []
+
+
+def test_type3_silent_for_the_cashier_returning_under_a_new_track_id():
+    df = tracks(
+        part(1, "person", 0, 10, *SEAT, wobble=3),
+        part(2, "person", 12, 30, *SEAT, wobble=3),  # at the seat: the seat is the cashier's
+    )
+
+    assert hits_of(OUTSIDER_IN_CASH_ROOM, df) == []
+
+
+def on_desk(label, *, t=(5, 15), at=DESK, conf=0.9):
+    return tracks(
+        part(1, "person", 0, 30, *SEAT, wobble=3),
+        part(10, "object", *t, *at, h=40, label=label, conf=conf),
+    )
+
+
+@pytest.mark.parametrize("label", ["cup", "cell phone", "bottle"])
+def test_type5_cup_phone_or_bottle_on_the_desk(label):
+    hits = hits_of(FOREIGN_OBJECT_AT_DESK, on_desk(label))
+
+    assert [(h.start_sec, h.end_sec, h.label) for h in hits] == [(5.0, 14.75, label)]
+    assert hits_of(VALUABLES_LEFT_ON_DESK, on_desk(label)) == []
+
+
+@pytest.mark.parametrize("label", ["cup", "cell phone", "bottle"])
+def test_type5_silent_for_a_single_frame(label):
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, on_desk(label, t=(5, 5.25))) == []
+
+
+def test_type5_a_phone_is_named_only_when_the_detector_is_sure():
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, on_desk("cell phone", conf=0.3)) == []
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, on_desk("cell phone", conf=0.6)) != []
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, on_desk("cup", conf=0.3)) != []  # only the phone needs the doubt
+
+
+def test_type5_silent_for_an_object_far_from_the_desk():
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, on_desk("cup", at=(200.0, 1500.0))) == []
+
+
+def test_type5_silent_for_a_class_that_is_not_in_the_list():
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, on_desk("laptop")) == []
+
+
+def test_type6_a_book_on_the_desk():
+    hits = hits_of(VALUABLES_LEFT_ON_DESK, on_desk("book"))
+
+    assert [(h.start_sec, h.end_sec, h.label) for h in hits] == [(5.0, 14.75, "book")]
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, on_desk("book")) == []
+
+
+def test_type6_silent_for_a_single_frame():
+    assert hits_of(VALUABLES_LEFT_ON_DESK, on_desk("book", t=(5, 5.25))) == []
+
+
+def client_leaves(*, client=(3, 12), cash=(2, 20), cashier=(0, 30), next_client=None):
+    """Cashier at the seat, a client at the counter, cash on the desk as given (None = absent)."""
+    parts = [part(1, "person", *cashier, *SEAT, wobble=3), part(2, "person", *client, *COUNTER)]
+    if cash:
+        parts.append(part(10, "cash", *cash, *DESK, h=20))
+    if next_client:
+        parts.append(part(3, "person", *next_client, *COUNTER))
+    return tracks(*parts)
+
+
+def test_type8_the_client_leaves_and_the_cash_stays_on_the_desk():
+    hits = hits_of(CLIENT_LEFT_DURING_COUNT, client_leaves())
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(12.0, 19.75)]
+
+
+def test_type8_silent_when_the_cash_is_gone_after_a_single_frame():
+    assert hits_of(CLIENT_LEFT_DURING_COUNT, client_leaves(cash=(2, 12.25))) == []
+
+
+def test_type8_silent_when_the_cash_is_put_away_before_the_client_leaves():
+    assert hits_of(CLIENT_LEFT_DURING_COUNT, client_leaves(cash=(2, 10))) == []
+
+
+def test_type8_silent_when_there_was_no_cash_while_the_client_was_there():
+    assert hits_of(CLIENT_LEFT_DURING_COUNT, client_leaves(cash=(13, 20))) == []
+
+
+def test_type8_silent_when_the_next_client_steps_up_that_is_type2s_business():
+    df = client_leaves(next_client=(15, 25))
+
+    assert hits_of(CLIENT_LEFT_DURING_COUNT, df) == []
+
+
+def test_type8_silent_when_the_cashier_is_away_after_the_client_leaves():
+    assert hits_of(CLIENT_LEFT_DURING_COUNT, client_leaves(cashier=(0, 11))) == []
+
+
+def test_type8_silent_when_the_client_is_still_at_the_counter_at_the_end():
+    assert hits_of(CLIENT_LEFT_DURING_COUNT, client_leaves(client=(3, 30))) == []
+
+
+@pytest.mark.parametrize(
+    ("type_id", "scene", "stricter"),
+    [
+        (OUTSIDER_IN_CASH_ROOM, outsider, Thresholds(min_outsider_sec=11.0)),
+        (OUTSIDER_IN_CASH_ROOM, outsider, Thresholds(room_radius=0.8)),
+        (FOREIGN_OBJECT_AT_DESK, lambda: on_desk("cup"), Thresholds(min_object_sec=11.0)),
+        (FOREIGN_OBJECT_AT_DESK, lambda: on_desk("cell phone", conf=0.6), Thresholds(phone_conf=0.7)),
+        (VALUABLES_LEFT_ON_DESK, lambda: on_desk("book"), Thresholds(min_object_sec=11.0)),
+        (CLIENT_LEFT_DURING_COUNT, client_leaves, Thresholds(min_left_sec=9.0)),
+    ],
+    ids=[
+        "min_outsider_sec",
+        "room_radius",
+        "min_object_sec",
+        "phone_conf",
+        "min_object_sec_book",
+        "min_left_sec",
+    ],
+)
+def test_every_threshold_of_part_2_can_be_passed_in(type_id, scene, stricter):
+    df = scene()
+
+    assert hits_of(type_id, df) != []
+    assert hits_of(type_id, df, thresholds=stricter) == []
+
+
+def test_the_vote_says_violation_for_a_series_of_n_seconds_and_is_silent_for_a_shorter_one():
+    series = [Hit("outsider_in_cash_room", 10.0, 19.75)]  # 40 frames at 4 fps = 10 s
+
+    assert voice(series, 10.0) is True
+    assert voice(series, 10.25) is False
+    assert voice([Hit("outsider_in_cash_room", 5.0, 5.0)], 1.0) is False  # one frame
+    assert voice([], 1.0) is False
+
+
+def test_the_vote_takes_the_longest_hit_not_the_sum():
+    two_short = [Hit("foreign_object_at_desk", 0.0, 2.75), Hit("foreign_object_at_desk", 5.0, 7.75)]
+
+    assert voice(two_short, 4.0) is False
+    assert voice(two_short, 3.0) is True
+
+
+def test_the_vote_follows_detect_end_to_end():
+    assert voice(detect(outsider()), 10.0) is True
+    assert voice(detect(outsider()), 10.25) is False
+    assert voice(detect(outsider(t=(5, 5.25))), 1.0) is False
+
+
+@pytest.mark.parametrize(
+    "type_id",
+    [OUTSIDER_IN_CASH_ROOM, FOREIGN_OBJECT_AT_DESK, VALUABLES_LEFT_ON_DESK, CLIENT_LEFT_DURING_COUNT],
+)
+def test_descriptions_of_part_2_never_claim_hiding_a_phone_camera_or_valuables(type_id):
+    # the template only: the cited act's title ends up in the full description and says "ценностей"
+    template = next(
+        t["description"]
+        for t in yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))["types"]
+        if t["id"] == type_id
+    )
+    texts = [template.format(object=name).lower() for name in OBJECT_NAMES.values()]
+
+    for name in OBJECT_NAMES.values():
+        assert name in describe_violation(type_id, {"object": name}).description or "{object}" not in template
+    for text in texts:
+        for banned in ("сокрыт", "скрыт", "камер", "ценност"):
+            assert banned not in text
