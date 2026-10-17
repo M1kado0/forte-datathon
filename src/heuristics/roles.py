@@ -23,11 +23,11 @@ class Roles:
 
 
 def find_roles(tracks: pd.DataFrame, thresholds: Thresholds = DEFAULT) -> Roles | None:
-    """The seat is the place where one track stays longest, whoever it is; the stillest place wins a tie.
+    """The seat is the place where one track has the most frames near it, whoever it is; the stillest place wins a tie.
 
     Ranking by a single track, not by everyone at the spot, keeps clients who arrive one after another at
     the counter from adding up to a seat. The cost: a cashier who returns under a new id loses the seat to a
-    client who stays longer than either fragment, so stable ids are #32's job. The cashier is the track most
+    client with more frames there than either fragment, so stable ids are #32's job. The cashier is the track most
     present at the seat. None when no person is tracked.
     """
     people = with_geometry(tracks[tracks["kind"] == "person"])

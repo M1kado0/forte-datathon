@@ -12,6 +12,7 @@ class Thresholds:
     min_away_sec: float = 3.0  # type 1: shorter absences are a step to the shelf, not leaving the workplace
     min_hold_sec: float = 3.0  # type 2: cash must stay this long after the next person arrives
     min_count_sec: float = 3.0  # type 4: shorter handling of cash is not counting
+    min_payout_sec: float = 5.0  # type 7: cash and a client together for less than this is not a payout
     # a detector miss up to this long does not end an episode (a missed violation is the worst error)
     gap_sec: float = 1.0
 
