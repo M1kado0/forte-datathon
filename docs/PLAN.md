@@ -28,7 +28,7 @@ Our output tells them where to look and which rule applies. It is a hint, never 
 - ASSUMPTION: the labels give one timecode per violation; we check in T04 whether some videos have several.
 - RISK: Ultralytics YOLO is AGPL-3.0. Do not use it. Check every LICENSE before `uv add` (TZ-F.3).
 - RISK: a local VLM (Qwen2.5-VL-7B, Apache-2.0) needs ~6.9 GB in 4-bit (AWQ); it likely fits on the 16 GB RTX 5080 next to the detector, to be measured. Qwen2.5-VL-3B has a non-commercial license, so it is out. Stretch only, and only on the RTX machine.
-- RISK: the test angle differs (FAQ 4). The training set already has 7 camera angles. T03 reports leave-one-angle-out next to LOVO; T13 (warps, own recordings) stays stretch.
+- RISK: the test angle differs (FAQ 4). The training set has one camera and two arrangements (furniture and cashier seating). T03 reports leave-one-arrangement-out next to LOVO; T13 (warps, own recordings) stays stretch.
 
 ## Grill agenda (path lock 13:30, 25 min hard stop)
 1. Serving machine. **Decided in ADR 0001: Ubuntu + RTX 5080 16 GB, torch on `cu132`.** Original agenda: P1 has a Mac (M1, 8 GB); one teammate has an RTX 5070 on Windows. Default: the RTX machine serves via `cloudflared` and runs embedding extraction; the Mac is the CPU fallback. It is a laptop; we plan for 8 GB VRAM (worst case), so no VLM in the base plan. The RTX owner is P2 (Алдияр С.); P3 (Ескендир) sets up serving and the tunnel on that machine.
@@ -58,7 +58,7 @@ Our output tells them where to look and which rule applies. It is a hint, never 
 |---|---|---|---|---|
 | 12:45–14:00 | T01 | 10 clips of T04 | T02 | T04 lead (labels), QUESTIONS.md |
 | 14:00–17:00 | T01 | T03 | T02 → T10 (quick tunnel) | T05 |
-| 17:00–21:00 | T07 | cash check → T08 detections → T06 | T15, Tailscale Funnel + systemd by 21:00 | T04 angle column + duplicates, T09 |
+| 17:00–21:00 | T07 | cash check → T08 detections → T06 | T15, Tailscale Funnel + systemd by 21:00 | T04 arrangement column + duplicates, T09 |
 | 21:00–00:00 | T07 polish, fixes | T06 tuning | T15 vote, T10 rerun | T11, INSIGHTS |
 | 00:00–06:00 | sleep, then hardening | T12, then sleep | sleep, then T13 / VLM stretch | RULES check, then sleep |
 | 06:00–11:00 | submit, UI fixes | T12 numbers into README, machine stays on | keep the public URL up | T14 |
