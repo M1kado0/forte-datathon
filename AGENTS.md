@@ -32,6 +32,7 @@ The jury scores our **API automatically** on hidden videos (85/100 pts); only th
 | `scripts/`, `pyproject.toml` deps, `docs/MODELS.md` | P3 | torch index, `make weights`, tunnel, systemd, jury simulation, license table |
 | `src/data/` (rest), `data/labels.csv`, `docs/DATA_CARD.md` | P4 | labels, angle column, merged duplicates, label checks |
 | `src/rules/`, `docs/RULES.md`, `docs/TYPES.md` | P4 | type → НБРК document, пункт, quote, URL, description template and its filling |
+| `data/external/adilet/` | P4 | page text of each act cited in `rules.yaml`, saved from adilet; `src.rules.verify_quotes` checks quotes against it |
 | `reports/figures/`, `docs/INSIGHTS.md` | P4 | takeaway-titled figures, one row per hypothesis with verdict |
 | `docs/acceptance.md`, `docs/PITCH.md`, `deck/`, `README.md` | P4 | brief checklist, script, slides, README |
 
