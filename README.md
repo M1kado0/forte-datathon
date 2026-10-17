@@ -12,48 +12,58 @@
 
 ## Запуск
 
-Нужны Python 3.11+ (его скачает сам [uv](https://docs.astral.sh/uv/)), uv, Node.js 20+ и npm. `make` нужен только для коротких команд: на Windows без WSL используйте строки `uv run` и `npm` рядом с ними.
-Подробнее про установку инструментов по системам: [`docs/SETUP.md`](docs/SETUP.md).
+Нужны [uv](https://docs.astral.sh/uv/), Node.js 20+ с npm и git. Python ставить не нужно: uv сам скачает версию из `.python-version` (сейчас 3.12, проект требует 3.11+). `make` нужен только для коротких команд: на Windows без WSL используйте строки `uv run` и `npm` рядом с ними.
+
+| Система | uv | Node.js 20+ | make |
+|---|---|---|---|
+| Ubuntu | `curl -LsSf https://astral.sh/uv/install.sh \| sh` | NodeSource или nvm (версия из `apt` часто ниже 20), проверка `node --version` | `sudo apt install make` |
+| Mac | `brew install uv` или тот же скрипт | `brew install node` | уже есть |
+| Windows | `powershell -c "irm https://astral.sh/uv/install.ps1 \| iex"` | `winget install OpenJS.NodeJS.LTS` | не нужен, берите строки без `make`; или WSL |
+
+Остальные инструменты команды (gh, ngrok, драйвер NVIDIA): [`docs/SETUP.md`](docs/SETUP.md).
+
+`uv sync` на Linux и Windows ставит сборку torch под CUDA 13.2 (`cu132`), это несколько гигабайт, даже на ноутбуке без GPU. На Mac ставится обычная сборка.
 
 ```bash
-git clone https://github.com/M1kado0/forte-datathon.git && cd forte-datathon   # или git@github.com:M1kado0/forte-datathon.git
+git clone https://github.com/M1kado0/forte-datathon.git   # или git@github.com:M1kado0/forte-datathon.git
+cd forte-datathon
 cp .env.example .env     # затем впишите длинный случайный API_KEY в .env
 make setup               # зависимости Python и web/
 make test                # быстрые детерминированные тесты
 make app                 # собирает web и запускает сервис на http://localhost:8000
 ```
 
-Без `make` (Windows PowerShell, Git Bash, Mac, Ubuntu одинаково) берите строки из столбца «Без `make`» таблицы ниже, в том же порядке: зависимости, тесты, сборка web, запуск.
+Без `make` (PowerShell, Git Bash, Mac, Ubuntu одинаково) берите строки из столбца «Без `make`» таблицы ниже, в том же порядке: зависимости, тесты, сборка web, запуск. Команды в таблице без `&&` и `cd`, поэтому работают и в Windows PowerShell 5.1.
 
 В PowerShell вместо `cp` используйте `Copy-Item .env.example .env`.
 
-`make app` не требует ни данных, ни весов: сервис стартует и отвечает по контракту. Веса и данные нужны для анализа реальных видео и для `make all`.
+`make app` не требует ни данных, ни весов: сервис стартует и отвечает по контракту. Веса и данные нужны для анализа реальных видео и для `make all`. Пока воркер на заглушке, сервис отдаёт один запасной тип (см. «Что уже подключено к API»).
 
 | Что | `make` | Без `make` |
 |---|---|---|
-| Зависимости | `make setup` | `uv sync` и `cd web && npm ci` (`make setup` ещё ставит `nbstripout`: `uv run nbstripout --install`) |
+| Зависимости | `make setup` | `uv sync`, затем `npm ci --prefix web` (`make setup` ещё ставит `nbstripout`: `uv run nbstripout --install`) |
 | Тесты | `make test` | `uv run pytest` |
-| Только сборка web | `make web` | `cd web && npm run build` |
-| Сервис и UI на одном порту | `make app` | `cd web && npm run build`, затем `uv run uvicorn api.main:app --host 0.0.0.0 --port 8000` |
-| Разработка с перезагрузкой | `make dev` | в одном окне `uv run uvicorn api.main:app --reload --port 8000`, в другом `cd web && npm run dev` (UI на :5173, `/api` проксируется на :8000) |
-| Форматирование и линтер | `make lint` | `uv run ruff check . --fix && uv run ruff format .` |
+| Только сборка web | `make web` | `npm run build --prefix web` |
+| Сервис и UI на одном порту | `make app` | `npm run build --prefix web`, затем `uv run uvicorn api.main:app --host 0.0.0.0 --port 8000` |
+| Разработка с перезагрузкой | `make dev` | в одном окне `uv run uvicorn api.main:app --reload --port 8000`, в другом `npm run dev --prefix web` (UI на :5173, `/api` проксируется на :8000) |
+| Форматирование и линтер | `make lint` | `uv run ruff check . --fix`, затем `uv run ruff format .` |
 | Заглушка пайплайна (старый учебный стенд) | `make demo` | `uv run python -m src.pipeline --stub`, затем запуск сервиса |
 | Веса моделей, один раз | `make weights` | `uv run python -m scripts.weights` |
 | Проверка весов без интернета | `make weights-check` | `HF_HUB_OFFLINE=1 uv run python -m scripts.weights --check` (PowerShell: сначала `$env:HF_HUB_OFFLINE=1`) |
-| Пересобрать все числа | `make all` | `uv run python -m src.rules.types_doc`, затем `uv run python -m src.pipeline` |
+| Пересобрать метрики, типы и модель окон (нужны видео в `data/raw/videos/`) | `make all` | `uv run python -m src.rules.types_doc`, затем `uv run python -m src.pipeline` |
 | Публичный адрес через ngrok | `make tunnel` | `ngrok http 8000` |
 | Запасной туннель | `make tunnel-cloudflared` | `cloudflared tunnel --no-autoupdate --url http://localhost:8000` |
-| Скриншоты UI | `make screenshots` | `cd web && npm run screenshots` |
+| Скриншоты UI | `make screenshots` | `npm run screenshots --prefix web` |
 | Удалить сборку и метрики | `make clean` | удалить `web/dist`, `models/*.pkl`, `reports/metrics.json` |
 | Симуляция жюри | `make jury-sim PUBLIC_URL=https://...` | `uv run python -m scripts.jury_sim --url https://...` |
 
-Порт меняется так: `make app PORT=9000` или `--port 9000`.
+Порт меняется так: `make app PORT=9000` или `--port 9000`. Для `make dev` порт 8000 фиксирован: прокси Vite смотрит на него (`web/vite.config.ts`).
 
 ### Веса и данные
 
 Модели скачиваются один раз (`make weights`) в `models/weights`, после этого сервис работает с `HF_HUB_OFFLINE=1`, без сети.
-Датасет организаторов в git не лежит: положите `open_labels.xlsx` в `data/raw/` и видео `.mov` в `data/raw/videos/`.
-`make all` читает их и пересобирает разметку, типы, метрики и модель окон.
+Датасет организаторов в git не лежит: положите `open_labels.xlsx` в `data/raw/` и видео `.mov` в `data/raw/videos/`. У части файлов в имени кириллическая «Х» (`Х-10.mov`), поэтому имена лучше подставлять автодополнением.
+Разметка `data/labels.csv` лежит в git. `make all` берёт её и видео: пересобирает справочник типов, метрики и модель окон. Разметку из xlsx пересобирает отдельная команда `uv run python -m src.data.labels` (её нет в `make all`), проверку разметки делает `uv run python -m src.data.check_labels`.
 
 ### Постоянный адрес для жюри
 
@@ -79,7 +89,7 @@ curl localhost:8000/api/health
 # Отправить видео: сразу вернётся job_id
 curl -X POST localhost:8000/api/v1/analyze \
   -H "X-API-Key: $API_KEY" \
-  -F "file=@data/raw/videos/X-14.mov"
+  -F "file=@data/raw/videos/X-1.mov"
 # {"job_id":"3f2a..."}
 
 # Спросить результат (повторять, пока status = processing)
@@ -121,7 +131,7 @@ curl -s localhost:8000/api/v1/jobs/3f2a... -H "X-API-Key: $API_KEY" \
 
 ```powershell
 $env:API_KEY = "..."   # значение из .env
-curl.exe -X POST localhost:8000/api/v1/analyze -H "X-API-Key: $env:API_KEY" -F "file=@data/raw/videos/X-14.mov"
+curl.exe -X POST localhost:8000/api/v1/analyze -H "X-API-Key: $env:API_KEY" -F "file=@data/raw/videos/X-1.mov"
 curl.exe localhost:8000/api/v1/jobs/3f2a... -H "X-API-Key: $env:API_KEY"
 ```
 
@@ -149,14 +159,14 @@ flowchart LR
 |---|---|---|
 | Очередь | Одна очередь в памяти, один фоновый воркер, анализатор подставляется. Исключение даёт `failed`, загруженный файл удаляется при любом исходе | [`api/jobs.py`](api/jobs.py), [`api/main.py`](api/main.py) |
 | Ветка A | Эмбеддинги кадров DINOv2 → короткие окна внахлёст → логистическая регрессия. Говорит, что в окне что-то не так, и даёт таймкод. Порог выбран по recall 1.0, потом минимум ложных срабатываний ([ADR 0002](docs/adr/0002-threshold-recall-first.md)) | [`src/features/embeddings.py`](src/features/embeddings.py), [`src/models/windows.py`](src/models/windows.py), [`src/models/train.py`](src/models/train.py), [`src/models/analyze.py`](src/models/analyze.py) |
-| Ветка B | Детекции людей и предметов (D-FINE-S), треки, деньги (OWLv2 по тексту) → признаки по зонам. Без позы: готовые веса позы обучены на некоммерческих данных | [`src/features/`](src/features/), [ADR 0003](docs/adr/0003-violation-taxonomy.md) (набор типов заменён [ADR 0005](docs/adr/0005-scenario-taxonomy.md)), источник про позу: [`docs/research/models.md`](docs/research/models.md), раздел 8 |
+| Ветка B | Детекции людей и предметов (D-FINE-S), треки, деньги (OWLv2 по тексту) → признаки по зонам. В работе: пока в коде только проверка денег на кадрах ([`src/features/cash_check.py`](src/features/cash_check.py)), см. статус ниже. Без позы: готовые веса позы обучены на некоммерческих данных | [ADR 0003](docs/adr/0003-violation-taxonomy.md) (набор типов заменён [ADR 0005](docs/adr/0005-scenario-taxonomy.md)), источник про позу: [`docs/research/models.md`](docs/research/models.md), раздел 8 |
 | Эвристики | Проверяют наблюдаемые факты (кто у кассы, где деньги, какие предметы, есть ли клиент), выбирают тип нарушения и могут поднять вердикт. Это наши проверки, к нормативу они отношения не имеют | [`src/heuristics/`](src/heuristics/) |
 | Справочник | Тип нарушения → документ, пункт, цитата, ссылка на adilet и шаблон описания. Описание собирается из шаблона и наблюдённых фактов, юридические выводы не генерируются | [`src/rules/rules.yaml`](src/rules/rules.yaml), [`docs/RULES.md`](docs/RULES.md), [`docs/TYPES.md`](docs/TYPES.md) |
 | Кадры-доказательства | От одного до трёх JPEG вокруг таймкода, в base64 | [`src/data/evidence.py`](src/data/evidence.py) |
 | API и UI | FastAPI отдаёт `/api/v1`, `/api/ui` и собранный `web/dist` на одном порту; UI на React, Tailwind и токенах Forte | [`api/`](api/), [`web/`](web/) |
 
 Если ни один тип не подходит, нарушение получает тип «Иное подозрительное действие» без точного пункта ([ADR 0005](docs/adr/0005-scenario-taxonomy.md)).
-Классификатор типов не обучаем: на тип приходится слишком мало примеров, поэтому тип выбирают эвристики.
+Классификатор типов не обучаем: на тип приходится слишком мало примеров, поэтому тип выбирают эвристики. По плану ([`docs/PLAN.md`](docs/PLAN.md)) запасной вариант, когда эвристики не уверены, это kNN по размеченным окнам; в коде его пока нет.
 
 ### Что уже подключено к API
 
@@ -169,7 +179,7 @@ flowchart LR
 | Ветка B: детекции и треки | в работе | [#32](https://github.com/M1kado0/forte-datathon/issues/32) |
 | Эвристики и их голос за вердикт | первые эвристики готовы ([#24](https://github.com/M1kado0/forte-datathon/issues/24)), остальные в работе | [#33](https://github.com/M1kado0/forte-datathon/issues/33), [#34](https://github.com/M1kado0/forte-datathon/issues/34) |
 
-После слияния этих тикетов `/api/health` отдаёт `model_loaded: true`, а типы нарушений приходят от эвристик. Сейчас `model_loaded` равен `false`.
+План: после слияния этих тикетов `/api/health` начнёт отдавать `model_loaded: true`, а типы нарушений будут приходить от эвристик. Сейчас `model_loaded` равен `false`.
 
 ## Числа
 
@@ -180,7 +190,7 @@ flowchart LR
 - [`docs/TYPES.md`](docs/TYPES.md) — типы нарушений и число меток, собирается из `data/labels.csv`;
 - [`docs/DATA_CARD.md`](docs/DATA_CARD.md) — описание данных и расстановок.
 
-Проверка сейчас идёт по схеме «одно видео за раз» (leave-one-video-out), порог выбирается по ней ([ADR 0002](docs/adr/0002-threshold-recall-first.md)). Соседние видео набора похожи друг на друга (одна и та же обстановка), поэтому такая оценка ненадёжна. Проверка на невиданной расстановке и по группам сцен — [#38](https://github.com/M1kado0/forte-datathon/issues/38), её результаты появятся в `reports/metrics.json`.
+Проверка сейчас идёт по схеме «одно видео за раз» (leave-one-video-out), порог выбирается по ней ([ADR 0002](docs/adr/0002-threshold-recall-first.md)). Соседние видео набора похожи друг на друга (одна и та же обстановка), поэтому такая оценка ненадёжна. Проверка на невиданной расстановке и по группам похожих видео — [#38](https://github.com/M1kado0/forte-datathon/issues/38), её результаты появятся в `reports/metrics.json`.
 
 ## Модели и лицензии
 
@@ -193,22 +203,8 @@ flowchart LR
 | OWLv2 (`google/owlv2-base-patch16-ensemble`) | поиск денег по тексту, ветка B | Apache-2.0 |
 | SigLIP-base (`google/siglip-base-patch16-224`) | запасные эмбеддинги, поиск по тексту; в сервисе пока не используется | Apache-2.0 |
 
-Исключения из правила лицензий: CUDA-колёса `nvidia-*` в составе torch, FFmpeg (LGPLv2.1) внутри колёс opencv, pillow (HPND), часть кода torch под BSL-1.0. Причины и условия в `docs/MODELS.md`. Туннели (ngrok, Tailscale, cloudflared) в сервис не входят, это инструменты на машине сервинга; их лицензии в том же файле.
+Исключения из правила лицензий (CUDA-колёса, FFmpeg в opencv и другие), версии библиотек и лицензии туннелей: [`docs/MODELS.md`](docs/MODELS.md). Туннели в сервис не входят.
 
 ## Ограничения
 
-Полный разбор ошибок с названиями клипов будет в [#38](https://github.com/M1kado0/forte-datathon/issues/38) и [#42](https://github.com/M1kado0/forte-datathon/issues/42). Уже известно:
-
-- Порог выбран по recall 1.0, поэтому ложные срабатывания на видео без нарушений есть: это осознанная цена, потому что пропуск нарушения недопустим для банка ([ADR 0002](docs/adr/0002-threshold-recall-first.md)). Сейчас модель окон отличает видео без нарушений слабо: при таком пороге доля ложных срабатываний высока (`fp_rate` в `reports/metrics.json`). Снижать её должны эвристики и порог после #38.
-- Обучающие видео сняты одной камерой в ограниченном числе расстановок ([`docs/DATA_CARD.md`](docs/DATA_CARD.md)), видео жюри может быть снято иначе. Мы проверяем и расстановку, но порог по ней не выбираем.
-- Типы нарушений мы определили сами по разметке организаторов (в ней типов нет), а у части типов мало примеров (число меток в [`docs/TYPES.md`](docs/TYPES.md)). Для типа без подходящего пункта ссылка ведёт на акт целиком.
-- Сервис видит только то, что видно в кадре: звука нет, лица не распознаются.
-
-## Команда
-
-| Роль | Кто |
-|---|---|
-| Fullstack: API, очередь, UI | Тамерлан |
-| ML и CV: эмбеддинги, детекции, порог, `analyze(path)`, машина сервинга | Алдияр С. |
-| Инфраструктура и эвристики: зависимости, веса, декодирование, туннель | Ескендир |
-| Данные, нормы, документация: разметка, типы, пункты НБРК, README | Алдияр М. |
+Полный разбор ошибок с названиями видео будет в [#38](https://github.com/M1kado0/forte-datathon/issues/38) и [#42](https://github.com/M1kado0/forte-datathon/issues/42). Сейчас известно главное: порог выбран по recall 1.0, поэтому ложные срабатывания на видео без нарушений есть ([ADR 0002](docs/adr/0002-threshold-recall-first.md)), а модель окон их различает слабо. Долю ложных срабатываний смотрите в `reports/metrics.json` (`fp_rate`).
