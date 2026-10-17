@@ -18,6 +18,9 @@ ADILET_TEXTS = DATA_EXTERNAL / "adilet"  # page text of each act cited in rules.
 LABELS_XLSX = DATA_RAW / "open_labels.xlsx"  # organizers' sheet (T04)
 VIDEOS_DIR = DATA_RAW / "videos"
 LABELS_CSV = ROOT / "data" / "labels.csv"  # cleaned labels, contract in contracts/data.py
+TYPES_CSV = (
+    ROOT / "data" / "violation_types.csv"
+)  # team-set type per violation label, kept apart so a rebuild keeps it (#26)
 
 SEED = 42
 VERSION = "0.1.0-stub"

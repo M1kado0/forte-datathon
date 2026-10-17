@@ -7,7 +7,7 @@ import pytest
 from contracts.data import LabelsSchema, StubSchema
 from src.config import FEATURES, ID_COL, TARGET
 from src.data.check_labels import check_labels, main
-from src.data.labels import build_labels, load_labels, normalize_name, parse_timecode
+from src.data.labels import build_labels, load_labels, normalize_name, parse_timecode, read_types
 from src.data.stub import make_stub
 from src.features.build import to_model_frame
 from src.models.explain import fmt_kzt
@@ -157,7 +157,7 @@ def test_labels_contract_rejects_bad_rows(row, column, value):
 
 def typed_labels():
     types = [
-        "cash partially given to client",
+        "cash_partially_given",
         None,
         "cash_on_desk_next_client",
         "cash_on_desk_next_client",
@@ -175,7 +175,8 @@ def test_labels_contract_accepts_violation_type():
         (0, None),  # violation without a type
         (1, "cash_on_desk_next_client"),  # no_violation with a type
         (0, " "),  # blank type
-        (0, " cash on desk"),  # leading space
+        (0, "worker left the key on a safe"),  # free text, not an id from rules.yaml
+        (0, "cash_on_desk_next_client "),  # id with trailing space
     ],
 )
 def test_labels_contract_rejects_bad_violation_type(row, value):
@@ -183,6 +184,54 @@ def test_labels_contract_rejects_bad_violation_type(row, value):
     df.loc[row, "violation_type"] = value
     with pytest.raises(pandera.errors.SchemaError):
         LabelsSchema.validate(df)
+
+
+def tiny_types():
+    return pd.DataFrame(
+        {
+            "video_id": ["X-1", "X-4", "X-4"],
+            "second": [22, 57, 68],
+            "violation_type": [
+                "cash_partially_given",
+                "cash_on_desk_next_client",
+                "cash_on_desk_next_client",
+            ],
+        }
+    )
+
+
+def test_build_labels_adds_types_and_keeps_row_order():
+    out = build_labels(tiny_xlsx_rows(), tiny_types())
+    assert out["video_id"].tolist() == ["X-1", "X-3", "X-4", "X-4", "X-5"]
+    assert out["violation_type"].fillna("-").tolist() == [
+        "cash_partially_given",
+        "-",
+        "cash_on_desk_next_client",
+        "cash_on_desk_next_client",
+        "-",
+    ]
+
+
+def test_build_labels_rejects_violation_without_type():
+    with pytest.raises(ValueError, match=r"without a type.*X-4.*68"):
+        build_labels(tiny_xlsx_rows(), tiny_types().iloc[:2])
+
+
+def test_build_labels_rejects_type_for_no_label():
+    orphan = pd.concat([tiny_types(), tiny_types().iloc[[0]].assign(second=23)], ignore_index=True)
+    with pytest.raises(ValueError, match=r"match no violation label.*X-1.*23"):
+        build_labels(tiny_xlsx_rows(), orphan)
+
+
+def test_build_labels_rejects_two_types_for_one_label():
+    twice = pd.concat([tiny_types(), tiny_types().iloc[[0]]], ignore_index=True)
+    with pytest.raises(ValueError, match="two types"):
+        build_labels(tiny_xlsx_rows(), twice)
+
+
+def test_build_labels_rejects_unknown_type_id():
+    with pytest.raises(pandera.errors.SchemaError):
+        build_labels(tiny_xlsx_rows(), tiny_types().assign(violation_type="left the door open"))
 
 
 @pytest.fixture
@@ -234,3 +283,14 @@ def test_committed_labels_csv_matches_the_issue():
     assert labels["video_id"].nunique() - violations["video_id"].nunique() == 19
     assert labels.loc[labels["video_id"] == "X-4", "second"].tolist() == [57, 68]
     assert not labels["video_id"].isin(["X-47", "X-48"]).any()  # merged into X-4 and X-5
+
+
+def test_committed_types_file_is_what_labels_csv_holds():
+    """Rebuilding labels.csv must not lose or change a type: the types file is the source, the csv a copy."""
+    labels = load_labels()
+    violations = labels[labels["verdict"] == "violation"]
+    types = read_types()
+    assert len(types) == len(violations) == 22
+    assert set(zip(types["video_id"], types["second"], types["violation_type"], strict=True)) == set(
+        zip(violations["video_id"], violations["second"], violations["violation_type"], strict=True)
+    )

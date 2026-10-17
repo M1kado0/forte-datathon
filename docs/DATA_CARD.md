@@ -6,7 +6,7 @@ Labels for the ForteBank cashier videos. Source: `data/raw/open_labels.xlsx` (or
 | Item | Value |
 |---|---|
 | Files | `open_labels.xlsx` (42 rows × 3 columns: file name, timestamp text, verdict text), 42 `.mov` clips |
-| Cleaned output | `data/labels.csv`: 41 rows, 40 unique videos |
+| Cleaned output | `data/labels.csv`: 41 rows, 40 unique videos. `violation_type` comes from `data/violation_types.csv` |
 | Grain (one row = ?) | One label. A video with two violations has two rows (different `second`) |
 | Target | `verdict` = `violation` / `no_violation`; for violations also `second` (whole second of the event) |
 | Counts | 40 videos: 21 with violations (22 labels), 19 without. Printed by `uv run python -m src.data.check_labels` |
@@ -38,6 +38,14 @@ never appear in `labels.csv`. If a merged pair ever disagreed on the verdict, `b
 ## Regenerate and check
 
 ```bash
-uv run python -m src.data.labels        # open_labels.xlsx -> data/labels.csv
+uv run python -m src.data.labels        # open_labels.xlsx + violation_types.csv -> data/labels.csv
 uv run python -m src.data.check_labels  # counts; fails on a contract breach or a missing clip
 ```
+
+## Violation types (`data/violation_types.csv`)
+
+The organizers' sheet has no types, so the team sets one per violation label after watching the video (ADR 0005).
+One row per label, keyed by `(video_id, second)`, value is a type `id` from `src/rules/rules.yaml`. The file is
+separate from `labels.csv` so a rebuild from the xlsx keeps it. The rebuild raises if a violation has no type, if a
+type row matches no violation label, or if one label has two types. The labels contract rejects any value that is
+not an `id` in `rules.yaml`.
