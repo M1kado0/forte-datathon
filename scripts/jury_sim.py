@@ -146,7 +146,10 @@ async def main(args: argparse.Namespace) -> int:
     async with httpx.AsyncClient(
         base_url=args.url.rstrip("/"), headers={"X-API-Key": key}, timeout=httpx.Timeout(120.0)
     ) as client:
-        failures += await check_access(client, args.url.rstrip("/"))
+        try:
+            failures += await check_access(client, args.url.rstrip("/"))
+        except httpx.HTTPError as error:
+            raise SystemExit(f"Сервис недоступен по {args.url}: {type(error).__name__}: {error}") from None
 
         print(f"Жюри: {args.parallel} параллельных задач × {args.rounds}")
         jury: list[Outcome] = []
