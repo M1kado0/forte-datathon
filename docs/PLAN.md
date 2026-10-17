@@ -27,12 +27,12 @@ Our output tells them where to look and which rule applies. It is a hint, never 
 - Validation: grouped by video (leave-one-video-out). Metrics: video recall, FP rate, median |Δt| s, type accuracy vs our labels.
 - ASSUMPTION: the labels give one timecode per violation; we check in T04 whether some videos have several.
 - RISK: Ultralytics YOLO is AGPL-3.0. Do not use it. Check every LICENSE before `uv add` (TZ-F.3).
-- RISK: a local VLM (Qwen2.5-VL-7B, Apache-2.0) needs ~6 GB in 4-bit, tight on an 8 GB RTX 5070 next to the detector. Qwen2.5-VL-3B has a non-commercial license, so it is out. Stretch only, and only on the RTX machine.
+- RISK: a local VLM (Qwen2.5-VL-7B, Apache-2.0) needs ~6.9 GB in 4-bit (AWQ); it likely fits on the 16 GB RTX 5080 next to the detector, to be measured. Qwen2.5-VL-3B has a non-commercial license, so it is out. Stretch only, and only on the RTX machine.
 - RISK: the test angle differs (FAQ 4). Branch A on embeddings is angle-sensitive. T13 measures it with perspective-warp augmentation and our own phone recordings (FAQ 7 allows).
 
 ## Grill agenda (path lock 13:30, 25 min hard stop)
-1. Serving machine. P1 has a Mac (M1, 8 GB); one teammate has an RTX 5070 on Windows. Default: the RTX machine serves via `cloudflared` and runs embedding extraction; the Mac is the CPU fallback. It is a laptop; we plan for 8 GB VRAM (worst case), so no VLM in the base plan. The RTX owner should take P2 (ML) if not already.
-   - RISK: RTX 50xx (Blackwell) needs PyTorch ≥ 2.7 built for CUDA 12.8 (`cu128`). Plain `uv add torch` on Windows installs CPU-only. T02 pins torch to the cu128 index for Windows/Linux.
+1. Serving machine. **Decided in ADR 0001: Ubuntu + RTX 5080 16 GB, torch on `cu132`.** Original agenda: P1 has a Mac (M1, 8 GB); one teammate has an RTX 5070 on Windows. Default: the RTX machine serves via `cloudflared` and runs embedding extraction; the Mac is the CPU fallback. It is a laptop; we plan for 8 GB VRAM (worst case), so no VLM in the base plan. The RTX owner should take P2 (ML) if not already.
+   - RISK: RTX 50xx (Blackwell) needs PyTorch ≥ 2.7. The `cu128` index stops at torch 2.11; torch 2.14.x ships on `cu132`, which the serving driver 595.99.02 supports. Plain `uv add torch` may not pick the CUDA build. T02 pins torch to the `cu132` index for Linux (`docs/research/models.md`, section 3).
    - RISK: the serving laptop must not sleep: power plan "never sleep" on charger, lid-close action "do nothing", Windows Update paused until 19 Oct.
 2. Laptop + tunnel or our own VM? Brief: models must run inside our service, public URL required, teams use own resources. ASSUMPTION: a self-rented VM running our own models is allowed. Default: laptop + tunnel; ask organizers before paying for a VM (QUESTIONS #8).
 3. Windows dev setup: `make` is not native. Default: P2–P4 use Git Bash or WSL; every Makefile target also has a plain `uv run ...` line in README.
@@ -67,7 +67,7 @@ Our output tells them where to look and which rule applies. It is a hint, never 
 | # | Title | TZ | Owner | Folders | Acceptance command | Label |
 |---|---|---|---|---|---|---|
 | T01 | Walking skeleton: API v1 + key + job queue + stub analyzer | 4.8, 10.1–10.3, 5.1, F.5 | P1 | `contracts/`, `api/`, `tests/` | `uv run pytest tests/test_api.py` + curl below | mvp0 |
-| T02 | Video deps (torch cu128 on Windows), `make weights`, offline run, license table | 7.3, 7.4, F.3 | P2 | `pyproject.toml`, `scripts/`, `docs/MODELS.md` | `HF_HUB_OFFLINE=1 uv run python -m src.data.video data/raw/<clip>.mov` prints fps processed | mvp0 |
+| T02 | Video deps (torch cu132 on Linux), `make weights`, offline run, license table | 7.3, 7.4, F.3 | P2 | `pyproject.toml`, `scripts/`, `docs/MODELS.md` | `HF_HUB_OFFLINE=1 uv run python -m src.data.video data/raw/<clip>.mov` prints fps processed | mvp0 |
 | T03 | Baseline: embeddings → window classifier → LOVO CV → `analyze(path)` | 4.4, 5.2, 5.4 | P2 | `src/features/`, `src/models/`, `experiments.csv` | `uv run python -m src.models.train` writes `reports/metrics.json` | mvp0 |
 | T04 | Data card + labels + type taxonomy | 8.5 | P3 (+all watch) | `src/data/`, `data/labels.csv`, `docs/DATA_CARD.md`, `docs/TYPES.md` | `uv run python -m src.data.check_labels` prints clips per type, fails on missing files | mvp0 |
 | T05 | Normative research: type → document, пункт, quote, URL | 4.7, 6.1, 6.2, 7.1, 8.4 | P4 (P3 verifies links) | `src/rules/rules.yaml`, `docs/RULES.md` | `uv run pytest tests/test_rules.py` (every type has doc, пункт, URL, quote) | mvp0 |
