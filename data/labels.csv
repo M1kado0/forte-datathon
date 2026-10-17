@@ -3,6 +3,7 @@ X-1,X-1.mov,violation,22,other[cash partially given to client]
 X-2,X-2.mov,violation,10,id_not_presented
 X-3,Х-3.mov,no_violation,,
 X-4,Х-4.mov,violation,57,cash_on_desk_next_client
+X-4,Х-4.mov,violation,68,cash_on_desk_next_client
 X-5,Х-5.mov,no_violation,,
 X-8,Х-8.mov,no_violation,,
 X-10,Х-10.mov,no_violation,,
@@ -25,7 +26,7 @@ X-26,Х-26.mov,violation,9,other[cash left on a table instead of being inside a 
 X-27,Х-27.mov,no_violation,,
 X-28,Х-28.mov,violation,7,other[worker left the laptop open]
 X-29,Х-29.mov,no_violation,,
-X-30,Х-30.mov,violation,13,other[third party joined the room]
+X-30,Х-30.mov,violation,13,outsider_in_cash_room
 X-31,Х-31.mov,no_violation,,
 X-32,Х-32.mov,violation,5,other[left the door open]
 X-33,Х-33.mov,violation,6,other[left the door open]
@@ -39,4 +40,3 @@ X-43,Х-43.mov,no_violation,,
 X-44,Х-44.mov,violation,16,other[worker didn't use counterfeit detector]
 X-45,Х-45.mov,no_violation,,
 X-46,Х-46.mov,violation,11,foreign_object_at_desk
-X-47,Х-47.mov,violation,68,cash_on_desk_next_client
