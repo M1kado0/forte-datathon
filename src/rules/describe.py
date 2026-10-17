@@ -29,12 +29,12 @@ def _format_citation(rule: dict) -> str:
     return ", ".join(parts)
 
 
-class Violation(NamedTuple):
+class TypeDescription(NamedTuple):
     name: str
     description: str
 
 
-def describe_violation(type_id: str, facts: dict[str, str]) -> Violation:
+def describe_violation(type_id: str, facts: dict[str, str]) -> TypeDescription:
     if type_id not in _TYPES:
         log.warning("unknown violation type %r, using fallback", type_id)
     t = _TYPES.get(type_id, _FALLBACK)
@@ -43,4 +43,4 @@ def describe_violation(type_id: str, facts: dict[str, str]) -> Violation:
         text = _one_line(t["description"]).format(**facts)
     except (KeyError, IndexError, AttributeError) as missing:
         raise ValueError(f"description of {t['id']} needs fact {missing}") from None
-    return Violation(t["name"], f"{text} {'; '.join(citations)}")
+    return TypeDescription(t["name"], f"{text} {'; '.join(citations)}")

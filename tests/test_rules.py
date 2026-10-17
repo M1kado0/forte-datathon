@@ -101,9 +101,12 @@ def test_every_type_renders_name_and_cites_each_document_and_punkt(t):
     assert name == t["name"]
     assert not UNSUPPORTED.search(description)
     for rule in t["rules"]:
-        title = " ".join(DOCS[rule["doc"]]["title"].split())
-        assert title in description
-        assert rule.get("punkt", "") in description
+        doc = DOCS[rule["doc"]]
+        citation = ", ".join(
+            [" ".join(doc["title"].split()), "утв. " + " ".join(doc["approved_by"].split())]
+            + ([rule["punkt"]] if rule.get("punkt") else [])
+        )
+        assert citation in description
 
 
 def test_unknown_id_is_logged(caplog):
