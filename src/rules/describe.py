@@ -12,7 +12,9 @@ log = logging.getLogger(__name__)
 _RULES = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))
 _DOCS = _RULES["documents"]
 _TYPES = {t["id"]: t for t in _RULES["types"]}
-_FALLBACK = next(t for t in _RULES["types"] if t.get("fallback"))
+_FALLBACK = next((t for t in _RULES["types"] if t.get("fallback")), None)
+if _FALLBACK is None:
+    raise RuntimeError(f"{RULES_YAML.name} has no type with fallback: true")
 
 
 def _one_line(text: str) -> str:
@@ -39,6 +41,6 @@ def describe_violation(type_id: str, facts: dict[str, str]) -> Violation:
     citations = list(dict.fromkeys(_format_citation(r) for r in t["rules"]))
     try:
         text = _one_line(t["description"]).format(**facts)
-    except (KeyError, IndexError) as missing:
+    except (KeyError, IndexError, AttributeError) as missing:
         raise ValueError(f"description of {t['id']} needs fact {missing}") from None
     return Violation(t["name"], f"{text} {'; '.join(citations)}")
