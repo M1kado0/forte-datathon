@@ -9,11 +9,12 @@ const out = "../reports/screens";
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
-  for (const [name, width, height] of [["desktop", 1440, 900], ["mobile", 390, 844]]) {
+  for (const [name, width, height] of [["desktop", 1440, 900], ["laptop", 1280, 800], ["tablet", 768, 1024], ["mobile", 390, 844]]) {
     const page = await browser.newPage({ viewport: { width, height } });
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.goto(base);
+    await page.locator(".eye-loader").waitFor({ state: "detached" });
     await page.getByText("Выберите видео, чтобы начать проверку.").waitFor();
     await page.screenshot({ path: `${out}/${name}-empty.png`, fullPage: true });
     await page.locator('input[type="file"]').setInputFiles(process.env.TEST_VIDEO ?? { name: "synthetic.mov", mimeType: "video/quicktime", buffer: Buffer.from("synthetic fixture") });
