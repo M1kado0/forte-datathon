@@ -11,6 +11,8 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   the cashier, so type 4 can fire with "no second worker in the frame". This is the price of tolerating a
   cashier who returns under a new track id.
 - If the tracker splits one person into two ids away from the seat, the second id reads as a new person.
+- A visit is the first to last frame of one id at the counter. A client who leaves and comes back under the
+  same id is one long visit, so the client served in between reads as a passer-by and type 2 is missed.
 - The seat is where one track stays longest. A client who stays at the counter longer than the cashier's
   longest track at the seat takes the seat, and a real type 1 is reported as type 4. That happens when the
   cashier is away for much of the clip, or when the tracker splits the cashier into short ids (stable ids
@@ -106,7 +108,7 @@ class _Timeline:
 
 
 def detect(tracks: pd.DataFrame, fps: float = DEFAULT_FPS, thresholds: Thresholds = DEFAULT) -> list[Hit]:
-    roles = find_roles(tracks, thresholds)
+    roles = find_roles(tracks, thresholds, fps)
     if roles is None:
         return []
     tl = _timeline(tracks, roles, fps, thresholds)

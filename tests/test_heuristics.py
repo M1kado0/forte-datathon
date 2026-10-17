@@ -491,6 +491,16 @@ def test_the_cashier_is_the_track_most_present_at_the_seat_not_the_lowest_id():
     assert find_roles(df).cashier == 7
 
 
+def test_missed_detections_of_the_cashier_do_not_hand_the_seat_to_a_client():
+    df = tracks(
+        part(1, "person", 0, 60, *SEAT, drop_every=4),  # 45 s of boxes over 60 s at the seat
+        part(2, "person", 5, 55, *COUNTER),  # 50 s of boxes
+    )
+
+    assert (find_roles(df).cashier, find_roles(df).seat) == (1, SEAT)
+    assert find_roles(df, Thresholds(gap_sec=0.0)).cashier == 2  # misses no longer closed
+
+
 @pytest.mark.parametrize(
     ("fragments", "client_until"),
     [
