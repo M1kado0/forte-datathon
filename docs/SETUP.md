@@ -17,7 +17,7 @@
 Скилл `playwright-cli` уже лежит в репо (`.agents/skills/playwright-cli`), ставить его не нужно.
 Playwright MCP не используем: в `.mcp.json` его нет.
 
-Python отдельно ставить не нужно: uv скачает его сам.
+Python отдельно ставить не нужно: uv сам скачает 3.12 из `.python-version`.
 
 ## 2. Только для своей роли
 

@@ -10,6 +10,7 @@ MODELS = ROOT / "models"
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 WEB_DIST = ROOT / "web" / "dist"
+EXPERIMENTS = ROOT / "experiments.csv"  # append-only run log; tests redirect it to a tmp file
 
 SEED = 42
 VERSION = "0.1.0-stub"

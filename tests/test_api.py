@@ -7,10 +7,13 @@ from contracts.schemas import PredictResponse
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(tmp_path_factory):
     from src.pipeline import main
 
-    main(stub=True)
+    # The pipeline appends a run to experiments.csv; keep test runs out of the real log.
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr("src.models.train.EXPERIMENTS", tmp_path_factory.mktemp("log") / "experiments.csv")
+        main(stub=True)
     from api.main import app
 
     with TestClient(app) as c:
