@@ -145,8 +145,36 @@ def test_type2_silent_when_there_is_no_next_client():
     assert hits_of("cash_on_desk_next_client", client_change(b=None)) == []
 
 
-def test_type2_silent_when_the_next_client_arrives_before_the_first_one_leaves():
-    assert hits_of("cash_on_desk_next_client", client_change(a=(3, 16))) == []
+def test_type2_counts_from_the_moment_the_previous_client_leaves_when_the_next_one_steps_up_early():
+    df = client_change(a=(0, 10), b=(9.5, 25), cash=(5, 30))  # B steps up half a second before A leaves
+
+    hits = hits_of("cash_on_desk_next_client", df)
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(10.0, 29.75)]
+
+
+def passer_by_during_a_visit(*, b=(18, 25)):
+    """Client A at the counter 3-16 s; someone steps up beside A 5-8 s and leaves first; the cash goes on the
+    desk at 9 s and stays until 22 s; client B as given (None = absent)."""
+    parts = [
+        part(1, "person", 0, 30, *SEAT, wobble=3),
+        part(2, "person", 3, 16, *COUNTER),
+        part(4, "person", 5, 8, 260.0, 700.0),
+        part(10, "cash", 9, 22, *DESK, h=20),
+    ]
+    if b:
+        parts.append(part(3, "person", *b, *COUNTER))
+    return tracks(*parts)
+
+
+def test_type2_a_passer_by_during_the_previous_visit_does_not_hide_the_client_change():
+    hits = hits_of("cash_on_desk_next_client", passer_by_during_a_visit())
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(18.0, 21.75)]
+
+
+def test_type2_silent_when_the_only_other_person_comes_and_goes_during_the_visit():
+    assert hits_of("cash_on_desk_next_client", passer_by_during_a_visit(b=None)) == []
 
 
 def test_type2_silent_when_the_cash_is_put_away_right_after_the_next_client_arrives():
@@ -262,7 +290,7 @@ def cashier_away_for_a_while():
     )
 
 
-def test_the_seat_is_where_people_are_present_longest_not_where_the_stillest_one_stands():
+def test_the_seat_is_where_one_track_stays_longest_not_where_the_stillest_one_stands():
     roles = find_roles(cashier_away_for_a_while())
 
     assert roles.cashier == 1
@@ -276,6 +304,38 @@ def test_type1_is_reported_when_the_cashier_is_away_for_40_percent_of_the_clip()
     assert [
         h for h in hits_of("count_without_controller", df) if h.end_sec >= 10.0 and h.start_sec < 22.0
     ] == []
+
+
+def clients_back_to_back(client_wobble):
+    """Cashier at the seat 0-25 s and 35-60 s; client A at the counter 0-30 s, client B at the same spot
+    30-60 s; cash on the desk 20-40 s. Together the clients stand longer than the cashier sits."""
+    return tracks(
+        part(1, "person", 0, 25, *SEAT, wobble=3),
+        part(1, "person", 35, 60, *SEAT, wobble=3),
+        part(2, "person", 0, 30, *COUNTER, wobble=client_wobble),
+        part(3, "person", 30, 60, *COUNTER, wobble=client_wobble),
+        part(10, "cash", 20, 40, *DESK, h=20),
+    )
+
+
+BACK_TO_BACK = pytest.mark.parametrize(
+    "client_wobble", [0.0, 10.0], ids=["still clients", "clients wobble more than the cashier"]
+)
+
+
+@BACK_TO_BACK
+def test_clients_who_come_one_after_another_do_not_make_the_counter_the_seat(client_wobble):
+    roles = find_roles(clients_back_to_back(client_wobble))
+
+    assert (roles.cashier, roles.seat) == (1, SEAT)
+
+
+@BACK_TO_BACK
+def test_type1_is_reported_when_clients_come_one_after_another(client_wobble):
+    df = clients_back_to_back(client_wobble)
+
+    assert [(h.start_sec, h.end_sec) for h in hits_of("workplace_left", df)] == [(25.0, 34.75)]
+    assert hits_of("count_without_controller", df) == []
 
 
 def test_one_missed_cash_detection_every_two_seconds_does_not_hide_a_type1_episode():
@@ -434,8 +494,9 @@ def test_the_cashier_is_the_track_most_present_at_the_seat_not_the_lowest_id():
 @pytest.mark.parametrize(
     ("fragments", "client_until"),
     [
-        ([(1, 0, 12), (5, 12, 30)], 20),  # the client waits longer than the cashier's longest fragment (18 s)
-        ([(1, 0, 10), (5, 10, 20), (6, 20, 30)], 15),  # three fragments of 10 s, the client waits 15 s
+        # The client waits less than the cashier's longest fragment; a longer wait takes the seat.
+        ([(1, 0, 12), (5, 12, 30)], 15),  # fragments of 12 s and 18 s, the client waits 15 s
+        ([(1, 0, 10), (5, 10, 20), (6, 20, 30)], 8),  # three fragments of 10 s, the client waits 8 s
     ],
     ids=["two ids", "three ids"],
 )

@@ -11,9 +11,10 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   the cashier, so type 4 can fire with "no second worker in the frame". This is the price of tolerating a
   cashier who returns under a new track id.
 - If the tracker splits one person into two ids away from the seat, the second id reads as a new person.
-- The seat is where person boxes pile up most, counting everyone at the spot. Clients who come one after
-  another at the counter add up: if their combined time matches or exceeds the cashier's at the seat, the
-  counter becomes the seat and a real type 1 is reported as type 4.
+- The seat is where one track stays longest. A client who stays at the counter longer than the cashier's
+  longest track at the seat takes the seat, and a real type 1 is reported as type 4. That happens when the
+  cashier is away for much of the clip, or when the tracker splits the cashier into short ids (stable ids
+  are #32's job).
 - A detector miss on the cashier longer than Thresholds.gap_sec reads as "left".
 - Type 7 does not see the identification itself, only whether a document shows up at the counter while
   cash is there. A document held below the counter, out of frame or shown as a digital document on a
@@ -21,12 +22,12 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
 """
 
 from dataclasses import dataclass
-from itertools import pairwise
 from math import ceil
 
 import numpy as np
 import pandas as pd
 
+from src.data.video import DEFAULT_FPS
 from src.heuristics.roles import Roles, find_roles
 from src.heuristics.thresholds import DEFAULT, Thresholds
 from src.heuristics.tracks import with_geometry
@@ -68,16 +69,24 @@ class _Timeline:
         return Hit(type_id, run[0] / self.fps, run[1] / self.fps)
 
     def cash_left_for_next_client(self, hold_sec: float) -> list[Hit]:
-        """The previous person left, the next one arrived, and the cash never left the desk (п. 20)."""
+        """The previous person left, the next one arrived, and the cash never left the desk (п. 20).
+
+        The previous person is the last to leave of those who came before the next one and left before them,
+        so someone who comes and goes during a visit is not taken for it. The next person often steps up
+        before the previous one leaves, so the client changes at the later of the two moments.
+        """
         hold = ceil(hold_sec * self.fps)
         cash_runs = self.runs(self.cash, 0)
         hits = []
-        for (_, previous_last), (next_first, _) in pairwise(self.visits):
-            if next_first <= previous_last:
+        for next_first, next_last in self.visits:
+            earlier_exits = [last for first, last in self.visits if first < next_first and last < next_last]
+            if not earlier_exits:
                 continue
+            previous_last = max(earlier_exits)
+            changed_at = max(next_first, previous_last + 1)
             for first, last in cash_runs:
-                if first <= previous_last and last >= next_first + hold - 1:
-                    hits.append(self.hit(CASH_ON_DESK_NEXT_CLIENT, (next_first, last)))
+                if first <= previous_last and last >= changed_at + hold - 1:
+                    hits.append(self.hit(CASH_ON_DESK_NEXT_CLIENT, (changed_at, last)))
         return hits
 
     def id_not_presented(self, min_sec: float) -> list[Hit]:
@@ -96,7 +105,7 @@ class _Timeline:
         return hits
 
 
-def detect(tracks: pd.DataFrame, fps: float = 4.0, thresholds: Thresholds = DEFAULT) -> list[Hit]:
+def detect(tracks: pd.DataFrame, fps: float = DEFAULT_FPS, thresholds: Thresholds = DEFAULT) -> list[Hit]:
     roles = find_roles(tracks, thresholds)
     if roles is None:
         return []

@@ -25,6 +25,11 @@ import pandera.pandas as pa
 
 KINDS = ("person", "object", "cash", "document")
 
+
+def _has_area(boxes: pd.DataFrame) -> pd.Series:
+    return (boxes["x2"] > boxes["x1"]) & (boxes["y2"] > boxes["y1"])
+
+
 TRACKS_SCHEMA = pa.DataFrameSchema(
     {
         "track_id": pa.Column(int, pa.Check.ge(0)),
@@ -37,7 +42,7 @@ TRACKS_SCHEMA = pa.DataFrameSchema(
         "y2": pa.Column(float),
         "conf": pa.Column(float, pa.Check.in_range(0, 1)),
     },
-    checks=pa.Check(lambda df: (df["x2"] > df["x1"]) & (df["y2"] > df["y1"]), error="box has no area"),
+    checks=pa.Check(_has_area, error="box has no area"),
     unique=["track_id", "t"],
     strict=True,
     coerce=True,
@@ -47,7 +52,7 @@ TRACKS_SCHEMA = pa.DataFrameSchema(
 def with_geometry(tracks: pd.DataFrame) -> pd.DataFrame:
     """Add box centre (cx, cy) and height (h) in pixels. Rows without area are dropped: TRACKS_SCHEMA rejects
     them, but a frame that skipped validation must not crash the heuristics."""
-    tracks = tracks[(tracks["x2"] > tracks["x1"]) & (tracks["y2"] > tracks["y1"])]
+    tracks = tracks[_has_area(tracks)]
     return tracks.assign(
         cx=(tracks["x1"] + tracks["x2"]) / 2,
         cy=(tracks["y1"] + tracks["y2"]) / 2,
