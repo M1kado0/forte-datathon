@@ -87,3 +87,11 @@ def test_unknown_id_gives_fallback_citing_whole_act():
     name, description = describe_violation("no_such_type", {"object": "x"})
     assert name == FALLBACK_NAME
     assert description.endswith(f"Нужна проверка человеком. {PRAVILA_231_CITE}")
+
+
+def test_type_citing_two_acts_cites_each_with_its_own_title():
+    _, description = describe_violation("outsider_in_cash_room", {})
+    assert description.count("утв. постановлением Правления Национального Банка") == 1
+    assert description.count("утв. постановлением Правления Агентства") == 2
+    assert description.endswith("п. 15 подп. 3), 5)")
+    assert "п. 8; " in description and "п. 14 подп. 1); " in description
