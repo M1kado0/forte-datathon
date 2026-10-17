@@ -11,20 +11,30 @@ import csv
 import functools
 import json
 import pickle
+from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.config import EXPERIMENTS, MODELS, REPORTS, SEED
 from src.data.labels import load_labels
-from src.features.embeddings import Embedder, load_or_embed, video_path, window_features
+from src.features.embeddings import (
+    EMBED_FPS,
+    FINGERPRINT,
+    Embedder,
+    load_or_embed,
+    video_path,
+    window_features,
+)
 from src.models.windows import (
     NEGATIVE,
     POSITIVE,
+    WINDOW_SEC,
     choose_threshold,
     labels_by_video,
     lovo_folds,
@@ -35,21 +45,46 @@ from src.models.windows import (
 )
 
 MODEL_PATH = MODELS / "window_clf.pkl"
-C = 0.1
-EXPERIMENT_COLUMNS = ["ts", "note", "roc_auc", "pr_auc", "brier", "n_train", "n_valid", "params"]
+LOGREG_C = 0.1
 REFERENCE_DURATION = 145.0  # the ticket records embedding time for a 145 s video
+EXPERIMENT_COLUMNS = [
+    "ts", "note", "roc_auc", "pr_auc", "brier", "n_train", "n_valid", "params",
+    "video_recall", "fp_rate", "median_abs_dt", "type_accuracy",
+]  # fmt: skip
 
 
-def make_classifier() -> object:
+@dataclass
+class Clip:
+    """One video: windows with labels, their pooled embeddings, and how long embedding took."""
+
+    windows: pd.DataFrame
+    feats: np.ndarray
+    embed_seconds: float
+    duration: float
+    label_seconds: list[int]
+
+    @property
+    def is_violation(self) -> bool:
+        return bool(self.label_seconds)
+
+
+def make_classifier() -> BaseEstimator:
     """Scaler lives inside the pipeline, so cross-validation fits it on train folds only."""
     return make_pipeline(
         StandardScaler(),
-        LogisticRegression(C=C, class_weight="balanced", max_iter=2000, random_state=SEED),
+        LogisticRegression(C=LOGREG_C, class_weight="balanced", max_iter=2000, random_state=SEED),
     )
 
 
-def build_dataset(labels: pd.DataFrame) -> tuple[list[str], list[dict]]:
-    """Per video: windows with labels, window features, frame seconds and embed time."""
+def fit_on(clips: list[Clip]) -> BaseEstimator:
+    """Fit on the labelled (positive / negative) windows of the given clips; unlabeled windows are skipped."""
+    X = np.concatenate([c.feats for c in clips])
+    y = np.concatenate([c.windows["label"].to_numpy() for c in clips])
+    labelled = np.isin(y, (POSITIVE, NEGATIVE))
+    return make_classifier().fit(X[labelled], y[labelled])
+
+
+def build_dataset(labels: pd.DataFrame) -> tuple[list[str], list[Clip]]:
     by_video = labels_by_video(labels)
     files = labels.drop_duplicates("video_id").set_index("video_id")["file"]
     ids = sorted(by_video, key=lambda v: int(v.split("-")[1]))
@@ -57,71 +92,57 @@ def build_dataset(labels: pd.DataFrame) -> tuple[list[str], list[dict]]:
     clips = []
     for vid in ids:
         seconds, emb, elapsed = load_or_embed(vid, video_path(files[vid]), embedder)
-        duration = float(seconds[-1]) + 1.0 / 4 if len(seconds) else 0.0
+        duration = float(seconds[-1]) + 1.0 / EMBED_FPS if len(seconds) else 0.0
         windows = make_windows(duration, by_video[vid])
         feats, kept = window_features(seconds, emb, windows)
         clips.append(
-            {
-                "windows": windows[kept].reset_index(drop=True),
-                "feats": feats[kept],
-                "elapsed": elapsed,
-                "duration": duration,
-                "labels": by_video[vid],
-            }
+            Clip(windows[kept].reset_index(drop=True), feats[kept], elapsed, duration, by_video[vid])
         )
     return ids, clips
 
 
-def cross_validate(ids: list[str], clips: list[dict]) -> list[np.ndarray]:
+def cross_validate(ids: list[str], clips: list[Clip]) -> list[np.ndarray]:
     """Out-of-fold score of every window of every video (unlabeled windows are scored, not trained on)."""
-    scores = [np.zeros(len(c["windows"])) for c in clips]
+    scores = [np.zeros(len(c.windows)) for c in clips]
     for train_idx, val_idx in lovo_folds(ids):
-        X = np.concatenate([clips[i]["feats"] for i in train_idx])
-        y = np.concatenate([clips[i]["windows"]["label"].to_numpy() for i in train_idx])
-        use = np.isin(y, (POSITIVE, NEGATIVE))
-        clf = make_classifier().fit(X[use], y[use])
+        clf = fit_on([clips[i] for i in train_idx])
         for i in val_idx:
-            if len(clips[i]["feats"]):
-                scores[i] = clf.predict_proba(clips[i]["feats"])[:, 1]
+            if len(clips[i].feats):
+                scores[i] = clf.predict_proba(clips[i].feats)[:, 1]
     return scores
 
 
 def run() -> dict:
-    labels = load_labels()
-    ids, clips = build_dataset(labels)
+    ids, clips = build_dataset(load_labels())
     scores = cross_validate(ids, clips)
     video_scores = [video_score(s) for s in scores]
-    is_violation = [bool(c["labels"]) for c in clips]
+    is_violation = [c.is_violation for c in clips]
+    # Threshold and metrics share the out-of-fold scores: recall 1.0 is by construction (ADR 0002).
     threshold = choose_threshold(video_scores, is_violation)
-    timecodes = [timecode(c["windows"]["start"], s, threshold) for c, s in zip(clips, scores, strict=True)]
-    metrics = video_metrics(video_scores, is_violation, threshold, timecodes, [c["labels"] for c in clips])
+    timecodes = [timecode(c.windows["start"], s, threshold) for c, s in zip(clips, scores, strict=True)]
+    metrics = video_metrics(
+        video_scores, is_violation, threshold, timecodes, [c.label_seconds for c in clips]
+    )
 
-    ref = min(range(len(clips)), key=lambda i: abs(clips[i]["duration"] - REFERENCE_DURATION))
+    ref = min(range(len(clips)), key=lambda i: abs(clips[i].duration - REFERENCE_DURATION))
     metrics |= {
         "threshold": threshold,
         "n_videos": len(ids),
-        "n_violation_videos": int(sum(is_violation)),
-        "n_false_positives": int(
-            sum(s >= threshold and not v for s, v in zip(video_scores, is_violation, strict=True))
-        ),
+        "n_violation_videos": sum(is_violation),
+        "n_false_positives": sum(s >= threshold and not v for s, v in zip(video_scores, is_violation, strict=True)),
         "embed_seconds_ref_video": {
-            "video_id": ids[ref],
-            "duration": clips[ref]["duration"],
-            "seconds": clips[ref]["elapsed"],
+            "video_id": ids[ref], "duration": clips[ref].duration, "seconds": clips[ref].embed_seconds,
         },
         "video_scores": dict(zip(ids, video_scores, strict=True)),
-    }
+    }  # fmt: skip
 
-    X = np.concatenate([c["feats"] for c in clips])
-    y = np.concatenate([c["windows"]["label"].to_numpy() for c in clips])
-    use = np.isin(y, (POSITIVE, NEGATIVE))
-    final = make_classifier().fit(X[use], y[use])
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(
             {
-                "model": final,
+                "model": fit_on(clips),
                 "threshold": threshold,
-                "embedding": "dinov2-small cls+meanpatch, 4 fps, 2 s windows",
+                "embedding": FINGERPRINT,
+                "window_sec": WINDOW_SEC,
             },
             f,
         )
@@ -131,24 +152,30 @@ def run() -> dict:
 
 
 def log_experiment(note: str, metrics: dict) -> None:
-    new = not EXPERIMENTS.exists()
-    params = {k: v for k, v in metrics.items() if k != "video_scores"} | {"C": C}
-    with open(EXPERIMENTS, "a", newline="") as f:
-        w = csv.writer(f)
-        if new:
-            w.writerow(EXPERIMENT_COLUMNS)
-        w.writerow(
-            [
-                datetime.now().isoformat(timespec="seconds"),
-                note,
-                "",
-                "",
-                "",
-                "",
-                "",
-                json.dumps(params, ensure_ascii=False),
-            ]
-        )
+    """Append one row; an older file with fewer columns is widened first (old rows keep blanks)."""
+    rows = []
+    if EXPERIMENTS.exists():
+        with open(EXPERIMENTS, newline="") as f:
+            rows = list(csv.DictReader(f))
+    params = {
+        k: v
+        for k, v in metrics.items()
+        if k not in ("video_scores", "video_recall", "fp_rate", "median_abs_dt")
+    }
+    rows.append(
+        {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "note": note,
+            "params": json.dumps(params | {"logreg_c": LOGREG_C}, ensure_ascii=False),
+            "video_recall": metrics["video_recall"],
+            "fp_rate": metrics["fp_rate"],
+            "median_abs_dt": metrics["median_abs_dt"],
+        }
+    )
+    with open(EXPERIMENTS, "w", newline="") as f:
+        w = csv.DictWriter(f, EXPERIMENT_COLUMNS)
+        w.writeheader()
+        w.writerows(rows)
 
 
 def load_model() -> dict:
@@ -159,4 +186,4 @@ def load_model() -> dict:
 
 if __name__ == "__main__":
     out = run()
-    print({k: v for k, v in out.items() if k != "video_scores"})
+    print(json.dumps({k: v for k, v in out.items() if k != "video_scores"}, indent=2, ensure_ascii=False))

@@ -10,6 +10,7 @@ import pandas as pd
 from contracts.data import StubSchema
 from src.config import DATA_PROCESSED, REPORTS, TARGET
 from src.data.stub import make_stub
+from src.models import train as real_train
 from src.models.stub_train import train
 
 
@@ -41,13 +42,13 @@ def build_insights(df: pd.DataFrame) -> list[dict]:
 
 
 def main(stub: bool) -> None:
-    if stub:
-        df = make_stub()
-    else:
-        raise SystemExit("Real data loader not wired yet: implement src/data/load.py (ticket 01).")
+    if not stub:
+        print("metrics:", {k: v for k, v in real_train.run().items() if k != "video_scores"})
+        return
+    df = make_stub()
     df = StubSchema.validate(df)
     df.to_parquet(DATA_PROCESSED / "train.parquet", index=False)
-    metrics = train(df, note="stub-baseline" if stub else "baseline")
+    metrics = train(df, note="stub-baseline")
     (REPORTS / "insights.json").write_text(json.dumps(build_insights(df), ensure_ascii=False, indent=2))
     print("metrics:", metrics)
 
