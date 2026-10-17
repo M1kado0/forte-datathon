@@ -274,6 +274,15 @@ def test_check_labels_cli_prints_counts_and_exits_nonzero_on_missing_file(labels
     assert exc.value.code not in (0, None)
 
 
+def test_check_labels_cli_prints_violations_per_type_with_zeros(labels_dir, capsys):
+    typed_labels().to_csv(labels_dir / "labels.csv", index=False)
+    main([str(labels_dir / "labels.csv"), str(labels_dir / "videos")])
+    lines = capsys.readouterr().out.splitlines()
+    assert "cash_on_desk_next_client: 2" in lines
+    assert "cash_partially_given: 1" in lines
+    assert "other: 0" in lines  # a type with no label is still listed
+
+
 def test_committed_labels_csv_matches_the_issue():
     """Counts come from issue #21, not from the code: 40 videos, 21 violating (22 labels), 19 clean."""
     labels = load_labels()
