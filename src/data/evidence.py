@@ -1,6 +1,7 @@
 """Evidence frames: 1-3 JPEGs around a violation's timecode, so a human can check it without scrubbing."""
 
 import base64
+from math import ceil
 from pathlib import Path
 from typing import Literal
 
@@ -23,7 +24,7 @@ def evidence_frames(path: str | Path, timecode_sec: float, kind: Kind = "state")
     Always returns at least the first frame: a timecode at or past the last frame snaps to the last one.
     Frames keep the native resolution and carry the time of the frame actually decoded.
     """
-    if timecode_sec < 0:
+    if not timecode_sec >= 0:  # also catches NaN
         raise ValueError(f"timecode_sec must be >= 0, got {timecode_sec}")
     offsets = OFFSETS_SEC[kind]
     path = Path(path)
@@ -47,6 +48,12 @@ def evidence_frames(path: str | Path, timecode_sec: float, kind: Kind = "state")
             if i == 0 and 0 < total <= idx:
                 idx = total - 1
             frame = _read_at(cap, idx)
+            if i == 0:
+                # some .mov tails decode in sequence but not after a seek: step back, within the contract's 1 s
+                floor = max(0, idx - (ceil(src_fps) - 1))
+                while frame is None and idx > floor:
+                    idx -= 1
+                    frame = _read_at(cap, idx)
             if frame is None and i == 0:
                 raise ValueError(f"no frame at {timecode_sec:g}s in {path}")
             if frame is None:

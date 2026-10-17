@@ -80,3 +80,21 @@ def test_negative_timecode_raises(clip):
 def test_missing_file_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         evidence_frames(tmp_path / "nope.mov", 1.0)
+
+
+def test_unseekable_tail_steps_back_to_a_readable_frame(clip, monkeypatch):
+    from src.data import evidence
+
+    last_readable = SRC_FPS * SECONDS - 4
+    real_read_at = evidence._read_at
+    monkeypatch.setattr(
+        evidence, "_read_at", lambda cap, idx: real_read_at(cap, idx) if idx <= last_readable else None
+    )
+    for timecode in (SECONDS - ONE_FRAME, 99.0):
+        frames = evidence_frames(clip, timecode, "state")
+        assert times(frames) == pytest.approx([last_readable / SRC_FPS])
+
+
+def test_nan_timecode_raises(clip):
+    with pytest.raises(ValueError):
+        evidence_frames(clip, float("nan"))
