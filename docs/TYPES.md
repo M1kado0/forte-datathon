@@ -1,6 +1,6 @@
 # Типы нарушений
 
-Собрано командой `uv run python -m src.rules.types_doc` (входит в `make all`) из `src/rules/rules.yaml` и `data/violation_types.csv`. Руками не правим.
+Собрано командой `uv run python -m src.rules.types_doc` (входит в `make all`) из `src/rules/rules.yaml` и `data/labels.csv` (типы в нём берутся из `data/violation_types.csv`). Руками не правим.
 Тип называем словами сценария из видео, норма идёт в пункт (ADR 0005). В описании стоит только то, что видно в кадре; `…` вместо предмета, который эвристика подставляет сама.
 Число меток считается по 22 меткам нарушений в `data/labels.csv`, у типа без примеров стоит 0.
 

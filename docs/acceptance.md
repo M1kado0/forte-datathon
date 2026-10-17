@@ -52,7 +52,7 @@ IDs follow the brief's sections (TZ-4.x = section 4, TZ-F.x = FAQ). Quote the br
 | TZ-F.5 | Тестовые видео не для обучения, не публиковать, не хранить (раздел 10, FAQ 6) | rule | P1 | T01 | uploads deleted after job | 🟥 |
 | TZ-F.6 | Ложных срабатываний минимум, пропуск недопустим (FAQ 16) | model | P2 | T06 | threshold note in `reports/metrics.json` | 🟥 |
 | TZ-F.7 | Конкретный кадр и таймкод (FAQ 17) | model | P2 | T06 | `timecode_sec` = onset (states) or peak (actions), first evidence frame at the same second | 🟥 |
-| TZ-F.8 | Финальное видео снято под другим углом (FAQ 4) | model | P2 | T03 | leave-one-arrangement-out metrics next to LOVO, the new camera angle is checked by #43 | 🟥 |
+| TZ-F.8 | Финальное видео снято под другим углом (FAQ 4) | model | P2 | T03 | leave-one-arrangement-out metrics next to LOVO, the new camera position is checked by #43 | 🟥 |
 | TZ-F.9 | В тесте возможны типы, которых нет в обучении (FAQ 9) | model | P2, P3 | T06, T15 | fallback type | 🟥 |
 | TZ-F.10 | Дедлайн 12:00 (FAQ 33) | rule | P4 | — | submit by 11:00 | 🟥 |
 | TZ-P.1 | Питч только для шортлиста: 5 мин + 2 мин вопросы, презентация по желанию (FAQ 19) | pitch | P4 | T14 | — | 🟥 |

@@ -1,13 +1,11 @@
 """docs/TYPES.md: every type of rules.yaml with its description and label count (TZ-8.5, #76)."""
 
 import pandas as pd
-import yaml
 
-from src.config import RULES_YAML, TYPES_MD
+from contracts.data import TYPE_IDS
+from src.config import TYPES_MD
 from src.data.labels import load_labels
 from src.rules.types_doc import build_types_md
-
-TYPE_IDS = [t["id"] for t in yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))["types"]]
 
 
 def table_rows(md: str) -> dict[str, list[str]]:
