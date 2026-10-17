@@ -59,10 +59,12 @@ watching it. One row per video, keyed by the canonical `video_id` (no `X-47`, `X
 `labels.csv` so a rebuild from the xlsx keeps it. The rebuild raises if a video has no arrangement, if a row matches no
 video or if a video has two. The labels contract accepts only the two values below and requires one value per video.
 
-| Value | Meaning | Videos |
-|---|---|---|
-| `back` | the cashier sits with the back to the camera | 14 |
-| `facing` | the cashier sits facing the camera | 26 |
+Positions are given relative to the camera frame (the camera looks down at the cash room from above, the frame is portrait, 464×848).
+
+| Value | Cashier | Desk | Safe | Videos |
+|---|---|---|---|---|
+| `back` | sits on the office chair in front of the desk, back to the camera, facing the desk | wooden desk on the left of the frame, its far side towards the glass partition; the client stands behind it | grey metal safe on a white stand (a plain box in `X-3` and `X-16`, a drawer unit in `X-35`) against the right wall, on the camera side of the desk's right end, clear of the desk | 14 |
+| `facing` | sits on the far side of the desk, facing the camera, glass partition behind them | wooden desk on the left of the frame, long side towards the camera | grey metal safe against the right wall behind the desk's right end, further from the camera than the desk, partly hidden by it | 26 |
 
 Both arrangements have videos with both verdicts, so recall and FP rate can be computed on each (#38):
 
@@ -71,5 +73,4 @@ Both arrangements have videos with both verdicts, so recall and FP rate can be c
 | `back` | 14 | 7 | 7 |
 | `facing` | 26 | 14 | 12 |
 
-The counts are printed by `uv run python -m src.data.check_labels`. TODO (after the freeze, separate ticket): where the desk
-and the safe stand in each arrangement, so that any video can be assigned from the description alone.
+The counts are printed by `uv run python -m src.data.check_labels`. Both descriptions come from frames of the clips below that the team viewed. Examples: `X-3`, `X-16` and `X-35` for `back`, `X-11`, `X-25` and `X-43` for `facing`.
