@@ -82,6 +82,7 @@ Test only deterministic code:
 - Validation: leave-one-video-out (grouped by clip). Fit any scaler on train folds only.
 - Models run locally from `models/weights` (`make weights` downloads once; then `HF_HUB_OFFLINE=1` must work).
 - Licenses: open source that allows commercial use only (Apache-2.0, MIT, BSD). **No Ultralytics YOLO (AGPL).**
+  Accepted exceptions (list in `docs/MODELS.md`): torch's nvidia-* CUDA wheels, FFmpeg (LGPLv2.1) inside opencv wheels, pillow (HPND), torch (BSL-1.0 part).
   Add each model to `docs/MODELS.md` with its license before `uv add`.
 - No face recognition or identification. No audio. Uploaded videos are deleted after the job, never used for training.
 - Never send dataset frames, crops or clips to a cloud model (Claude, Codex, any chat), not even to "look at" them (FAQ 6).
