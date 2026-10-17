@@ -16,22 +16,14 @@
 Подробнее про установку инструментов по системам: [`docs/SETUP.md`](docs/SETUP.md).
 
 ```bash
-git clone git@github.com:M1kado0/forte-datathon.git && cd forte-datathon
+git clone https://github.com/M1kado0/forte-datathon.git && cd forte-datathon   # или git@github.com:M1kado0/forte-datathon.git
 cp .env.example .env     # затем впишите длинный случайный API_KEY в .env
 make setup               # зависимости Python и web/
 make test                # быстрые детерминированные тесты
 make app                 # собирает web и запускает сервис на http://localhost:8000
 ```
 
-Без `make` (Windows PowerShell, Git Bash, Mac, Ubuntu одинаково):
-
-```bash
-uv sync
-cd web && npm ci && cd ..
-uv run pytest
-cd web && npm run build && cd ..
-uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
-```
+Без `make` (Windows PowerShell, Git Bash, Mac, Ubuntu одинаково) берите строки из столбца «Без `make`» таблицы ниже, в том же порядке: зависимости, тесты, сборка web, запуск.
 
 В PowerShell вместо `cp` используйте `Copy-Item .env.example .env`.
 
@@ -39,14 +31,20 @@ uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
 
 | Что | `make` | Без `make` |
 |---|---|---|
-| Зависимости | `make setup` | `uv sync` и `cd web && npm ci` |
+| Зависимости | `make setup` | `uv sync` и `cd web && npm ci` (`make setup` ещё ставит `nbstripout`: `uv run nbstripout --install`) |
 | Тесты | `make test` | `uv run pytest` |
+| Только сборка web | `make web` | `cd web && npm run build` |
 | Сервис и UI на одном порту | `make app` | `cd web && npm run build`, затем `uv run uvicorn api.main:app --host 0.0.0.0 --port 8000` |
 | Разработка с перезагрузкой | `make dev` | в одном окне `uv run uvicorn api.main:app --reload --port 8000`, в другом `cd web && npm run dev` (UI на :5173, `/api` проксируется на :8000) |
+| Форматирование и линтер | `make lint` | `uv run ruff check . --fix && uv run ruff format .` |
+| Заглушка пайплайна (старый учебный стенд) | `make demo` | `uv run python -m src.pipeline --stub`, затем запуск сервиса |
 | Веса моделей, один раз | `make weights` | `uv run python -m scripts.weights` |
 | Проверка весов без интернета | `make weights-check` | `HF_HUB_OFFLINE=1 uv run python -m scripts.weights --check` (PowerShell: сначала `$env:HF_HUB_OFFLINE=1`) |
 | Пересобрать все числа | `make all` | `uv run python -m src.rules.types_doc`, затем `uv run python -m src.pipeline` |
 | Публичный адрес через ngrok | `make tunnel` | `ngrok http 8000` |
+| Запасной туннель | `make tunnel-cloudflared` | `cloudflared tunnel --no-autoupdate --url http://localhost:8000` |
+| Скриншоты UI | `make screenshots` | `cd web && npm run screenshots` |
+| Удалить сборку и метрики | `make clean` | удалить `web/dist`, `models/*.pkl`, `reports/metrics.json` |
 | Симуляция жюри | `make jury-sim PUBLIC_URL=https://...` | `uv run python -m scripts.jury_sim --url https://...` |
 
 Порт меняется так: `make app PORT=9000` или `--port 9000`.
@@ -54,7 +52,7 @@ uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
 ### Веса и данные
 
 Модели скачиваются один раз (`make weights`) в `models/weights`, после этого сервис работает с `HF_HUB_OFFLINE=1`, без сети.
-Датасет организаторов в git не лежит: положите `open_labels.xlsx` в `data/raw/` и клипы `.mov` в `data/raw/videos/`.
+Датасет организаторов в git не лежит: положите `open_labels.xlsx` в `data/raw/` и видео `.mov` в `data/raw/videos/`.
 `make all` читает их и пересобирает разметку, типы, метрики и модель окон.
 
 ### Постоянный адрес для жюри
@@ -88,7 +86,7 @@ curl -X POST localhost:8000/api/v1/analyze \
 curl localhost:8000/api/v1/jobs/3f2a... -H "X-API-Key: $API_KEY"
 ```
 
-Ответ `jobs/{job_id}` строго по разделу 10 брифа, своих полей нет:
+Ответ `jobs/{job_id}` строго по разделу 10 брифа, своих полей нет (пример сокращён: `…` вместо текста и кадра; с заглушкой тип всегда «Иное подозрительное действие»):
 
 ```json
 {
@@ -119,7 +117,13 @@ curl -s localhost:8000/api/v1/jobs/3f2a... -H "X-API-Key: $API_KEY" \
   | jq 'del(.violations[].evidence_frames[].image_base64)'
 ```
 
-В PowerShell используйте `curl.exe` (а не псевдоним `curl`) и `$env:API_KEY`.
+В PowerShell те же запросы одной строкой (`curl.exe`, а не псевдоним `curl`):
+
+```powershell
+$env:API_KEY = "..."   # значение из .env
+curl.exe -X POST localhost:8000/api/v1/analyze -H "X-API-Key: $env:API_KEY" -F "file=@data/raw/videos/X-14.mov"
+curl.exe localhost:8000/api/v1/jobs/3f2a... -H "X-API-Key: $env:API_KEY"
+```
 
 Схемы ответов лежат в [`contracts/schemas.py`](contracts/schemas.py), тест контракта в [`tests/test_api.py`](tests/test_api.py).
 
@@ -130,9 +134,10 @@ flowchart LR
     U["UI или жюри"] -->|POST /api/v1/analyze| Q["Очередь в памяти и один воркер"]
     Q --> V["Декодирование видео<br/>src/data/video.py"]
     V --> A["Ветка A: что-то не так, в секунду X<br/>эмбеддинги DINOv2, классификатор окон"]
-    V --> B["Ветка B: что именно произошло<br/>детекции, треки, эвристики"]
+    V --> B["Ветка B: что именно произошло<br/>детекции и треки"]
+    B --> H["Эвристики<br/>src/heuristics/"]
     A -->|скор окон, порог| M["Вердикт, таймкод"]
-    B -->|тип, голос за вердикт| M
+    H -->|тип, голос за вердикт| M
     M --> R["Справочник типов и норм<br/>src/rules/rules.yaml"]
     M --> E["Кадры-доказательства<br/>src/data/evidence.py"]
     R --> O["JSON по контракту: вердикт, нарушения"]
@@ -144,7 +149,7 @@ flowchart LR
 |---|---|---|
 | Очередь | Одна очередь в памяти, один фоновый воркер, анализатор подставляется. Исключение даёт `failed`, загруженный файл удаляется при любом исходе | [`api/jobs.py`](api/jobs.py), [`api/main.py`](api/main.py) |
 | Ветка A | Эмбеддинги кадров DINOv2 → короткие окна внахлёст → логистическая регрессия. Говорит, что в окне что-то не так, и даёт таймкод. Порог выбран по recall 1.0, потом минимум ложных срабатываний ([ADR 0002](docs/adr/0002-threshold-recall-first.md)) | [`src/features/embeddings.py`](src/features/embeddings.py), [`src/models/windows.py`](src/models/windows.py), [`src/models/train.py`](src/models/train.py), [`src/models/analyze.py`](src/models/analyze.py) |
-| Ветка B | Детекции людей и предметов (D-FINE-S), треки, деньги (OWLv2 по тексту) → признаки по зонам. Без позы: готовые веса позы обучены на некоммерческих данных | [`src/features/`](src/features/), [`docs/adr/0003-violation-taxonomy.md`](docs/adr/0003-violation-taxonomy.md) |
+| Ветка B | Детекции людей и предметов (D-FINE-S), треки, деньги (OWLv2 по тексту) → признаки по зонам. Без позы: готовые веса позы обучены на некоммерческих данных | [`src/features/`](src/features/), [ADR 0003](docs/adr/0003-violation-taxonomy.md) (набор типов заменён [ADR 0005](docs/adr/0005-scenario-taxonomy.md)), источник про позу: [`docs/research/models.md`](docs/research/models.md), раздел 8 |
 | Эвристики | Проверяют наблюдаемые факты (кто у кассы, где деньги, какие предметы, есть ли клиент), выбирают тип нарушения и могут поднять вердикт. Это наши проверки, к нормативу они отношения не имеют | [`src/heuristics/`](src/heuristics/) |
 | Справочник | Тип нарушения → документ, пункт, цитата, ссылка на adilet и шаблон описания. Описание собирается из шаблона и наблюдённых фактов, юридические выводы не генерируются | [`src/rules/rules.yaml`](src/rules/rules.yaml), [`docs/RULES.md`](docs/RULES.md), [`docs/TYPES.md`](docs/TYPES.md) |
 | Кадры-доказательства | От одного до трёх JPEG вокруг таймкода, в base64 | [`src/data/evidence.py`](src/data/evidence.py) |
@@ -175,7 +180,7 @@ flowchart LR
 - [`docs/TYPES.md`](docs/TYPES.md) — типы нарушений и число меток, собирается из `data/labels.csv`;
 - [`docs/DATA_CARD.md`](docs/DATA_CARD.md) — описание данных и расстановок.
 
-Проверка сейчас идёт по схеме «одно видео за раз» (leave-one-video-out), порог выбирается по ней ([ADR 0002](docs/adr/0002-threshold-recall-first.md)). Соседние клипы набора похожи друг на друга (одна сцена), поэтому такая оценка ненадёжна. Проверка на невиданной расстановке и по группам сцен — [#38](https://github.com/M1kado0/forte-datathon/issues/38), её результаты появятся в `reports/metrics.json`.
+Проверка сейчас идёт по схеме «одно видео за раз» (leave-one-video-out), порог выбирается по ней ([ADR 0002](docs/adr/0002-threshold-recall-first.md)). Соседние видео набора похожи друг на друга (одна и та же обстановка), поэтому такая оценка ненадёжна. Проверка на невиданной расстановке и по группам сцен — [#38](https://github.com/M1kado0/forte-datathon/issues/38), её результаты появятся в `reports/metrics.json`.
 
 ## Модели и лицензии
 
@@ -186,17 +191,17 @@ flowchart LR
 | DINOv2-small (`facebook/dinov2-small`) | эмбеддинги кадров, ветка A | Apache-2.0 |
 | D-FINE-S (`ustc-community/dfine-small-coco`) | детекция людей и предметов, ветка B | Apache-2.0 |
 | OWLv2 (`google/owlv2-base-patch16-ensemble`) | поиск денег по тексту, ветка B | Apache-2.0 |
-| SigLIP-base (`google/siglip-base-patch16-224`) | запасные эмбеддинги | Apache-2.0 |
+| SigLIP-base (`google/siglip-base-patch16-224`) | запасные эмбеддинги, поиск по тексту; в сервисе пока не используется | Apache-2.0 |
 
-Исключения из правила лицензий: CUDA-колёса `nvidia-*` в составе torch, FFmpeg (LGPLv2.1) внутри колёс opencv, pillow (HPND), часть кода torch под BSL-1.0. Причины и условия в `docs/MODELS.md`.
+Исключения из правила лицензий: CUDA-колёса `nvidia-*` в составе torch, FFmpeg (LGPLv2.1) внутри колёс opencv, pillow (HPND), часть кода torch под BSL-1.0. Причины и условия в `docs/MODELS.md`. Туннели (ngrok, Tailscale, cloudflared) в сервис не входят, это инструменты на машине сервинга; их лицензии в том же файле.
 
 ## Ограничения
 
 Полный разбор ошибок с названиями клипов будет в [#38](https://github.com/M1kado0/forte-datathon/issues/38) и [#42](https://github.com/M1kado0/forte-datathon/issues/42). Уже известно:
 
 - Порог выбран по recall 1.0, поэтому ложные срабатывания на видео без нарушений есть: это осознанная цена, потому что пропуск нарушения недопустим для банка ([ADR 0002](docs/adr/0002-threshold-recall-first.md)). Сейчас модель окон отличает видео без нарушений слабо: при таком пороге доля ложных срабатываний высока (`fp_rate` в `reports/metrics.json`). Снижать её должны эвристики и порог после #38.
-- Обучающие видео сняты одной камерой в двух расстановках, видео жюри может быть снято иначе. Мы проверяем и расстановку, но порог по ней не выбираем.
-- Типы нарушений мы определили сами по разметке организаторов (в ней типов нет), а у части типов один–два примера. Для типа без подходящего пункта ссылка ведёт на акт целиком.
+- Обучающие видео сняты одной камерой в ограниченном числе расстановок ([`docs/DATA_CARD.md`](docs/DATA_CARD.md)), видео жюри может быть снято иначе. Мы проверяем и расстановку, но порог по ней не выбираем.
+- Типы нарушений мы определили сами по разметке организаторов (в ней типов нет), а у части типов мало примеров (число меток в [`docs/TYPES.md`](docs/TYPES.md)). Для типа без подходящего пункта ссылка ведёт на акт целиком.
 - Сервис видит только то, что видно в кадре: звука нет, лица не распознаются.
 
 ## Команда
