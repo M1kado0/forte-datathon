@@ -1,6 +1,8 @@
-"""Tunable numbers of the type heuristics. Defaults are first guesses; #34 tunes them on leave-one-video-out."""
+"""Tunable numbers and switches of the type heuristics. Defaults are first guesses; #34 tunes them on
+leave-one-video-out."""
 
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -15,6 +17,10 @@ class Thresholds:
     min_payout_sec: float = 5.0  # type 7: cash and a client together for less than this is not a payout
     # a detector miss up to this long does not end an episode (a missed violation is the worst error)
     gap_sec: float = 1.0
+    # how find_roles ranks candidate seats: "track" puts the spot where one track stays longest first, so
+    # clients who come one after another do not add up; "boxes" puts the spot with the most person boxes
+    # first, so a cashier split into short ids keeps the seat while a client waits longer than each id
+    seat_by: Literal["track", "boxes"] = "track"
 
 
 DEFAULT = Thresholds()
