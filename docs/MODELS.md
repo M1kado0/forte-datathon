@@ -27,6 +27,8 @@
 | protobuf | 7.36.2 | BSD-3-Clause | нужен токенайзеру SigLIP |
 | numpy | 2.5.4 | BSD-3-Clause | |
 | scipy | 1.18.1 | BSD-3-Clause | `linear_sum_assignment` в ByteTrack (`src/features/bytetrack.py`) |
+| joblib | 1.6.0 | BSD-3-Clause | параллельный nested-LOVO в `src/models/train.py`, транзитивно через scikit-learn |
+| threadpoolctl | 3.7.0 | BSD-3-Clause | один поток BLAS на процесс в nested-LOVO, транзитивно через scikit-learn |
 | pillow | 12.3.0 | MIT-CMU (HPND, разрешающая, близка к MIT) | транзитивно через transformers, напрямую не объявлена |
 | nvidia-* (15 колёс CUDA: cublas, cudnn, nccl и др.) | 13.2.x | NVIDIA Software License / CUDA EULA (проприетарная, redistribution разрешён вместе с приложением) | транзитивно через torch cu132; на macOS не ставятся |
 
