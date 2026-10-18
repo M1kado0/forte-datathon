@@ -30,6 +30,9 @@ TYPES_CSV = (
 ARRANGEMENTS_CSV = (
     ROOT / "data" / "arrangements.csv"
 )  # team-set furniture arrangement per video, kept apart so a rebuild keeps it (#26)
+SCENES_CSV = (
+    ROOT / "data" / "scenes.csv"
+)  # paired takes of one scene, CV folds (ADR 0006), src/data/scenes.py
 
 SEED = 42
 VERSION = "0.1.0-stub"

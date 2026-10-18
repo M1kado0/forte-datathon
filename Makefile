@@ -42,6 +42,7 @@ demo:
 all:
 	uv run python -m src.rules.types_doc
 	uv run python -m src.pipeline
+	uv run python -m src.models.scene_cv --log
 	uv run python -m src.data.insights
 
 # Public URL for the jury via ngrok (outbound 443; cloudflared is blocked on our networks). Start `make app` first.
