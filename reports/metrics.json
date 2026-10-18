@@ -58,6 +58,19 @@
     "clean_videos_branch_a_misses": 1
   },
   "types": {
+    "heuristics": {
+      "chosen": "controller_exempt",
+      "tried": {
+        "default": {
+          "typed_right": 2,
+          "named_wrong": 1
+        },
+        "controller_exempt": {
+          "typed_right": 2,
+          "named_wrong": 0
+        }
+      }
+    },
     "allowed": [
       "outsider_in_cash_room"
     ],
@@ -96,7 +109,7 @@
       }
     },
     "n_typed_right": 2,
-    "n_named": 2,
+    "n_named": 3,
     "by_video": {
       "X-1": {
         "truth": [
@@ -126,7 +139,7 @@
         "truth": [
           "cash_put_away_uncounted"
         ],
-        "found": "other"
+        "found": "outsider_in_cash_room"
       },
       "X-15": {
         "truth": [
@@ -295,16 +308,18 @@
   },
   "timecode_choice": {
     "state": {
-      "n": 4,
-      "onset": 1.5,
-      "peak": 5.25,
-      "n_picked": 2,
-      "picked_onset": 9.75,
-      "picked_peak": 9.5
+      "n": 2,
+      "onset": 9.75,
+      "peak": 9.5,
+      "nearest_episode": {
+        "n": 4,
+        "onset": 1.5,
+        "peak": 5.25
+      }
     },
     "action": {
-      "n": 19,
-      "onset": 9.0,
+      "n": 18,
+      "onset": 8.5,
       "peak": 5.0
     }
   },
@@ -321,7 +336,7 @@
   "embed_seconds_ref_video": {
     "video_id": "X-14",
     "duration": 142.51647944457446,
-    "seconds": 45.09237975900032
+    "seconds": 18.321287099002802
   },
   "video_scores": {
     "X-1": 0.9739677309989929,

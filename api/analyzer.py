@@ -14,11 +14,10 @@ from src.config import RULES_YAML
 
 def load_analyzer() -> Analyzer:
     """Warm the model's process-wide caches before accepting uploads; fail if weights are missing."""
-    from src.models.analyze import analyze, default_detector, default_embedder, default_model
+    from src.models.analyze import analyze, default_embedder, default_model
 
     default_model()
     default_embedder()
-    default_detector()
     return analyze
 
 

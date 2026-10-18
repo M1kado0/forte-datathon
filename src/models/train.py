@@ -13,7 +13,7 @@ import csv
 import functools
 import json
 import pickle
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
@@ -25,21 +25,25 @@ from sklearn.preprocessing import StandardScaler
 
 from src.config import EXPERIMENTS, MODELS, REPORTS, SEED
 from src.data.labels import load_labels
-from src.features import tracks as track_cache
-from src.features.detectors import LocalDetector
 from src.features.embeddings import (
     EMBED_FPS,
     FINGERPRINT,
     Embedder,
+    embed_video,
     load_or_embed,
     video_path,
     window_features,
 )
-from src.heuristics import Hit, Thresholds, detect
-from src.heuristics.detect import ID_NOT_PRESENTED
-from src.heuristics.thresholds import DEFAULT
-from src.models.evaluate import Case, bank_windows, fit_settings, lovo
-from src.models.violations import peak_feature
+from src.models.evaluate import (
+    Case,
+    bank_windows,
+    files_by_video,
+    fit_settings,
+    heuristic_hits,
+    lovo,
+    payout_sweep,
+)
+from src.models.violations import HEURISTIC_CONFIGS, peak_feature
 from src.models.windows import (
     NEGATIVE,
     POSITIVE,
@@ -96,7 +100,7 @@ def fit_on(clips: list[Clip]) -> BaseEstimator:
 
 def build_dataset(labels: pd.DataFrame) -> tuple[list[str], list[Clip]]:
     by_video = labels_by_video(labels)
-    files = labels.drop_duplicates("video_id").set_index("video_id")["file"]
+    files = files_by_video(labels)
     ids = sorted(by_video, key=lambda v: int(v.split("-")[1]))
     embedder = functools.cache(Embedder)  # built once, and only if some video is not cached yet
     clips = []
@@ -122,57 +126,37 @@ def cross_validate(ids: list[str], clips: list[Clip]) -> list[np.ndarray]:
     return scores
 
 
-PAYOUT_GRID_SEC = (3.0, 5.0, 8.0, 15.0)  # min_payout_sec values tried for id_not_presented (#54)
-
-
-def heuristic_hits(files: dict[str, str], thresholds: Thresholds = DEFAULT) -> dict[str, list[Hit]]:
-    """Heuristic hits of each video, from its cached tracks (built once on a miss)."""
-    detector = functools.cache(LocalDetector)
-    hits = {}
-    for vid, file in files.items():
-        tracks = track_cache.load_tracks(video_path(file))
-        hits[vid] = detect(
-            tracks if tracks is not None else track_cache.get_tracks(video_path(file), detector()),
-            thresholds=thresholds,
-        )
-    return hits
-
-
-def payout_sweep(labels: pd.DataFrame, ids: list[str]) -> list[dict]:
-    """Videos where id_not_presented fires at each min_payout_sec, split by what the video is labelled with."""
-    files = labels.drop_duplicates("video_id").set_index("video_id")["file"].to_dict()
-    clean = set(labels.loc[labels["verdict"] == "no_violation", "video_id"])
-    right = set(labels.loc[labels["violation_type"] == ID_NOT_PRESENTED, "video_id"])
-    sweep = []
-    for min_payout in PAYOUT_GRID_SEC:
-        hits = heuristic_hits({v: files[v] for v in ids}, replace(DEFAULT, min_payout_sec=min_payout))
-        fired = {v for v in ids if any(h.type_id == ID_NOT_PRESENTED for h in hits[v])}
-        sweep.append(
-            {
-                "min_payout_sec": min_payout,
-                "fired_right": len(fired & right),
-                "fired_clean": len(fired & clean),
-                "fired_other_type": len(fired - right - clean),
-            }
-        )
-    return sweep
-
-
 def build_cases(
     labels: pd.DataFrame, ids: list[str], clips: list[Clip], scores: list[np.ndarray]
 ) -> tuple[list[Case], dict]:
     """One Case per video for the type and vote evaluation, and the kNN bank (positive windows by type)."""
-    files = labels.drop_duplicates("video_id").set_index("video_id")["file"].to_dict()
-    hits = heuristic_hits({v: files[v] for v in ids})
+    files = files_by_video(labels)
+    hits_by = {name: heuristic_hits({v: files[v] for v in ids}, th) for name, th in HEURISTIC_CONFIGS.items()}
     cases, banks = [], {}
     for vid, clip, s in zip(ids, clips, scores, strict=True):
         rows = labels[(labels["video_id"] == vid) & (labels["verdict"] == "violation")]
         truth = [(int(sec), t) for sec, t in zip(rows["second"], rows["violation_type"], strict=True)]
+        by_config = {name: hits[vid] for name, hits in hits_by.items()}
         cases.append(
-            Case(vid, clip.windows["start"].to_numpy(), s, peak_feature(s, clip.feats), hits[vid], truth)
+            Case(
+                vid,
+                clip.windows["start"].to_numpy(),
+                s,
+                peak_feature(s, clip.feats),
+                by_config["default"],
+                truth,
+                by_config,
+            )
         )
         banks[vid] = bank_windows(clip.windows, clip.feats, truth)
     return cases, banks
+
+
+def reference_embed_seconds(video_id: str, labels: pd.DataFrame) -> float:
+    """Embedding time of the reference video measured now: a cached time was measured on whatever load the GPU
+    had on the day, and the number is what the time budget is checked against."""
+    path = video_path(files_by_video(labels)[video_id])
+    return embed_video(path, Embedder())[2]
 
 
 def run() -> dict:
@@ -196,8 +180,7 @@ def run() -> dict:
 
     cases, banks = build_cases(labels, ids, clips, scores)
     settings, notes = fit_settings(cases, threshold, banks)
-    final = lovo(cases, threshold, banks, settings.knn)
-    n_clean = sum(not v for v in is_violation)
+    final = lovo(cases, threshold, banks)
     metrics = {k: final[k] for k in ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy")}
     metrics |= {
         "branch_a": branch_a,  # the window classifier alone, as before #34
@@ -208,6 +191,7 @@ def run() -> dict:
             **notes["vote"],
         },
         "types": {
+            "heuristics": notes["heuristics"],  # which HEURISTIC_CONFIGS the saved model uses, and why
             "allowed": sorted(settings.allowed),  # heuristic types that may name a violation
             "per_type": notes["per_type"],
             "n_typed_right": final["n_typed_right"],
@@ -227,10 +211,10 @@ def run() -> dict:
         "threshold": threshold,
         "n_videos": len(ids),
         "n_violation_videos": sum(is_violation),
-        "n_clean_videos": n_clean,
-        "n_false_positives": round(final["fp_rate"] * n_clean),
+        "n_clean_videos": final["n_clean_videos"],
+        "n_false_positives": final["n_false_positives"],
         "embed_seconds_ref_video": {
-            "video_id": ids[ref], "duration": clips[ref].duration, "seconds": clips[ref].embed_seconds,
+            "video_id": ids[ref], "duration": clips[ref].duration, "seconds": reference_embed_seconds(ids[ref], labels),
         },
         "video_scores": dict(zip(ids, video_scores, strict=True)),
     }  # fmt: skip

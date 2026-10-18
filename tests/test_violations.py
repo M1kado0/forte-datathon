@@ -32,7 +32,7 @@ def scores_with(**peaks):
 
 
 def run(hits, scores, vote=VOTE, knn=None, peak_feat=None):
-    return decide(STARTS, scores, THRESHOLD, hits, replace(SETTINGS, vote=vote), knn, peak_feat)
+    return decide(STARTS, scores, THRESHOLD, hits, replace(SETTINGS, vote=vote, knn=knn), peak_feat)
 
 
 def test_evidence_kind_is_state_for_scenarios_that_last_and_action_for_the_rest():

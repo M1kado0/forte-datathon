@@ -1,32 +1,32 @@
 """Leave-one-video-out evaluation of the type choice and the heuristics' vote (#34), and the choice of their settings.
 
-The settings (types the heuristics may name, vote N and types, kNN) are fitted on the videos outside the held-out
-clip's group and applied to it, so every number is out of sample. `fit_settings` on all videos gives the
-settings `train` saves. Branch A's window scores are the out-of-fold ones from `train.cross_validate`.
+Everything that is chosen is chosen on the videos outside the held-out clip's group and applied to it, so every
+number is out of sample: the heuristic thresholds, the types the heuristics may name, the vote's N and types, and
+kNN's k and share. `fit_settings` on all videos gives the settings `train` saves. Branch A's window scores are the
+out-of-fold ones from `train.cross_validate`.
 """
 
 from __future__ import annotations
 
+import functools
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from statistics import median
 
 import numpy as np
+import pandas as pd
 
-from src.heuristics import Hit, vote
-from src.heuristics.detect import (
-    CASH_ON_DESK_NEXT_CLIENT,
-    CLIENT_LEFT_DURING_COUNT,
-    COUNT_WITHOUT_CONTROLLER,
-    FOREIGN_OBJECT_AT_DESK,
-    ID_NOT_PRESENTED,
-    OUTSIDER_IN_CASH_ROOM,
-    VALUABLES_LEFT_ON_DESK,
-    WORKPLACE_LEFT,
-)
+from src.features import tracks as track_cache
+from src.features.detectors import LocalDetector
+from src.features.embeddings import video_path
+from src.heuristics import Hit, Thresholds, detect, vote
+from src.heuristics.detect import ID_NOT_PRESENTED
+from src.heuristics.thresholds import DEFAULT
 from src.models.violations import (
     FALLBACK_TYPE,
+    HEURISTIC_CONFIGS,
+    HEURISTIC_TYPES,
     Found,
     Knn,
     Settings,
@@ -40,22 +40,13 @@ from src.models.windows import POSITIVE, WINDOW_SEC, group_of
 
 VOTE_GRID_SEC = (3.0, 4.0, 5.0, 6.0, 8.0, 10.0)  # a hit is at least 3 s long already (Thresholds.min_*_sec)
 KNN_GRID = [(k, share) for k in (5, 15) for share in (0.6, 0.8, 1.0)]
-MIN_TYPE_PRECISION = (
-    0.5  # a heuristic names a type only if, where it fires, the type was the labelled one half the time
-)
-MIN_TYPE_VIDEOS = 1  # ... and it was right on at least this many videos (two would leave nothing in a fold)
+# A heuristic names a type only if, where it fires, the type was the labelled one half the time and on at least
+# one video. One video is thin evidence; with two, a fold that holds one of two positives out keeps nothing.
+MIN_TYPE_PRECISION = 0.5
+MIN_TYPE_VIDEOS = 1
 MIN_KNN_ANSWERS = 3  # kNN is judged on at least this many answers
-# Every type `detect` can emit, so metrics.json shows the ones that never fire as well (id_not_presented, #54).
-HEURISTIC_TYPES = (
-    WORKPLACE_LEFT,
-    CASH_ON_DESK_NEXT_CLIENT,
-    COUNT_WITHOUT_CONTROLLER,
-    ID_NOT_PRESENTED,
-    OUTSIDER_IN_CASH_ROOM,
-    FOREIGN_OBJECT_AT_DESK,
-    VALUABLES_LEFT_ON_DESK,
-    CLIENT_LEFT_DURING_COUNT,
-)
+# min_payout_sec values tried for id_not_presented (#54). Nothing is selected from them, so there is no fold.
+PAYOUT_GRID_SEC = (3.0, 5.0, 8.0, 15.0)
 
 
 @dataclass
@@ -66,8 +57,9 @@ class Case:
     starts: np.ndarray
     scores: np.ndarray
     peak_feature: np.ndarray | None  # features of the best-scoring window
-    hits: list[Hit]
+    hits: list[Hit]  # of the default heuristic thresholds
     truth: list[tuple[int, str]]  # (second, type) of each violation label; [] for a clean video
+    hits_by: dict[str, list[Hit]] = field(default_factory=dict)  # per key of HEURISTIC_CONFIGS
 
     @property
     def types(self) -> set[str]:
@@ -81,6 +73,50 @@ class Case:
     def group(self) -> str:
         return group_of(self.video_id)
 
+    def view(self, config: str) -> Case:
+        """This video as the heuristics of `config` see it."""
+        return replace(self, hits=self.hits_by[config]) if self.hits_by else self
+
+
+# --- inputs -----------------------------------------------------------------------------------------------
+
+
+def files_by_video(labels: pd.DataFrame) -> dict[str, str]:
+    return labels.drop_duplicates("video_id").set_index("video_id")["file"].to_dict()
+
+
+def heuristic_hits(files: dict[str, str], thresholds: Thresholds = DEFAULT) -> dict[str, list[Hit]]:
+    """Heuristic hits of each video, from its cached tracks (built once on a miss)."""
+    detector = functools.cache(LocalDetector)
+    hits = {}
+    for vid, file in files.items():
+        tracks = track_cache.load_tracks(video_path(file))
+        hits[vid] = detect(
+            tracks if tracks is not None else track_cache.get_tracks(video_path(file), detector()),
+            thresholds=thresholds,
+        )
+    return hits
+
+
+def payout_sweep(labels: pd.DataFrame, ids: list[str]) -> list[dict]:
+    """Videos where id_not_presented fires at each min_payout_sec, split by what the video is labelled with."""
+    files = files_by_video(labels)
+    clean = set(labels.loc[labels["verdict"] == "no_violation", "video_id"])
+    right = set(labels.loc[labels["violation_type"] == ID_NOT_PRESENTED, "video_id"])
+    sweep = []
+    for min_payout in PAYOUT_GRID_SEC:
+        hits = heuristic_hits({v: files[v] for v in ids}, replace(DEFAULT, min_payout_sec=min_payout))
+        fired = {v for v in ids if any(h.type_id == ID_NOT_PRESENTED for h in hits[v])}
+        sweep.append(
+            {
+                "min_payout_sec": min_payout,
+                "fired_right": len(fired & right),
+                "fired_clean": len(fired & clean),
+                "fired_other_type": len(fired - right - clean),
+            }
+        )
+    return sweep
+
 
 def bank_windows(
     windows, feats: np.ndarray, truth: Sequence[tuple[int, str]]
@@ -92,8 +128,9 @@ def bank_windows(
     return feats[rows], types
 
 
-def run_case(case: Case, threshold: float, settings: Settings, bank: Knn | None = None) -> list[Found]:
-    return decide(case.starts, case.scores, threshold, case.hits, settings, bank, case.peak_feature)
+def run_case(case: Case, threshold: float, settings: Settings) -> list[Found]:
+    view = case.view(settings.heuristics)
+    return decide(view.starts, view.scores, threshold, view.hits, settings, view.peak_feature)
 
 
 # --- choosing the settings --------------------------------------------------------------------------------
@@ -138,7 +175,8 @@ def fit_vote(cases: Sequence[Case], threshold: float) -> tuple[Vote, dict]:
 
 
 def fit_knn(cases: Sequence[Case], banks: dict[str, tuple[np.ndarray, list[str]]]) -> tuple[Knn | None, dict]:
-    """kNN settings, or None when no setting names the right type for at least half of its answers.
+    """kNN with the bank of all of `banks`, or None when no k and share name the right type for at least half of
+    their answers.
 
     Each answer is out of sample: the bank for a clip leaves out its group. `banks` maps video id -> (features,
     types) of its positive windows.
@@ -179,34 +217,62 @@ def _bank(
     return np.concatenate([x for x, _ in parts]), np.array([s for _, t in parts for s in t])
 
 
+def _typed(cases: Sequence[Case], threshold: float, settings: Settings) -> tuple[int, int]:
+    """(violation videos whose first violation has the labelled type, videos named with a wrong type)."""
+    right = wrong = 0
+    for c in cases:
+        found = run_case(c, threshold, settings)
+        if found and found[0].type_id in c.types:
+            right += 1
+        elif found and found[0].type_id != FALLBACK_TYPE:
+            wrong += 1
+    return right, wrong
+
+
 def fit_settings(cases: Sequence[Case], threshold: float, banks: dict | None = None) -> tuple[Settings, dict]:
-    """Settings fitted on `cases`, and the numbers behind each choice for metrics.json."""
-    allowed, per_type = fit_allowed(cases)
-    chosen_vote, vote_notes = fit_vote(cases, threshold)
+    """Settings fitted on `cases`, and the numbers behind each choice for metrics.json.
+
+    The heuristic thresholds are the HEURISTIC_CONFIGS key with the most right types on `cases`, then the fewest
+    wrong ones; the first key (the default) wins a tie.
+    """
+    tried = {}
+    for name in HEURISTIC_CONFIGS:
+        view = [c.view(name) for c in cases]
+        allowed, per_type = fit_allowed(view)
+        chosen_vote, vote_notes = fit_vote(view, threshold)
+        settings = Settings(allowed, chosen_vote, None, name)
+        tried[name] = (settings, per_type, vote_notes, *_typed(view, threshold, settings))
+    best = max(tried, key=lambda name: (tried[name][3], -tried[name][4]))
+    settings, per_type, vote_notes, _, _ = tried[best]
     knn, knn_notes = fit_knn(cases, banks) if banks else (None, {})
-    return Settings(allowed, chosen_vote, knn), {"per_type": per_type, "vote": vote_notes, "knn": knn_notes}
+    notes = {
+        "heuristics": {
+            "chosen": best,
+            "tried": {name: {"typed_right": t[3], "named_wrong": t[4]} for name, t in tried.items()},
+        },
+        "per_type": per_type,
+        "vote": vote_notes,
+        "knn": knn_notes,
+    }
+    return replace(settings, knn=knn), notes
 
 
 # --- leave-one-video-out ----------------------------------------------------------------------------------
 
 
-def lovo(cases: Sequence[Case], threshold: float, banks: dict | None = None, knn: Knn | None = None) -> dict:
-    """Metrics of the whole decision when every clip is judged with settings fitted on the other clips.
-
-    `knn` is the setting chosen once on all clips (it is itself judged out of sample, per clip); a clip's bank
-    leaves out its own group.
-    """
+def lovo(cases: Sequence[Case], threshold: float, banks: dict | None = None) -> dict:
+    """Metrics of the whole decision when every clip is judged with settings fitted on the other clips: the
+    held-out clip's group is out of the cases and out of kNN's bank."""
     first: list[Found | None] = []
+    seen: list[Case] = []  # each clip as the heuristics chosen for its fold saw it
     for c in cases:
         rest = [o for o in cases if o.group != c.group]
-        s, _ = fit_settings(rest, threshold)
-        bank = None
-        if knn is not None and banks:
-            parts = _bank(banks, c.group)
-            bank = Knn(parts[0], parts[1], knn.k, knn.min_share) if parts else None
-        found = run_case(c, threshold, s, bank)
+        rest_banks = {v: b for v, b in banks.items() if group_of(v) != c.group} if banks else None
+        settings, _ = fit_settings(rest, threshold, rest_banks)
+        found = run_case(c, threshold, settings)
         first.append(found[0] if found else None)
-    return summarize(cases, first)
+        seen.append(c.view(settings.heuristics))
+    return summarize(seen, first)
 
 
 def _delta(truth: Sequence[tuple[int, str]], second: float) -> float:
@@ -220,10 +286,12 @@ def summarize(cases: Sequence[Case], first: Sequence[Found | None]) -> dict:
     flagged = [(c, f) for c, f in violation if f is not None]
     typed = [(c, f) for c, f in flagged if f.type_id in c.types]
     named = [(c, f) for c, f in flagged if f.type_id != FALLBACK_TYPE]
-
+    false_positives = sum(f is not None for _, f in clean)
     return {
         "video_recall": len(flagged) / len(violation) if violation else None,
-        "fp_rate": sum(f is not None for _, f in clean) / len(clean) if clean else None,
+        "fp_rate": false_positives / len(clean) if clean else None,
+        "n_clean_videos": len(clean),
+        "n_false_positives": false_positives,
         "median_abs_dt": _median([_delta(c.truth, f.timecode_sec) for c, f in flagged]),
         "type_accuracy": len(typed) / len(violation) if violation else None,
         "n_typed_right": len(typed),
@@ -239,11 +307,11 @@ def summarize(cases: Sequence[Case], first: Sequence[Found | None]) -> dict:
 def _timecode_choice(cases: Sequence[Case], flagged: Sequence[tuple[Case, Found]]) -> dict:
     """Median |Δt| of the start and of the peak, by kind of type, so the choice by scenario rests on numbers.
 
-    `state`: every label of a state type that a hit of that type covers, on the hit nearest the label (the right
-    episode). Start is the hit's start, peak the centre of its strongest window. `picked_*` are the same for the
-    episode `decide` picked, where its type was the labelled one; the two differ when a clip has several.
-    `action`: every flagged video whose first violation is an action type, the fallback included; the start is
-    the end of the first window over the threshold, the peak the best window's centre.
+    `state` is judged on the episodes `decide` reports: violations of a state type whose type is the labelled one
+    (the hit's start against the centre of its strongest window). `nearest_episode` is the same on the hit nearest
+    each label, which assumes the right episode was picked and so flatters both; the two differ when a clip has
+    several episodes of one type. `action`: every flagged video whose first violation is an action type, the
+    fallback included; the start is the end of the first window over the threshold, the peak the best window's centre.
     """
     onset, peak = [], []
     for c in cases:
@@ -257,12 +325,10 @@ def _timecode_choice(cases: Sequence[Case], flagged: Sequence[tuple[Case, Found]
     action = [(c, f) for c, f in flagged if f.kind == "action"]
     return {
         "state": {
-            "n": len(onset),
-            "onset": _median(onset),
-            "peak": _median(peak),
-            "n_picked": len(picked),
-            "picked_onset": _median([_delta(c.truth, f.onset_sec) for c, f in picked]),
-            "picked_peak": _median([_delta(c.truth, f.peak_sec) for c, f in picked]),
+            "n": len(picked),
+            "onset": _median([_delta(c.truth, f.onset_sec) for c, f in picked]),
+            "peak": _median([_delta(c.truth, f.peak_sec) for c, f in picked]),
+            "nearest_episode": {"n": len(onset), "onset": _median(onset), "peak": _median(peak)},
         },
         "action": {
             "n": len(action),

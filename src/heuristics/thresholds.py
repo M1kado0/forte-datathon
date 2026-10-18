@@ -31,10 +31,10 @@ class Thresholds:
     # outsider_in_cash_room: shorter presence behind the desk is passing through
     min_outsider_sec: float = 3.0
     # outsider_in_cash_room: True takes a second person beside the cashier, while cash lies on the desk, for the
-    # controller of a count (count_without_controller needs one). On since #34: on the real tracks the labelled
-    # outsiders still fire and a hit on a video of another type goes (reports/metrics.json, types.per_type). On the
-    # stand-in tracks it hid a labelled outsider, so with other tracks this needs the same check.
-    controller_exempt: bool = True
+    # controller of a count (count_without_controller needs one). Off by default: on the stand-in tracks it hides
+    # the labelled outsider of X-18 (16-22 s, cash on the desk), the 19 clean videos fire nothing without it, and
+    # a missed violation costs more than a false one (ADR 0002). #34 decides on real tracks.
+    controller_exempt: bool = False
     # foreign_object_at_desk and valuables_left_on_desk, up to book_conf:
     min_object_sec: float = 3.0  # an object on the desk for less than this is a passing hand
     object_radius: float = 0.5  # an object this close to the seat lies on the cashier's desk

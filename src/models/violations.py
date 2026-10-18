@@ -8,13 +8,23 @@ verdict. Pure functions: `train` measures them on leave-one-video-out and saves 
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
 from src.data.evidence import Kind
 from src.heuristics import Hit, vote
-from src.heuristics.detect import FOREIGN_OBJECT_AT_DESK, OUTSIDER_IN_CASH_ROOM, VALUABLES_LEFT_ON_DESK
+from src.heuristics.detect import (
+    CASH_ON_DESK_NEXT_CLIENT,
+    CLIENT_LEFT_DURING_COUNT,
+    COUNT_WITHOUT_CONTROLLER,
+    FOREIGN_OBJECT_AT_DESK,
+    ID_NOT_PRESENTED,
+    OUTSIDER_IN_CASH_ROOM,
+    VALUABLES_LEFT_ON_DESK,
+    WORKPLACE_LEFT,
+)
+from src.heuristics.thresholds import DEFAULT, Thresholds
 from src.models.windows import WINDOW_SEC, timecode
 from src.rules.describe import OBJECT_NAMES
 
@@ -22,20 +32,42 @@ FALLBACK_TYPE = "other"  # rules.yaml `fallback: true`
 MAX_VIOLATIONS = 2
 MIN_GAP_SEC = 5.0
 
-# Types that stand while they last: the timecode is the start of the state and the evidence frames follow it.
-# Every other type, the fallback included, is an action: the timecode is the score peak (docs/TYPES.md).
-# `train` checks both choices by median |Δt| (metrics.json, timecode_choice).
+# Every type `detect` can emit.
+HEURISTIC_TYPES = (
+    WORKPLACE_LEFT,
+    CASH_ON_DESK_NEXT_CLIENT,
+    COUNT_WITHOUT_CONTROLLER,
+    ID_NOT_PRESENTED,
+    OUTSIDER_IN_CASH_ROOM,
+    FOREIGN_OBJECT_AT_DESK,
+    VALUABLES_LEFT_ON_DESK,
+    CLIENT_LEFT_DURING_COUNT,
+)
+
+# The heuristic thresholds `train` chooses between (inside the folds, see evaluate.fit_settings); the first is
+# the default and wins ties. controller_exempt silences the outsider type while cash lies on the desk, because
+# a second worker beside the cashier during a count is the controller, not an outsider.
+HEURISTIC_CONFIGS: dict[str, Thresholds] = {
+    "default": DEFAULT,
+    "controller_exempt": replace(DEFAULT, controller_exempt=True),
+}
+
+# State types stand while they last: the timecode is the start of the state and the evidence frames follow it.
+# These are the scenarios the ticket lists (keys, safe, door, laptop, object, cash on the desk, outsider). Every
+# other type, the fallback included, is an action, a moment: the timecode is the score peak (client left, collector,
+# cash put away, detector, identification, handing over). `train` checks both choices by median |Δt|
+# (metrics.json, timecode_choice).
 STATE_TYPES = frozenset(
     {
         "keys_left_on_safe",
         "safe_left_open",
         "cash_room_door_open",
         "laptop_left_open",
-        "valuables_left_on_desk",
-        "foreign_object_at_desk",
         "cash_left_on_desk",
-        "cash_on_desk_next_client",
-        "outsider_in_cash_room",
+        VALUABLES_LEFT_ON_DESK,
+        FOREIGN_OBJECT_AT_DESK,
+        CASH_ON_DESK_NEXT_CLIENT,
+        OUTSIDER_IN_CASH_ROOM,
     }
 )
 # The description of these needs the object a heuristic saw, which a window embedding does not give.
@@ -48,7 +80,7 @@ class Vote:
 
     enabled: bool = False
     n_sec: float = 3.0
-    types: frozenset[str] = frozenset({OUTSIDER_IN_CASH_ROOM})
+    types: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -69,7 +101,8 @@ class Settings:
 
     allowed: frozenset[str] = frozenset()  # heuristic types that may name a violation
     vote: Vote = Vote()
-    knn: Knn | None = None
+    knn: Knn | None = None  # the labelled windows to look a type up in, with the k and share chosen for them
+    heuristics: str = "default"  # key of HEURISTIC_CONFIGS
 
 
 @dataclass(frozen=True)
@@ -101,11 +134,10 @@ def decide(
     threshold: float,
     hits: list[Hit],
     settings: Settings,
-    knn: Knn | None = None,
     peak_feature: np.ndarray | None = None,
 ) -> list[Found]:
-    """The violations of one video, strongest first; [] means no violation. `knn` is the bank for this clip;
-    `settings.knn` only holds the chosen k and share."""
+    """The violations of one video, strongest first; [] means no violation. `hits` come from the thresholds
+    named by `settings.heuristics`."""
     starts = np.asarray(starts, dtype=float)
     scores = np.asarray(scores, dtype=float)
     flagged = bool(scores.size and scores.max() >= threshold)
@@ -118,7 +150,7 @@ def decide(
     if typed:
         return typed[:MAX_VIOLATIONS]
     peak = int(np.argmax(scores))
-    type_id = knn_type(peak_feature, knn) if knn is not None and peak_feature is not None else None
+    type_id = knn_type(peak_feature, settings.knn)
     type_id = type_id or FALLBACK_TYPE
     centre = float(starts[peak] + WINDOW_SEC / 2)
     onset = timecode(starts, scores, threshold, "onset")  # not None: only a flagged video gets here

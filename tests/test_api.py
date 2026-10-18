@@ -248,9 +248,6 @@ def test_explicit_stub_mode_starts_without_weights_and_completes_jobs(monkeypatc
         assert result["violations"][0]["timecode_sec"] == 0
 
 
-WARMED = {"default_model", "default_embedder", "default_detector"}
-
-
 def load_test_model(warmed=None, paths=None, failing_loader=None):
     """Substitute the ML boundary inside the child, without importing model libraries."""
     warmed_names = []
@@ -265,7 +262,7 @@ def load_test_model(warmed=None, paths=None, failing_loader=None):
 
     def analyze(path):
         nonlocal calls
-        assert set(warmed_names) == WARMED
+        assert set(warmed_names) == {"default_model", "default_embedder"}
         paths.put(path)
         calls += 1
         if calls == 1:
@@ -278,7 +275,6 @@ def load_test_model(warmed=None, paths=None, failing_loader=None):
     sys.modules["src.models.analyze"] = SimpleNamespace(
         default_model=lambda: warm("default_model"),
         default_embedder=lambda: warm("default_embedder"),
-        default_detector=lambda: warm("default_detector"),
         analyze=analyze,
     )
     return load_analyzer()
@@ -304,15 +300,15 @@ def test_default_app_warms_model_once_and_serves_its_results(monkeypatch, mode):
         assert violation["verdict"] == "violation"
         assert violation["violations"][0]["timecode_sec"] == 12.5
         assert violation["violations"][0]["evidence_frames"][0]["timestamp_sec"] == 12.5
-        loaded = [warmed.get(timeout=1) for _ in WARMED]
-        assert {name for name, _ in loaded} == WARMED
+        loaded = [warmed.get(timeout=1), warmed.get(timeout=1)]
+        assert {name for name, _ in loaded} == {"default_model", "default_embedder"}
         assert all(pid != os.getpid() for _, pid in loaded)
         with pytest.raises(Empty):
             warmed.get(timeout=0.02)
         assert all(not paths.get(timeout=1).exists() for _ in range(2))
 
 
-@pytest.mark.parametrize("failing_loader", sorted(WARMED))
+@pytest.mark.parametrize("failing_loader", ["default_model", "default_embedder"])
 def test_model_load_failure_stops_startup_without_stub_fallback(failing_loader):
     app = create_app(analyzer_loader=partial(load_test_model, failing_loader=failing_loader))
     with pytest.raises(RuntimeError, match="Local model is unavailable"), TestClient(app):

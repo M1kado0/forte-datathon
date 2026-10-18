@@ -616,14 +616,8 @@ def test_type3_silent_for_a_second_worker_who_controls_the_count_when_the_exempt
     assert hits_of(OUTSIDER_IN_CASH_ROOM, counted_with_controller(), thresholds=EXEMPT) == []
 
 
-def test_type3_the_count_exemption_is_on_by_default_and_can_be_switched_off():
-    assert hits_of(OUTSIDER_IN_CASH_ROOM, counted_with_controller()) == []
-    assert (
-        hits_of(
-            OUTSIDER_IN_CASH_ROOM, counted_with_controller(), thresholds=Thresholds(controller_exempt=False)
-        )
-        != []
-    )
+def test_type3_the_count_exemption_is_off_by_default_because_it_would_hide_a_real_outsider():
+    assert hits_of(OUTSIDER_IN_CASH_ROOM, counted_with_controller()) != []
 
 
 def test_type3_with_the_exemption_on_it_still_fires_for_the_part_of_the_stay_without_cash():

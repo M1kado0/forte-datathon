@@ -21,7 +21,7 @@ from src.features.embeddings import MODEL_NAME
 from src.models import analyze as analyze_mod
 from src.models.analyze import FALLBACK_TYPE, MAX_VIOLATIONS, MIN_GAP_SEC, analyze
 from src.models.train import MODEL_PATH
-from src.models.violations import Settings, Vote
+from src.models.violations import HEURISTIC_CONFIGS, HEURISTIC_TYPES, Settings, Vote
 from src.rules.describe import rule_catalog
 
 SRC_FPS = 10
@@ -199,12 +199,24 @@ REAL_CLIP = shortest_real_clip()
 def test_smoke_real_model_on_shortest_real_clip(monkeypatch):
     """DINOv2 + saved classifier on a real camera clip (native size, h264); no score is asserted.
 
-    With the saved threshold the contract holds whatever the verdict. Threshold 0 flags every video, so
-    the violation path (evidence frames, type, description) also runs on real frames. The clip is embedded
-    once and shared by both calls, which keeps the test under the 5 s limit of AGENTS.md.
+    This is branch A, the smoke test of #28: the saved heuristic settings are left out, so no tracks are built
+    (the real detector run is checked by `make jury-sim`, and takes about 1 s more than this fits in). With the
+    saved threshold the contract holds whatever the verdict. Threshold 0 flags every video, so the violation path
+    (evidence frames, type, description) also runs on real frames. The clip is embedded once and shared by both
+    calls, which keeps the test under the 5 s limit of AGENTS.md.
     """
     monkeypatch.setattr(analyze_mod, "embed_video", functools.cache(analyze_mod.embed_video))
-    assert_contract(analyze(REAL_CLIP))
-    forced = analyze(REAL_CLIP, model={**analyze_mod.default_model(), "threshold": 0.0})
+    branch_a = {**analyze_mod.default_model(), "settings": None}
+    assert_contract(analyze(REAL_CLIP, model=branch_a))
+    forced = analyze(REAL_CLIP, model={**branch_a, "threshold": 0.0})
     assert len(forced) == 1
     assert_contract(forced)
+
+
+@pytest.mark.skipif(not MODEL_PATH.exists(), reason="needs models/window_clf.pkl")
+def test_saved_settings_load_and_name_known_things():
+    settings = analyze_mod.default_model()["settings"]
+    assert isinstance(settings, Settings)
+    assert settings.heuristics in HEURISTIC_CONFIGS
+    assert settings.allowed <= set(HEURISTIC_TYPES)
+    assert settings.vote.types <= set(HEURISTIC_TYPES)
