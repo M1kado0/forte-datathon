@@ -8,6 +8,7 @@ Frames are decoded and scored locally with the production `LocalDetector`; nothi
 
 import sys
 from dataclasses import asdict, dataclass, replace
+from pathlib import Path
 from typing import Literal
 
 from src.config import VIDEOS_DIR
@@ -25,13 +26,10 @@ from src.features.experiments import append_row
 from src.heuristics.thresholds import Thresholds
 
 OWL_THRESHOLD = detectors.OWL_MIN_CONF
-OWL_SWEEP = (
-    0.1,
-    0.15,
-    0.2,
-    0.25,
-)  # OWLv2 floors tried, to see whether any separates label frames from clean ones
-LOOSE_CONF = 0.3  # floor of the classes thresholds.py has none for (laptop) or keeps off (book)
+# OWLv2 floors tried, to see whether any separates label frames from clean ones
+OWL_SWEEP = (0.1, 0.15, 0.2, 0.25)
+# floor of the classes thresholds.py has none for (laptop) or keeps off (book)
+LOOSE_CONF = 0.3
 WINDOW_S = 3.0  # frames from [second - WINDOW_S, second + WINDOW_S] around a violation label
 BATCH = 8
 LABEL_GOAL = 0.70  # an item passes when it is found on at least this share of its target labels...
@@ -67,9 +65,8 @@ ITEMS = (
 
 @dataclass(frozen=True)
 class ItemSummary:
-    violation_frames_all: (
-        float  # frames with the item on all labels of the item's source (the ticket's label set)
-    )
+    # frames with the item on all labels of the item's source (the ticket's label set)
+    violation_frames_all: float
     violation_frames_target: float  # the same on the item's own target labels
     target_labels_hit: float  # target labels with the item in at least one window frame
     clean_frames: float  # frames of videos without violations with the item
@@ -132,7 +129,7 @@ def union_score(item: Item, best: dict[str, float]) -> float:
     return max(best[m] / floors[m] for m in item.members)
 
 
-def frame_scores(det, frames: list) -> list[dict[str, float]]:
+def frame_scores(det: detectors.Detector, frames: list) -> list[dict[str, float]]:
     """Best score per item for each BGR frame of one size."""
     coco, owl = det.coco(frames), det.open_vocab(frames)
     out = []
@@ -148,7 +145,7 @@ def frame_scores(det, frames: list) -> list[dict[str, float]]:
     return out
 
 
-def score_video(det, path, wanted: set[int]) -> dict[int, dict[str, float]]:
+def score_video(det: detectors.Detector, path: Path, wanted: set[int]) -> dict[int, dict[str, float]]:
     """Scores of the sampled frames whose index is in wanted; frames are batched and dropped, so memory stays flat."""
     scores: dict[int, dict[str, float]] = {}
     batch: list[tuple[int, object]] = []
@@ -216,12 +213,15 @@ def report(violation: dict, clean: dict, arrangement: dict[str, str]) -> dict[st
             f"{pct(s.violation_frames_target):>10}{pct(s.target_labels_hit):>7}"
             f"{pct(s.clean_frames):>12}{pct(s.clean_videos_hit):>12}{str(s.passed):>8}"
         )
-    print("\nпо меткам: доля кадров окна с находкой (макс. уверенность)")
+    print(
+        "\nпо меткам: доля кадров окна с находкой (макс. уверенность; у foreign object в долях пола класса)"
+    )
     for i in ITEMS:
         cells = []
         for v in i.targets:
             scores = violation[i.name].get(v, [])
-            cells.append(f"{v} {_share(scores, i.threshold):.0%} ({max(scores, default=0.0):.2f})")
+            top = f"{max(scores, default=0.0):.2f}" + (" пола" if i.members else "")
+            cells.append(f"{v} {_share(scores, i.threshold):.0%} ({top})")
         print(f"  {i.name:<15}" + "  ".join(cells))
     sweeps: dict[str, list[dict]] = {}
     print("\nпороги OWLv2: доля кадров меток / доля чистых кадров / макс. на чистых кадрах / passed")
