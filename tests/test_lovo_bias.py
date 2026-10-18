@@ -4,11 +4,14 @@ import numpy as np
 
 from scripts.lovo_bias import (
     balanced_folds,
+    drop_folds,
     fp_at_full_recall,
     knn_scores,
+    nearest_twin,
     normal_bank,
     pair_auc,
     pair_folds,
+    random_stand_in,
     top_mean,
 )
 from src.models.windows import NEGATIVE, POSITIVE, UNLABELED
@@ -99,3 +102,35 @@ def test_fp_at_full_recall_counts_clean_clips_scoring_at_or_above_the_weakest_vi
     assert fp_at_full_recall([0.9, 0.4, 0.4, 0.2, 0.1], violation) == 1
     # every violation scores above every clean clip: no false positive
     assert fp_at_full_recall([0.9, 0.8, 0.3, 0.2, 0.1], violation) == 0
+
+
+def test_nearest_twin_is_the_most_similar_other_clip_by_cosine():
+    mean = np.array([[1.0, 0.0], [0.9, 0.1], [0.0, 1.0], [0.1, 0.9], [-1.0, 0.0]])
+    # clip 4 points away from everything, its closest direction is clip 2 or 3 (orthogonal, cosine 0), never itself
+    twin = nearest_twin(mean)
+    assert twin[:4].tolist() == [1, 0, 3, 2]
+    assert twin[4] != 4
+
+
+def test_random_stand_in_has_the_twins_class_and_is_neither_the_clip_nor_its_twin():
+    twin = np.array([6, 7, 8, 9, 0, 1, 2, 3, 4, 5])  # every clip is paired with another one
+    for seed in range(5):
+        stand_in = random_stand_in(twin, VIOLATION, seed)
+        for i, j in enumerate(stand_in):
+            assert VIOLATION[j] == VIOLATION[twin[i]]
+            assert j not in (i, twin[i])
+
+
+def test_drop_folds_hold_out_one_clip_and_also_remove_the_dropped_one_from_training():
+    dropped = np.array([6, 6, 6, 6, 6, 6, 0, 0, 0, 0])
+    folds = list(drop_folds(IDS, dropped))
+    assert len(folds) == len(IDS)
+    for train, val in folds:
+        assert val[0] not in train and dropped[val[0]] not in train
+        assert len(train) == len(IDS) - 2
+
+
+def test_pair_folds_can_also_remove_a_dropped_clip_per_member_of_the_pair():
+    dropped = np.array([6, 6, 6, 6, 6, 6, 0, 0, 0, 0])
+    for train, pos, neg in pair_folds(IDS, VIOLATION, dropped):
+        assert not {pos, neg, dropped[pos], dropped[neg]} & set(train.tolist())

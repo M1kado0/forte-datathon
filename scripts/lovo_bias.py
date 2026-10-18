@@ -6,7 +6,8 @@ Diagnostics on the cached embeddings, no model and no GPU:
     uv run python -m scripts.lovo_bias d3    leave-pair-out: one violation and one clean clip held out, 21 x 19 folds
     uv run python -m scripts.lovo_bias d5    do the nearest training clips predict the held-out score?
     uv run python -m scripts.lovo_bias dn2   kNN distance to a bank of normal windows of the same layout
-    uv run python -m scripts.lovo_bias all   the four above
+    uv run python -m scripts.lovo_bias lto   leave-twin-out: a clip is scored without its nearest lookalike in training
+    uv run python -m scripts.lovo_bias all   everything above
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ SEEDS = range(SEED, SEED + 10)
 NEIGHBOURS = 5  # D5: nearest training clips
 KNN_K = (1, 5)  # DN2
 TOP_N = 5  # DN2: top-n mean video score
+CONTROL_SEEDS = SEEDS[:5]  # LTO control draws
 
 
 def _groups(video_ids: Sequence[str]) -> np.ndarray:
@@ -67,20 +69,58 @@ def balanced_folds(
         yield np.flatnonzero(train), np.flatnonzero(val)
 
 
+def nearest_twin(mean_embeddings: np.ndarray) -> np.ndarray:
+    """Per clip, the index of the most similar other clip (cosine of the clip's mean embedding)."""
+    unit = mean_embeddings / np.maximum(np.linalg.norm(mean_embeddings, axis=1, keepdims=True), 1e-12)
+    sim = unit @ unit.T
+    np.fill_diagonal(sim, -np.inf)
+    return np.argmax(sim, axis=1)
+
+
+def random_stand_in(twin: np.ndarray, is_violation: Sequence[bool], seed: int) -> np.ndarray:
+    """Per clip, a random clip of its twin's class that is neither the clip nor the twin.
+
+    The control for a twin drop: the training side loses a clip of the same class, but not the lookalike.
+    """
+    rng = np.random.default_rng(seed)
+    bad = np.asarray(is_violation, dtype=bool)
+    out = np.empty(len(twin), dtype=int)
+    for i, t in enumerate(twin):
+        pool = [j for j in np.flatnonzero(bad == bad[t]) if j not in (i, t)]
+        out[i] = rng.choice(pool)
+    return out
+
+
+def drop_folds(video_ids: Sequence[str], dropped: Sequence[int]) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+    """Leave-one-video-out where clip `dropped[i]` also leaves the training side whenever clip i is held out.
+
+    With `dropped` = each clip's nearest twin this is leave-twin-out: a clip is never scored by a model that
+    saw its lookalike.
+    """
+    groups = _groups(video_ids)
+    for g in sorted(set(groups)):
+        val = groups == g
+        out = {groups[dropped[i]] for i in np.flatnonzero(val)} | {g}
+        yield np.flatnonzero(~np.isin(groups, list(out))), np.flatnonzero(val)
+
+
 def pair_folds(
-    video_ids: Sequence[str], is_violation: Sequence[bool]
+    video_ids: Sequence[str], is_violation: Sequence[bool], dropped: Sequence[int] | None = None
 ) -> Iterator[tuple[np.ndarray, int, int]]:
     """Leave-pair-out: hold out one violation clip and one clean clip, train on the rest.
 
     Yields (train_idx, violation_idx, clean_idx) for every pair. AUC is the share of pairs where the violation
     clip scores higher, and it does not move with the class ratio of a fold (Airola et al. 2011).
+    With `dropped`, the clip `dropped[i]` leaves the training side whenever clip i is held out.
     """
     groups = _groups(video_ids)
     bad = np.asarray(is_violation, dtype=bool)
     for i in np.flatnonzero(bad):
         for j in np.flatnonzero(~bad):
-            train = ~np.isin(groups, [groups[i], groups[j]])
-            yield np.flatnonzero(train), int(i), int(j)
+            out = [groups[i], groups[j]]
+            if dropped is not None:
+                out += [groups[dropped[i]], groups[dropped[j]]]
+            yield np.flatnonzero(~np.isin(groups, out)), int(i), int(j)
 
 
 def pair_auc(violation_scores: Sequence[float], clean_scores: Sequence[float]) -> float:
@@ -250,6 +290,15 @@ def _dn2_score(c: Cohort, train: np.ndarray, held_out: Sequence[int], k: int) ->
     return out
 
 
+def _dn2_oof(c: Cohort, folds: list[tuple[np.ndarray, np.ndarray]], k: int) -> np.ndarray:
+    """Out-of-fold DN2 scores, one row per clip: (max, top-n mean) of its window distances."""
+    got = Parallel(n_jobs=-1)(delayed(_dn2_score)(c, train, val, k) for train, val in folds)
+    scores = np.zeros((len(c.clips), 2))
+    for (_, val), g in zip(folds, got, strict=True):
+        scores[val] = g
+    return scores
+
+
 def run_dn2(c: Cohort) -> None:
     """kNN distance to a bank of normal windows of the same layout, balanced inside that layout."""
     n_clean = int((~c.violation).sum())
@@ -258,10 +307,7 @@ def run_dn2(c: Cohort) -> None:
         auc, fp = [], []
         for seed in SEEDS:
             folds = list(balanced_folds(c.ids, c.violation, seed, layouts=c.layout))
-            got = Parallel(n_jobs=-1)(delayed(_dn2_score)(c, train, val, k) for train, val in folds)
-            scores = np.zeros((len(c.clips), 2))
-            for (_, val), g in zip(folds, got, strict=True):
-                scores[val] = g
+            scores = _dn2_oof(c, folds, k)
             auc.append([_auc(scores[:, m], c.violation) for m in (0, 1)])
             fp.append([fp_at_full_recall(scores[:, m], c.violation) for m in (0, 1)])
         mean, sd, fps = np.mean(auc, axis=0), np.std(auc, axis=0), np.array(fp)
@@ -272,7 +318,72 @@ def run_dn2(c: Cohort) -> None:
             )
 
 
-COMMANDS = ("d2", "d3", "d5", "dn2", "all")
+def _clip_twins(c: Cohort) -> np.ndarray:
+    dim = c.clips[0].feats.shape[1]
+    mean = np.stack([x.feats.mean(axis=0) if len(x.feats) else np.zeros(dim) for x in c.clips])
+    return nearest_twin(mean)
+
+
+def _d3_scores(c: Cohort, dropped: np.ndarray | None) -> tuple[float, int]:
+    """Leave-pair-out pair AUC and FP at recall 1.0 (score = mean over the video's pairs)."""
+    pairs = list(pair_folds(c.ids, c.violation, dropped))
+    out = Parallel(n_jobs=-1)(delayed(_fit_fold)(c.clips, train, (i, j)) for train, i, j in pairs)
+    total, count = np.zeros(len(c.clips)), np.zeros(len(c.clips))
+    for (_, i, j), (pos, neg) in zip(pairs, out, strict=True):
+        total[[i, j]] += (pos, neg)
+        count[[i, j]] += 1
+    auc = float(np.mean([pair_auc([pos], [neg]) for pos, neg in out]))
+    return auc, fp_at_full_recall(total / count, c.violation)
+
+
+def run_lto(c: Cohort) -> None:
+    """Leave-twin-out: the classifier, DN2 and D3 when the held-out clip's nearest lookalike is not in training.
+
+    Three arms per method: plain, twin dropped, and a control that drops a random clip of the twin's class
+    instead, so a change in class counts is not mistaken for a twin effect.
+    """
+    n_clean = int((~c.violation).sum())
+    twin = _clip_twins(c)
+    stand_ins = [random_stand_in(twin, c.violation, s) for s in CONTROL_SEEDS]
+    print(
+        f"LTO leave-twin-out nearest twin is of the other class for {np.mean(c.violation[twin] != c.violation):.0%} of clips"
+    )
+    print("                   method           arm        AUC             FP at recall 1.0")
+
+    def line(method: str, arm: str, aucs: list[float], fps: list[int]) -> None:
+        spread = f" +- {np.std(aucs):.3f}" if len(aucs) > 1 else "      "
+        print(
+            f"                   {method:<16} {arm:<10} {np.mean(aucs):.3f}{spread}   {_fp_text(fps, n_clean)}"
+        )
+
+    def folds_of(dropped: np.ndarray | None) -> list[tuple[np.ndarray, np.ndarray]]:
+        return list(lovo_folds(c.ids) if dropped is None else drop_folds(c.ids, dropped))
+
+    arms = [("plain", [None]), ("twin out", [twin]), ("control", stand_ins)]
+    for arm, droppeds in arms:
+        runs = [_oof_scores(c.clips, folds_of(d)) for d in droppeds]
+        line(
+            "classifier",
+            arm,
+            [_auc(r, c.violation) for r in runs],
+            [fp_at_full_recall(r, c.violation) for r in runs],
+        )
+    for k in KNN_K:
+        for arm, droppeds in arms:
+            runs = [_dn2_oof(c, folds_of(d), k) for d in droppeds]
+            for m, name in enumerate(("max", f"top-{TOP_N}")):
+                line(
+                    f"DN2 k={k} {name}",
+                    arm,
+                    [_auc(r[:, m], c.violation) for r in runs],
+                    [fp_at_full_recall(r[:, m], c.violation) for r in runs],
+                )
+    for arm, droppeds in arms:
+        runs = [_d3_scores(c, d) for d in droppeds]
+        line("D3 leave-pair", arm, [r[0] for r in runs], [r[1] for r in runs])
+
+
+COMMANDS = ("d2", "d3", "d5", "dn2", "lto", "all")
 
 
 def main(argv: list[str]) -> None:
@@ -291,6 +402,8 @@ def main(argv: list[str]) -> None:
         run_d3(c)
     if cmd in ("dn2", "all"):
         run_dn2(c)
+    if cmd in ("lto", "all"):
+        run_lto(c)
 
 
 if __name__ == "__main__":
