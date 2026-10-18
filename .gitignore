@@ -10,10 +10,14 @@ web/dist/
 data/raw/*
 data/processed/*
 !data/**/.gitkeep
+# our own recordings (#43): people on camera, never pushed
+data/self_videos/
 /models/
 reports/screens/
 *.ipynb_checkpoints
 .DS_Store
 .claude/settings.local.json
+# agent worktrees
+.claude/worktrees/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
