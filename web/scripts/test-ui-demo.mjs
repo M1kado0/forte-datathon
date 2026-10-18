@@ -1,0 +1,52 @@
+// Browser-only synthetic fixtures. Never reads or uploads dataset videos.
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+try {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.goto(process.env.APP_URL ?? 'http://localhost:8000');
+  await page.locator('.eye-loader').waitFor({state:'detached'});
+  await page.locator('.cinema-panel[data-position="active"] .slide-cta').click();
+  await page.waitForFunction(() => document.querySelector('.cinema').dataset.moving === 'false');
+  const input = page.locator('input[type=file]');
+  const submit = page.locator('button[type=submit]');
+  await input.setInputFiles({ name:'invalid.mp4', mimeType:'video/mp4', buffer:Buffer.from('synthetic') });
+  assert.equal(await submit.isDisabled(), true);
+  assert.equal(await page.getByRole('alert').count(), 1);
+  const data = await page.evaluateHandle(() => {
+    const dt = new DataTransfer(); dt.items.add(new File(['synthetic'], 'dragged.MOV', {type:'application/octet-stream'})); return dt;
+  });
+  await page.locator('.upload-zone').dispatchEvent('dragenter', {dataTransfer:data});
+  assert.equal(await page.locator('.upload-zone').getAttribute('data-dragging'), 'true');
+  await page.locator('.upload-zone').dispatchEvent('drop', {dataTransfer:data});
+  assert.equal(await submit.isEnabled(), true);
+  assert.equal(await page.locator('.file-info p').innerText(), 'dragged.MOV');
+  assert.equal(await page.getByRole('alert').count(), 0);
+  await page.locator('.remove-file').click();
+  assert.equal(await submit.isDisabled(), true);
+  await page.locator('.upload-target').focus();
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.keyboard.press('Enter');
+  const chooser = await chooserPromise;
+  await chooser.setFiles({name:'keyboard.mov', mimeType:'video/quicktime', buffer:Buffer.from('synthetic')});
+  assert.equal(await submit.isEnabled(), true);
+  assert.equal(await page.locator('.partners-caption, .cinema-controls').count(), 0);
+  assert.equal(await page.locator('.motion-toggle').count(), 0);
+  await page.locator('.partners').scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>document.querySelector('.marquee-track').dataset.paused==='false');
+  assert.equal(await page.locator('.marquee-track').evaluate(e=>getComputedStyle(e).animationPlayState), 'running');
+  const loop = await page.locator('.marquee-track').evaluate(e=>({width:e.getBoundingClientRect().width,group:e.firstElementChild.getBoundingClientRect().width}));
+  assert.equal(loop.width,loop.group*2);
+  const sponsorNames = await page.locator('.partners img[alt]:not([alt=""])').evaluateAll(images => images.map(image => image.alt));
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.reload();
+  assert.equal(await page.locator('.eye-loader:visible').count(),0);
+  assert.equal(await page.locator('.marquee-track').evaluate(e=>getComputedStyle(e).animationName),'none');
+  assert.deepEqual(await page.locator('.partner-slot:visible img').evaluateAll(images => images.map(image => image.alt)), sponsorNames);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.deepEqual(errors,[]);
+  console.log('UI demo: invalid format, drag/drop, uppercase MOV, removal, keyboard picker, automatic marquee, seamless group geometry, reduced motion — PASS');
+} finally { await browser.close(); }

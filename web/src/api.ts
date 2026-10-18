@@ -1,5 +1,6 @@
 ﻿// Mirrors contracts/schemas.py; UI uses the same handlers without a jury API key.
 export type EvidenceFrame = { timestamp_sec: number; image_base64: string };
+export type Health = { status: string; version: string; model_loaded: boolean };
 export type RuleType = { id: string; name: string; citation_suffix: string; rules: { title: string; approved_by: string; punkt: string | null; url: string; citation: string }[] };
 export type Violation = { type: string; timecode_sec: number; description: string; evidence_frames: EvidenceFrame[] };
 export type Job = {
@@ -12,7 +13,7 @@ export type Job = {
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`/api/ui${path}`, init);
+    response = await fetch(path, init);
   } catch {
     throw new Error("Сервис не ответил. Проверьте соединение и повторите проверку.");
   }
@@ -28,11 +29,12 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  rules: () => req<RuleType[]>("/rules"),
+  health: () => req<Health>("/api/health", { signal: AbortSignal.timeout(5000) }),
+  rules: () => req<RuleType[]>("/api/ui/rules"),
   analyze(file: File) {
     const body = new FormData();
     body.append("file", file);
-    return req<{ job_id: string }>("/analyze", { method: "POST", body });
+    return req<{ job_id: string }>("/api/ui/analyze", { method: "POST", body });
   },
-  job: (id: string) => req<Job>(`/jobs/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(60_000) }),
+  job: (id: string) => req<Job>(`/api/ui/jobs/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(60_000) }),
 };

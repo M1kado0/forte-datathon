@@ -7,7 +7,7 @@ export function Button({ className, ...p }: ButtonHTMLAttributes<HTMLButtonEleme
     <button
       className={cn(
         "inline-flex h-12 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-primary px-6",
-        "text-[15px] font-semibold text-primary-foreground transition-colors hover:bg-forte-dark",
+        "text-[15px] font-semibold text-primary-foreground transition-colors hover:bg-foreground",
         "disabled:cursor-not-allowed disabled:opacity-60",
         className,
       )}

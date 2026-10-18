@@ -1,0 +1,39 @@
+Forte Datathon UI demo — footage provenance
+Retrieved: 2026-10-17
+
+All clips are locally hosted, silent, approximately eight-second derivatives.
+Encoded as 1280x720 WebM (VP9); JPEG posters are frames from the same sources.
+No video or dataset footage is sent to a remote model at runtime.
+
+counting.webm / counting.jpg
+Creator: Tima Miroshnichenko
+Pexels ID: 6266425 — Man Counting Money
+https://www.pexels.com/video/man-counting-money-6266425/
+
+team.webm / team.jpg
+Creator: Tima Miroshnichenko
+Pexels ID: 6266250 — People Counting Money
+https://www.pexels.com/video/people-counting-money-6266250/
+
+payment.webm / payment.jpg
+Creator: Kindel Media
+Pexels ID: 8351658 — A Person Paying at a Cashier
+https://www.pexels.com/video/a-person-paying-at-a-cashier-8351658/
+
+License: Pexels License
+https://www.pexels.com/license/
+Permits free website use and modification, with attribution optional.
+Do not imply endorsement or portray identifiable people negatively.
+These clips illustrate ordinary cash handling; they make no allegation about
+any depicted person and are not claimed to be violations or model detections.
+
+Selection limits: staged stock footage, US dollars, not Kazakhstan bank CCTV.
+No appropriately licensed exact violation footage was verified. Use these as
+context only, never as training data, evaluation data or detection evidence.
+The interface labels this distinction and links to the original creators.
+
+Repository context checked:
+src/rules/rules.yaml has seven named categories and an 'other' fallback.
+src/heuristics/detect.py implements workplace_left, cash_on_desk_next_client,
+count_without_controller and id_not_presented. Stock clips provide cash-handling
+context for these checks but do not demonstrate that their conditions are met.
