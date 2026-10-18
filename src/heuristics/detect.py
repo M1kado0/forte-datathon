@@ -4,17 +4,20 @@
 
 Known limits, for #32 and #34 (no id merging is built before there is real tracker output):
 - Anyone who is not the cashier is "someone else": clients and incassators are not told apart.
-- count_without_controller does not see counting. It fires on cashier at the seat + cash on the desk + nobody else in the
-  frame, so a cashier sitting idle next to cash fires it too.
+- cash_left_on_desk and laptop_left_open do not see the cashier leave, only that nobody is at the seat. They
+  need no client at the counter: п. 20, часть вторая, does not ask for one.
 - Anyone at the seat counts as the cashier while the cashier's own track is absent. A client standing at
-  the seat while the cashier is away hides workplace_left; a second worker who sits in the empty seat looks like
-  the cashier, so count_without_controller can fire with "no second worker in the frame". This is the price of tolerating a
+  the seat while the cashier is away hides cash_left_on_desk and laptop_left_open. This is the price of tolerating a
   cashier who returns under a new track id.
+- laptop_left_open sees a laptop box within Thresholds.laptop_radius of the seat, not whether the screen is open or
+  locked. D-FINE finds a laptop on 93% of clean frames (#70), so only the empty seat tells the violation from a
+  normal shift. On the cached real tracks it does not fire on X-28 (the cashier is at the seat for 15.5 of 16.3 s,
+  and the last 0.75 s is below min_away_sec) and fires once on a clean video (X-39), for #34 to settle on LOVO.
 - If the tracker splits one person into two ids away from the seat, the second id reads as a new person.
 - A visit is the first to last frame of one id at the counter. A client who leaves and comes back under the
   same id is one long visit, so the client served in between reads as a passer-by and cash_on_desk_next_client is missed.
 - The seat is where one track stays longest. A client who stays at the counter longer than the cashier's
-  longest track at the seat takes the seat, and a real workplace_left is reported as count_without_controller. That happens when the
+  longest track at the seat takes the seat, and a real cash_left_on_desk is missed. That happens when the
   cashier is away for much of the clip, or when the tracker splits the cashier into short ids (stable ids
   are #32's job).
 - A detector miss on the cashier longer than Thresholds.gap_sec reads as "left".
@@ -49,9 +52,9 @@ from src.heuristics.thresholds import DEFAULT, Thresholds
 from src.heuristics.tracks import with_geometry
 
 # type ids, as in src/rules/rules.yaml
-WORKPLACE_LEFT = "workplace_left"
+CASH_LEFT_ON_DESK = "cash_left_on_desk"
 CASH_ON_DESK_NEXT_CLIENT = "cash_on_desk_next_client"
-COUNT_WITHOUT_CONTROLLER = "count_without_controller"
+LAPTOP_LEFT_OPEN = "laptop_left_open"
 ID_NOT_PRESENTED = "id_not_presented"
 OUTSIDER_IN_CASH_ROOM = "outsider_in_cash_room"
 FOREIGN_OBJECT_AT_DESK = "foreign_object_at_desk"
@@ -62,6 +65,7 @@ CLIENT_LEFT_DURING_COUNT = "client_left_during_count"
 FOREIGN_OBJECTS = ("cup", "cell phone", "bottle")
 VALUABLES_OBJECTS = ("book",)
 OBJECT_CLASSES = FOREIGN_OBJECTS + VALUABLES_OBJECTS
+LAPTOP = "laptop"  # looked for within Thresholds.laptop_radius, a laptop is larger than a cup
 
 
 @dataclass(frozen=True)
@@ -78,9 +82,9 @@ class _Timeline:
 
     fps: float
     at_seat: np.ndarray  # someone stands at the cashier's seat
-    others: np.ndarray  # a person other than the cashier is in the frame, a client or an incassator
     at_counter: np.ndarray  # such a person is within counter_radius of the seat
     cash: np.ndarray  # cash lies on the cashier's desk
+    laptop: np.ndarray  # a laptop stands on the cashier's desk
     document: np.ndarray  # an identity document or paper is visible at the counter
     visits: list[tuple[int, int]]  # (first, last) frame of each person at the counter, by arrival
     outsider: np.ndarray  # a person other than the cashier stands beside the seat while the cashier is there
@@ -162,12 +166,11 @@ def detect(tracks: pd.DataFrame, fps: float = DEFAULT_FPS, thresholds: Threshold
         return []
     tl = _timeline(tracks, roles, fps, thresholds)
     arrived = np.maximum.accumulate(tl.at_seat)  # a cashier who was never at the seat has not left it
-    left = arrived & ~tl.at_seat & tl.at_counter & tl.cash
-    counting = tl.at_seat & tl.cash & ~tl.others
+    away = arrived & ~tl.at_seat
     return [
-        *(tl.hit(WORKPLACE_LEFT, run) for run in tl.runs(left, thresholds.min_away_sec)),
+        *(tl.hit(CASH_LEFT_ON_DESK, run) for run in tl.runs(away & tl.cash, thresholds.min_away_sec)),
+        *(tl.hit(LAPTOP_LEFT_OPEN, run) for run in tl.runs(away & tl.laptop, thresholds.min_away_sec)),
         *tl.cash_left_for_next_client(thresholds.min_hold_sec),
-        *(tl.hit(COUNT_WITHOUT_CONTROLLER, run) for run in tl.runs(counting, thresholds.min_count_sec)),
         *tl.id_not_presented(thresholds.min_payout_sec),
         *(tl.hit(OUTSIDER_IN_CASH_ROOM, run) for run in tl.runs(tl.outsider, thresholds.min_outsider_sec)),
         *tl.objects_on_desk(FOREIGN_OBJECT_AT_DESK, FOREIGN_OBJECTS, thresholds.min_object_sec),
@@ -185,6 +188,7 @@ def _confident(tracks: pd.DataFrame, th: Thresholds) -> pd.DataFrame:
     }
     off = 2.0  # above any confidence: the class is switched off
     by_class = {
+        LAPTOP: th.laptop_conf,
         "cell phone": th.phone_conf,
         "cup": th.cup_conf,
         "bottle": th.bottle_conf,
@@ -227,9 +231,9 @@ def _timeline(tracks: pd.DataFrame, roles: Roles, fps: float, th: Thresholds) ->
     return _Timeline(
         fps=fps,
         at_seat=_close_gaps(_frames_to_mask(n, people["frame"][near]), gap),
-        others=_close_gaps(_frames_to_mask(n, others["frame"]), gap),
         at_counter=_close_gaps(_frames_to_mask(n, at_counter["frame"]), gap),
         cash=cash,
+        laptop=_close_gaps(_frames_to_mask(n, _laptop_frames(d, th)), gap),
         document=_close_gaps(
             _frames_to_mask(n, papers["frame"][papers["from_seat"] <= th.counter_radius]), gap
         ),
@@ -257,6 +261,12 @@ def _outsider_frames(
     h_rel = pair["h"] / roles.scale
     ok = (overlap < th.iou_dup) & h_rel.between(th.outsider_h_min, th.outsider_h_max)
     return pair["frame"][ok]
+
+
+def _laptop_frames(d: pd.DataFrame, th: Thresholds) -> pd.Series:
+    """Frames with a laptop box near enough to the seat to stand on the cashier's desk (laptop_left_open)."""
+    laptops = d[(d["kind"] == "object") & (d["label"] == LAPTOP)]
+    return laptops["frame"][laptops["from_seat"] <= th.laptop_radius]
 
 
 def _objects_on_desk(d: pd.DataFrame, n: int, fps: float, th: Thresholds) -> dict[str, np.ndarray]:

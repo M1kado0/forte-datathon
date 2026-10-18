@@ -11,11 +11,10 @@ class Thresholds:
     seat_radius: float = 0.75  # a person this close to the seat is the cashier
     desk_radius: float = 2.0  # cash this close to the seat lies on the cashier's desk
     counter_radius: float = 2.0  # a person this close to the seat is at the counter, not just in the frame
-    # workplace_left: shorter absences are a step to the shelf, not leaving the workplace
+    # cash_left_on_desk and laptop_left_open: shorter absences are a step to the shelf, not leaving the workplace
     min_away_sec: float = 3.0
     # cash_on_desk_next_client: cash must stay this long after the next person arrives
     min_hold_sec: float = 3.0
-    min_count_sec: float = 3.0  # count_without_controller: shorter handling of cash is not counting
     # id_not_presented: cash and a client together for less than this is not a payout
     min_payout_sec: float = 5.0
     # outsider_in_cash_room: two people at the seat at once. A person other than the cashier, no farther than room_radius from
@@ -31,13 +30,18 @@ class Thresholds:
     # outsider_in_cash_room: shorter presence behind the desk is passing through
     min_outsider_sec: float = 3.0
     # outsider_in_cash_room: True takes a second person beside the cashier, while cash lies on the desk, for the
-    # controller of a count (count_without_controller needs one). Off by default: on the stand-in tracks it hides
+    # controller of a count. Off by default: on the stand-in tracks it hides
     # the labelled outsider of X-18 (16-22 s, cash on the desk), the 19 clean videos fire nothing without it, and
     # a missed violation costs more than a false one (ADR 0002). #34 decides on real tracks.
     controller_exempt: bool = False
     # foreign_object_at_desk and valuables_left_on_desk, up to book_conf:
     min_object_sec: float = 3.0  # an object on the desk for less than this is a passing hand
     object_radius: float = 0.5  # an object this close to the seat lies on the cashier's desk
+    # laptop_left_open: a laptop box counts when it is within laptop_radius of the seat (X-28 has it at 1.4, a
+    # laptop is larger than the cup the 0.5 object_radius is for) and above laptop_conf (the real X-28 laptop is
+    # at 0.8-0.94, the doubtful boxes in the other clips at 0.3-0.5). Both are first guesses for #34 on LOVO.
+    laptop_radius: float = 2.0
+    laptop_conf: float = 0.5
     # a box below its class confidence is dropped, a phone is never named on a doubt
     phone_conf: float = 0.4
     cup_conf: float = 0.5

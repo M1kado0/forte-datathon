@@ -15,14 +15,14 @@ import numpy as np
 from src.data.evidence import Kind
 from src.heuristics import Hit, vote
 from src.heuristics.detect import (
+    CASH_LEFT_ON_DESK,
     CASH_ON_DESK_NEXT_CLIENT,
     CLIENT_LEFT_DURING_COUNT,
-    COUNT_WITHOUT_CONTROLLER,
     FOREIGN_OBJECT_AT_DESK,
     ID_NOT_PRESENTED,
+    LAPTOP_LEFT_OPEN,
     OUTSIDER_IN_CASH_ROOM,
     VALUABLES_LEFT_ON_DESK,
-    WORKPLACE_LEFT,
 )
 from src.heuristics.thresholds import DEFAULT, Thresholds
 from src.models.windows import WINDOW_SEC, timecode
@@ -34,9 +34,9 @@ MIN_GAP_SEC = 5.0
 
 # Every type `detect` can emit.
 HEURISTIC_TYPES = (
-    WORKPLACE_LEFT,
+    CASH_LEFT_ON_DESK,
     CASH_ON_DESK_NEXT_CLIENT,
-    COUNT_WITHOUT_CONTROLLER,
+    LAPTOP_LEFT_OPEN,
     ID_NOT_PRESENTED,
     OUTSIDER_IN_CASH_ROOM,
     FOREIGN_OBJECT_AT_DESK,
@@ -62,8 +62,8 @@ STATE_TYPES = frozenset(
         "keys_left_on_safe",
         "safe_left_open",
         "cash_room_door_open",
-        "laptop_left_open",
-        "cash_left_on_desk",
+        LAPTOP_LEFT_OPEN,
+        CASH_LEFT_ON_DESK,
         VALUABLES_LEFT_ON_DESK,
         FOREIGN_OBJECT_AT_DESK,
         CASH_ON_DESK_NEXT_CLIENT,

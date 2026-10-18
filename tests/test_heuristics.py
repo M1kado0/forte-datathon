@@ -9,16 +9,16 @@ from pandera.errors import SchemaError
 from src.config import RULES_YAML
 from src.heuristics import TRACKS_SCHEMA, Thresholds, detect, find_roles
 from src.heuristics.detect import (
+    CASH_LEFT_ON_DESK,
     CASH_ON_DESK_NEXT_CLIENT,
     CLIENT_LEFT_DURING_COUNT,
-    COUNT_WITHOUT_CONTROLLER,
     FOREIGN_OBJECT_AT_DESK,
     FOREIGN_OBJECTS,
     ID_NOT_PRESENTED,
+    LAPTOP_LEFT_OPEN,
     OUTSIDER_IN_CASH_ROOM,
     VALUABLES_LEFT_ON_DESK,
     VALUABLES_OBJECTS,
-    WORKPLACE_LEFT,
     Hit,
 )
 from src.heuristics.vote import VOTING_TYPES, vote
@@ -95,7 +95,7 @@ def hits_of(type_id, df, **kwargs):
     return [h for h in detect(df, **kwargs) if h.type_id == type_id]
 
 
-def workplace_left(*, away=(10, 20), client=(5, 20), client_at=COUNTER, cash=(2, 20), cash_drop=0):
+def cash_left(*, away=(10, 20), client=(5, 20), client_at=COUNTER, cash=(2, 20), cash_drop=0):
     """Cashier at the seat, leaves for `away` seconds; a client and cash on the desk as given (None = absent)."""
     stays = [(0, 30)] if away is None else [(0, away[0]), (away[1], 30)]
     parts = [part(1, "person", a, b, *SEAT, wobble=3) for a, b in stays]
@@ -106,30 +106,38 @@ def workplace_left(*, away=(10, 20), client=(5, 20), client_at=COUNTER, cash=(2,
     return tracks(*parts)
 
 
-def test_type1_cashier_leaves_with_cash_on_desk_and_client_at_counter():
-    hits = hits_of("workplace_left", workplace_left())
+def test_cash_left_on_desk_cashier_leaves_with_cash_on_the_desk_and_a_client_at_the_counter():
+    hits = hits_of(CASH_LEFT_ON_DESK, cash_left())
 
     assert [(h.start_sec, h.end_sec) for h in hits] == [(10.0, 19.75)]
 
 
-def test_type1_silent_when_no_client_is_visible():
-    assert hits_of("workplace_left", workplace_left(client=None)) == []
+def test_cash_left_on_desk_needs_no_client_at_the_counter():
+    hits = hits_of(CASH_LEFT_ON_DESK, cash_left(client=None))
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(10.0, 19.75)]
 
 
-def test_type1_silent_when_no_cash_is_on_the_desk():
-    assert hits_of("workplace_left", workplace_left(cash=None)) == []
+def test_cash_left_on_desk_does_not_care_where_a_client_stands():
+    far = cash_left(client_at=(440.0, 800.0))  # 2.3 cashier heights from the seat
+
+    assert [(h.start_sec, h.end_sec) for h in hits_of(CASH_LEFT_ON_DESK, far)] == [(10.0, 19.75)]
 
 
-def test_type1_silent_when_the_cashier_only_steps_away_for_a_second():
-    assert hits_of("workplace_left", workplace_left(away=(10, 11))) == []
+def test_cash_left_on_desk_silent_when_no_cash_is_on_the_desk():
+    assert hits_of(CASH_LEFT_ON_DESK, cash_left(cash=None)) == []
 
 
-def test_type1_silent_when_the_cashier_never_leaves():
-    assert hits_of("workplace_left", workplace_left(away=None)) == []
+def test_cash_left_on_desk_silent_when_the_cashier_only_steps_away_for_a_second():
+    assert hits_of(CASH_LEFT_ON_DESK, cash_left(away=(10, 11))) == []
 
 
-def test_type1_silent_before_the_cashier_has_arrived():
-    assert hits_of("workplace_left", workplace_left(away=(0, 8))) == []
+def test_cash_left_on_desk_silent_when_the_cashier_never_leaves():
+    assert hits_of(CASH_LEFT_ON_DESK, cash_left(away=None)) == []
+
+
+def test_cash_left_on_desk_silent_before_the_cashier_has_arrived():
+    assert hits_of(CASH_LEFT_ON_DESK, cash_left(away=(0, 8))) == []
 
 
 def client_change(*, a=(3, 10), b=(14, 25), b_at=COUNTER, cash=(1, 22), cash_drop=0):
@@ -192,45 +200,6 @@ def test_type2_silent_when_the_cash_is_put_away_right_after_the_next_client_arri
     assert hits_of("cash_on_desk_next_client", client_change(cash=(1, 15))) == []
 
 
-def counting(*, cash=(5, 20), cashier=(0, 30), others=(), cash_drop=0):
-    """Cashier with cash on the desk; `others` is a list of (track_id, t0, t1, cx, cy) for other people."""
-    parts = [part(1, "person", *cashier, *SEAT, wobble=3)]
-    if cash:
-        parts.append(part(10, "cash", *cash, *DESK, h=20, drop_every=cash_drop))
-    parts += [part(i, "person", t0, t1, cx, cy) for i, t0, t1, cx, cy in others]
-    return tracks(*parts)
-
-
-def test_type4_cashier_counts_cash_alone():
-    hits = hits_of("count_without_controller", counting())
-
-    assert [(h.start_sec, h.end_sec) for h in hits] == [(5.0, 19.75)]
-
-
-def test_type4_silent_when_a_client_is_at_the_counter():
-    df = counting(others=[(2, 3, 25, *COUNTER)])
-
-    assert hits_of("count_without_controller", df) == []
-
-
-def test_type4_silent_when_a_second_worker_is_in_the_frame():
-    df = counting(others=[(2, 3, 25, 200.0, 100.0)])  # behind the cashier, far from the counter
-
-    assert hits_of("count_without_controller", df) == []
-
-
-def test_type4_silent_when_there_is_no_cash():
-    assert hits_of("count_without_controller", counting(cash=None)) == []
-
-
-def test_type4_silent_when_the_cash_lies_there_but_the_cashier_is_away():
-    assert hits_of("count_without_controller", counting(cashier=(0, 10), cash=(12, 20))) == []
-
-
-def test_type4_silent_when_the_cash_is_handled_only_for_two_seconds():
-    assert hits_of("count_without_controller", counting(cash=(5, 7))) == []
-
-
 def test_type2_silent_when_the_cash_appears_only_after_the_previous_client_left():
     assert hits_of("cash_on_desk_next_client", client_change(cash=(11, 22))) == []
 
@@ -254,9 +223,9 @@ def test_every_type_the_heuristics_can_report_exists_in_rules_yaml():
     known = {t["id"] for t in yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))["types"]}
 
     assert {
-        WORKPLACE_LEFT,
+        CASH_LEFT_ON_DESK,
         CASH_ON_DESK_NEXT_CLIENT,
-        COUNT_WITHOUT_CONTROLLER,
+        LAPTOP_LEFT_OPEN,
         ID_NOT_PRESENTED,
         OUTSIDER_IN_CASH_ROOM,
         FOREIGN_OBJECT_AT_DESK,
@@ -265,22 +234,10 @@ def test_every_type_the_heuristics_can_report_exists_in_rules_yaml():
     } <= known
 
 
-def test_type1_silent_when_the_only_other_person_is_far_from_the_counter():
-    df = workplace_left(client_at=(440.0, 800.0))  # 2.3 cashier heights from the seat
-
-    assert hits_of("workplace_left", df) == []
-
-
 def test_type2_silent_when_the_next_person_is_far_from_the_counter():
     df = client_change(b_at=(440.0, 800.0))
 
     assert hits_of("cash_on_desk_next_client", df) == []
-
-
-def test_type4_silent_when_a_client_stands_right_beside_the_cashier():
-    df = counting(others=[(2, 3, 25, 200.0, 500.0)])  # 0.5 cashier heights from the seat
-
-    assert hits_of("count_without_controller", df) == []
 
 
 def test_a_cashier_who_returns_under_a_new_track_id_is_not_someone_else():
@@ -292,7 +249,7 @@ def test_a_cashier_who_returns_under_a_new_track_id_is_not_someone_else():
 
     hits = [(h.type_id, h.start_sec, h.end_sec) for h in detect(df)]
 
-    assert hits == [("count_without_controller", 2.0, 9.75), ("count_without_controller", 20.0, 29.75)]
+    assert hits == [(CASH_LEFT_ON_DESK, 10.0, 19.75)]  # the new id at the seat from 20 s is the cashier back
 
 
 def cashier_away_for_a_while():
@@ -312,13 +269,10 @@ def test_the_seat_is_where_one_track_stays_longest_not_where_the_stillest_one_st
     assert roles.seat == SEAT
 
 
-def test_type1_is_reported_when_the_cashier_is_away_for_40_percent_of_the_clip():
+def test_cash_left_on_desk_is_reported_when_the_cashier_is_away_for_40_percent_of_the_clip():
     df = cashier_away_for_a_while()
 
-    assert [(h.start_sec, h.end_sec) for h in hits_of("workplace_left", df)] == [(10.0, 19.75)]
-    assert [
-        h for h in hits_of("count_without_controller", df) if h.end_sec >= 10.0 and h.start_sec < 22.0
-    ] == []
+    assert [(h.start_sec, h.end_sec) for h in hits_of(CASH_LEFT_ON_DESK, df)] == [(10.0, 21.75)]
 
 
 def clients_back_to_back(client_wobble):
@@ -346,15 +300,14 @@ def test_clients_who_come_one_after_another_do_not_make_the_counter_the_seat(cli
 
 
 @BACK_TO_BACK
-def test_type1_is_reported_when_clients_come_one_after_another(client_wobble):
+def test_cash_left_on_desk_is_reported_when_clients_come_one_after_another(client_wobble):
     df = clients_back_to_back(client_wobble)
 
-    assert [(h.start_sec, h.end_sec) for h in hits_of("workplace_left", df)] == [(25.0, 34.75)]
-    assert hits_of("count_without_controller", df) == []
+    assert [(h.start_sec, h.end_sec) for h in hits_of(CASH_LEFT_ON_DESK, df)] == [(25.0, 34.75)]
 
 
-def test_one_missed_cash_detection_every_two_seconds_does_not_hide_a_type1_episode():
-    hits = hits_of("workplace_left", workplace_left(cash_drop=8))
+def test_one_missed_cash_detection_every_two_seconds_does_not_hide_a_cash_left_on_desk_episode():
+    hits = hits_of(CASH_LEFT_ON_DESK, cash_left(cash_drop=8))
 
     assert [h.start_sec for h in hits] == [10.0]
 
@@ -365,20 +318,14 @@ def test_one_missed_cash_detection_every_two_seconds_does_not_hide_a_type2_episo
     assert [h.start_sec for h in hits] == [14.0]
 
 
-def test_one_missed_cash_detection_every_two_seconds_does_not_hide_a_type4_episode():
-    hits = hits_of("count_without_controller", counting(cash=(5, 25), cash_drop=8))
-
-    assert [h.start_sec for h in hits] == [5.0]
-
-
 def test_a_gap_longer_than_a_second_still_splits_the_episode():
     df = tracks(
-        part(1, "person", 0, 30, *SEAT, wobble=3),
+        part(1, "person", 0, 4, *SEAT, wobble=3),  # the cashier leaves at 4 s
         part(10, "cash", 5, 10, *DESK, h=20),
         part(10, "cash", 11.25, 20, *DESK, h=20),  # missing for 1.25 s
     )
 
-    hits = hits_of("count_without_controller", df)
+    hits = hits_of(CASH_LEFT_ON_DESK, df)
 
     assert [(h.start_sec, h.end_sec) for h in hits] == [(5.0, 9.75), (11.25, 19.75)]
 
@@ -391,21 +338,23 @@ def test_the_track_schema_rejects_a_box_without_area():
 @pytest.mark.parametrize(
     ("type_id", "scene", "stricter"),
     [
-        ("workplace_left", lambda: workplace_left(), Thresholds(min_away_sec=11.0)),
-        ("workplace_left", lambda: workplace_left(), Thresholds(counter_radius=1.0)),
-        ("workplace_left", lambda: workplace_left(cash_drop=8), Thresholds(gap_sec=0.0)),
+        (CASH_LEFT_ON_DESK, lambda: cash_left(), Thresholds(min_away_sec=11.0)),
+        (CASH_LEFT_ON_DESK, lambda: cash_left(), Thresholds(desk_radius=0.1)),
+        (CASH_LEFT_ON_DESK, lambda: cash_left(cash_drop=8), Thresholds(gap_sec=0.0)),
+        (LAPTOP_LEFT_OPEN, lambda: laptop_scene(), Thresholds(min_away_sec=13.0)),
+        (LAPTOP_LEFT_OPEN, lambda: laptop_scene(), Thresholds(laptop_radius=0.5)),
+        (LAPTOP_LEFT_OPEN, lambda: laptop_scene(conf=0.6), Thresholds(laptop_conf=0.7)),
         ("cash_on_desk_next_client", lambda: client_change(), Thresholds(min_hold_sec=9.0)),
-        ("count_without_controller", lambda: counting(), Thresholds(min_count_sec=16.0)),
-        ("count_without_controller", lambda: counting(), Thresholds(desk_radius=0.1)),
         ("id_not_presented", lambda: payout(), Thresholds(min_payout_sec=14.0)),
     ],
     ids=[
-        "min_away_sec",
-        "counter_radius",
-        "gap_sec",
+        "cash min_away_sec",
+        "cash desk_radius",
+        "cash gap_sec",
+        "laptop min_away_sec",
+        "laptop laptop_radius",
+        "laptop laptop_conf",
         "min_hold_sec",
-        "min_count_sec",
-        "desk_radius",
         "min_payout_sec",
     ],
 )
@@ -433,11 +382,13 @@ def test_the_seat_radius_decides_who_counts_as_standing_at_the_seat():
         part(10, "cash", 2, 30, *DESK, h=20),
     )
 
-    default = [h for h in detect(df) if h.type_id == "workplace_left"]
-    narrow = [h for h in detect(df, thresholds=Thresholds(seat_radius=0.4)) if h.type_id == "workplace_left"]
+    default = hits_of(CASH_LEFT_ON_DESK, df)
+    narrow = hits_of(CASH_LEFT_ON_DESK, df, thresholds=Thresholds(seat_radius=0.4))
 
-    assert default == []  # taken for the cashier's stand-in at the seat
-    assert [(h.start_sec, h.end_sec) for h in narrow] == [(12.0, 17.75)]  # too far from the seat: a client
+    assert (
+        default == []
+    )  # taken for the cashier's stand-in at the seat, so the desk is never left alone for 3 s
+    assert [(h.start_sec, h.end_sec) for h in narrow] == [(10.0, 19.75)]  # too far from the seat: a client
 
 
 def payout(*, client=(5, 20), cash=(6, 19), document=None, document_at=COUNTER):
@@ -490,11 +441,11 @@ def test_type7_a_document_of_the_previous_client_does_not_cover_the_next_one():
 def test_a_box_without_area_that_skipped_the_schema_is_ignored_not_a_crash(collapsed, to):
     broken = tracks(part(99, "person", 5, 6, *COUNTER))
     broken[collapsed] = broken[to]  # as if TRACKS_SCHEMA.validate had not run
-    mixed = pd.concat([workplace_left(), broken])
+    mixed = pd.concat([cash_left(), broken])
 
     assert find_roles(broken) is None
     assert detect(broken) == []
-    assert detect(mixed) == detect(workplace_left())
+    assert detect(mixed) == detect(cash_left())
 
 
 def test_the_cashier_is_the_track_most_present_at_the_seat_not_the_lowest_id():
@@ -542,7 +493,7 @@ def test_a_cashier_split_into_several_ids_keeps_the_seat_while_a_client_waits(
 
     assert roles.seat == SEAT
     assert roles.cashier != 2
-    assert hits_of("workplace_left", df, thresholds=th) == []
+    assert hits_of(CASH_LEFT_ON_DESK, df, thresholds=th) == []
     assert hits_of("cash_on_desk_next_client", df, thresholds=th) == []
 
 
@@ -831,6 +782,64 @@ def test_the_book_floor_and_min_object_sec_apply_to_type6():
     assert (
         hits_of(VALUABLES_LEFT_ON_DESK, df, thresholds=Thresholds(book_conf=0.5, min_object_sec=11.0)) == []
     )
+
+
+LAPTOP_AT = (200.0, 600.0)  # 1 cashier height from the seat, as the open laptop sits in X-28
+
+
+def laptop_scene(*, away=(8, 20), laptop=(0, 30), at=LAPTOP_AT, conf=0.9, laptop_drop=0):
+    """Cashier at the seat, away for `away` seconds (None = never); a laptop box as given (None = absent)."""
+    stays = [(0, 30)] if away is None else [(0, away[0]), (away[1], 30)]
+    parts = [part(1, "person", a, b, *SEAT, wobble=3) for a, b in stays if b > a]
+    if laptop:
+        parts.append(
+            part(20, "object", *laptop, *at, h=60.0, label="laptop", conf=conf, drop_every=laptop_drop)
+        )
+    return tracks(*parts)
+
+
+def test_laptop_left_open_fires_while_the_laptop_is_on_the_desk_and_the_cashier_is_away():
+    hits = hits_of(LAPTOP_LEFT_OPEN, laptop_scene())
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(8.0, 19.75)]
+
+
+def test_laptop_left_open_silent_when_the_cashier_stays_at_the_seat():
+    assert hits_of(LAPTOP_LEFT_OPEN, laptop_scene(away=None)) == []
+
+
+def test_laptop_left_open_silent_when_the_cashier_only_steps_away_for_a_second():
+    assert hits_of(LAPTOP_LEFT_OPEN, laptop_scene(away=(8, 9))) == []
+
+
+def test_laptop_left_open_silent_without_a_laptop_on_the_desk():
+    assert hits_of(LAPTOP_LEFT_OPEN, laptop_scene(laptop=None)) == []
+
+
+def test_laptop_left_open_silent_when_the_laptop_is_seen_for_less_than_the_absence_threshold():
+    assert hits_of(LAPTOP_LEFT_OPEN, laptop_scene(laptop=(12, 14))) == []
+
+
+def test_laptop_left_open_silent_for_a_laptop_far_from_the_cashiers_desk():
+    assert hits_of(LAPTOP_LEFT_OPEN, laptop_scene(at=(200.0, 1200.0))) == []  # 4 cashier heights away
+
+
+def test_laptop_left_open_silent_for_a_doubtful_laptop_box():
+    assert hits_of(LAPTOP_LEFT_OPEN, laptop_scene(conf=0.3)) == []
+
+
+def test_laptop_left_open_silent_before_the_cashier_has_arrived():
+    assert hits_of(LAPTOP_LEFT_OPEN, laptop_scene(away=(0, 8))) == []
+
+
+def test_laptop_left_open_survives_a_missed_laptop_detection_every_two_seconds():
+    hits = hits_of(LAPTOP_LEFT_OPEN, laptop_scene(laptop_drop=8))
+
+    assert [h.start_sec for h in hits] == [8.0]
+
+
+def test_a_laptop_on_the_desk_does_not_make_it_a_foreign_object():
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, laptop_scene()) == []
 
 
 NEXT_CLIENT = {CASH_ON_DESK_NEXT_CLIENT}
