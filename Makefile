@@ -1,6 +1,8 @@
 .PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-cloudflared jury-sim screenshots clean
 
 PORT ?= 8000
+# Serving uses real weights. For a standalone UI demo: make app FORTE_ANALYZER=stub.
+export FORTE_ANALYZER ?= real
 
 setup:
 	uv sync
@@ -26,10 +28,12 @@ web:
 app: web
 	uv run uvicorn api.main:app --host 0.0.0.0 --port $(PORT)
 
+dev: export FORTE_ANALYZER = stub
 dev:
 	( uv run uvicorn api.main:app --reload --port $(PORT) & cd web && npm run dev )
 
 # Stub pipeline: synthetic data -> model -> artifacts -> app. Replace internals tomorrow, keep the targets.
+demo: export FORTE_ANALYZER = stub
 demo:
 	uv run python -m src.pipeline --stub
 	$(MAKE) app

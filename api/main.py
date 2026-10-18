@@ -15,28 +15,40 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
-from api.analyzer import analyze_stub
+from api.analyzer import analyze_stub, load_analyzer
 from api.jobs import Analyzer, JobQueue
 from contracts.schemas import AnalyzeResponse, Health, JobResponse, RuleType
 from src.config import ROOT, VERSION, WEB_DIST
 from src.rules.describe import rule_catalog
 
 
-def create_app(*, analyzer: Analyzer = analyze_stub, api_key: str | None = None) -> FastAPI:
+def create_app(*, analyzer: Analyzer | None = None, api_key: str | None = None) -> FastAPI:
     load_dotenv(ROOT / ".env")
     key = api_key if api_key is not None else os.getenv("API_KEY", "")
+    if analyzer is None:
+        mode = os.getenv("FORTE_ANALYZER", "real")
+        if mode not in {"real", "stub"}:
+            raise ValueError("FORTE_ANALYZER must be 'real' or 'stub'")
+        if mode == "stub":
+            analyzer = analyze_stub
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        app.state.model_loaded = False
+        active_analyzer = analyzer
+        if active_analyzer is None:
+            active_analyzer = await run_in_threadpool(load_analyzer)
+            app.state.model_loaded = True
         with TemporaryDirectory(prefix="forte-upload-") as directory:
             app.state.upload_dir = Path(directory)
-            app.state.jobs = JobQueue(analyzer)
+            app.state.jobs = JobQueue(active_analyzer)
             worker = asyncio.create_task(app.state.jobs.run())
             try:
                 yield
             finally:
                 app.state.jobs.queue.put_nowait(None)
                 await worker
+                app.state.model_loaded = False
 
     app = FastAPI(title="Forte: проверка кассовой дисциплины", version=VERSION, lifespan=lifespan)
 
@@ -50,7 +62,7 @@ def create_app(*, analyzer: Analyzer = analyze_stub, api_key: str | None = None)
 
     @app.get("/api/health", response_model=Health)
     def health():
-        return Health(version=VERSION, model_loaded=False)
+        return Health(version=VERSION, model_loaded=app.state.model_loaded)
 
     router = APIRouter()
 

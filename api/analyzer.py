@@ -1,4 +1,4 @@
-"""Local placeholder analyzer; never decodes uploaded videos."""
+"""Load the local model for serving; keep an explicit placeholder for contract tests."""
 
 import base64
 from io import BytesIO
@@ -7,8 +7,18 @@ from pathlib import Path
 import yaml
 from PIL import Image
 
+from api.jobs import Analyzer
 from contracts.schemas import EvidenceFrame, Violation
 from src.config import RULES_YAML
+
+
+def load_analyzer() -> Analyzer:
+    """Warm the model's process-wide caches before accepting uploads; fail if weights are missing."""
+    from src.models.analyze import analyze, default_embedder, default_model
+
+    default_model()
+    default_embedder()
+    return analyze
 
 
 def analyze_stub(path: Path) -> list[Violation]:

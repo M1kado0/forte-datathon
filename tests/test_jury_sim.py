@@ -1,8 +1,65 @@
-"""Pure helpers of the jury simulation; no network, no ffmpeg."""
+"""Jury simulation checks with an in-memory HTTP transport; no network or ffmpeg."""
 
+import argparse
+import asyncio
+
+import httpx
 import pytest
 
-from scripts.jury_sim import percentile, pick_clips, schema_problem
+from scripts.jury_sim import main, percentile, pick_clips, schema_problem
+
+
+@pytest.mark.parametrize(
+    ("health_status", "health_body", "error"),
+    [
+        (200, {"status": "ok", "model_loaded": True}, None),
+        (200, {"status": "ok", "model_loaded": False}, "model_loaded"),
+        (200, {"status": "ok"}, "model_loaded"),
+        (200, {"status": "ok", "model_loaded": None}, "model_loaded"),
+        (200, {"status": "ok", "model_loaded": "true"}, "model_loaded"),
+        (200, {"status": "ok", "model_loaded": 1}, "model_loaded"),
+        (200, {"status": "loading", "model_loaded": True}, "status ok"),
+        (503, {"status": "ok", "model_loaded": True}, "503"),
+        (200, [], "status ok"),
+        (200, "<html>tunnel unavailable</html>", "status ok"),
+    ],
+)
+def test_jury_sim_requires_ready_model_before_uploading(
+    monkeypatch, tmp_path, capsys, health_status, health_body, error
+):
+    requests = []
+
+    def respond(request):
+        requests.append(request.url.path)
+        if request.url.path == "/api/health":
+            if isinstance(health_body, str):
+                return httpx.Response(health_status, text=health_body)
+            return httpx.Response(health_status, json=health_body)
+        if request.url.path == "/api/v1/jobs/none":
+            return httpx.Response(401)
+        if request.url.path == "/api/v1/analyze":
+            return httpx.Response(200, json={"job_id": "test-job"})
+        return httpx.Response(
+            200,
+            json={"job_id": "test-job", "status": "done", "verdict": "no_violation", "violations": []},
+        )
+
+    client_type = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **kwargs: client_type(**kwargs, transport=httpx.MockTransport(respond))
+    )
+    (tmp_path / "sample.mov").write_bytes(b"synthetic fixture")
+    args = argparse.Namespace(
+        url="http://jury.test", api_key="test-key", stress=0, parallel=1, videos=tmp_path, timeout=1
+    )
+    result = asyncio.run(main(args))
+    if error:
+        assert result == 1
+        assert "/api/v1/analyze" not in requests
+        assert error in capsys.readouterr().out
+    else:
+        assert result == 0
+        assert "/api/v1/analyze" in requests
 
 
 def test_percentile_is_nearest_rank():
