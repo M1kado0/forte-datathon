@@ -6,7 +6,9 @@ Branch A scores 2 s windows with the saved classifier (src/models/train.py). Bra
 cash and runs the type heuristics (src/heuristics) when the saved settings let them name a type or vote. What is
 reported, of which type and at which second is decided in src/models/violations.py: the verdict is a window at
 or above the threshold OR a long enough hit of a voting type, the type comes from a heuristic, then kNN, then the
-fallback (ADR 0005), and the timecode is the start of a state or the peak of an action.
+fallback (ADR 0005), and the timecode is the start of a state or the peak of an action. Two opt-in switches in
+src/config.py (defaults = this behaviour): VERDICT_POLICY=always_violation flags every video, and
+TIMECODE_MODE=prior puts a violation no heuristic saw at the training labels' fraction of the clip.
 """
 
 from __future__ import annotations
@@ -17,13 +19,16 @@ import logging
 import sys
 import time
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from contracts.schemas import Violation
+from src.config import TIMECODE_MODE, TIMECODE_PRIOR_JSON, VERDICT_POLICY
 from src.data.evidence import evidence_frames
+from src.data.video import duration
 from src.features.detectors import LocalDetector
 from src.features.embeddings import EMBED_FPS, FINGERPRINT, Embedder, embed_video, window_features
 from src.features.tracks import build_tracks
@@ -34,6 +39,7 @@ from src.models.violations import (
     HEURISTIC_CONFIGS,
     MAX_VIOLATIONS,
     MIN_GAP_SEC,
+    Found,
     Settings,
     decide,
     peak_feature,
@@ -41,7 +47,10 @@ from src.models.violations import (
 from src.models.windows import WINDOW_SEC, make_windows
 from src.rules.describe import describe_violation
 
-__all__ = ["FALLBACK_TYPE", "MAX_VIOLATIONS", "MIN_GAP_SEC", "analyze"]
+__all__ = ["FALLBACK_TYPE", "MAX_VIOLATIONS", "MIN_GAP_SEC", "TIMECODE_MODES", "VERDICT_POLICIES", "analyze"]
+
+VERDICT_POLICIES = ("classifier", "always_violation")
+TIMECODE_MODES = ("peak", "prior")
 
 log = logging.getLogger(__name__)
 
@@ -69,6 +78,12 @@ def default_model() -> dict:
     return model
 
 
+@functools.cache
+def prior_fraction() -> float:
+    """Median label second / clip duration over the training labels (scripts/timecode_prior.py)."""
+    return float(json.loads(TIMECODE_PRIOR_JSON.read_text())["fraction"])
+
+
 def default_tracks(path: Path) -> pd.DataFrame:
     """Tracks of an uploaded video, built and dropped with the job: nothing of an upload is cached."""
     return build_tracks(path, default_detector())
@@ -80,9 +95,16 @@ def analyze(
     embedder: Callable[[list[np.ndarray]], np.ndarray] | None = None,
     model: dict | None = None,
     tracks: Callable[[Path], pd.DataFrame] | None = None,
+    verdict_policy: str | None = None,
+    timecode_mode: str | None = None,
 ) -> list[Violation]:
-    """Violations in one video, strongest first; [] means no violation. The upload is read, never cached."""
+    """Violations in one video, strongest first; [] means no violation. The upload is read, never cached.
+    `verdict_policy` and `timecode_mode` default to the switches in src/config.py."""
     path = Path(path)
+    policy = verdict_policy or VERDICT_POLICY
+    mode = timecode_mode or TIMECODE_MODE
+    if policy not in VERDICT_POLICIES or mode not in TIMECODE_MODES:
+        raise ValueError(f"unknown VERDICT_POLICY={policy!r} or TIMECODE_MODE={mode!r}")
     model = model or default_model()
     settings: Settings = model.get("settings") or Settings()
     seconds, emb, _ = embed_video(path, embedder or default_embedder())
@@ -93,7 +115,12 @@ def analyze(
             hits = detect((tracks or default_tracks)(path), thresholds=HEURISTIC_CONFIGS[settings.heuristics])
         except Exception:  # noqa: BLE001 - heuristics only raise the verdict, so branch A must still answer
             log.exception("branch B failed on %s, answering from branch A alone", path.name)
-    found = decide(starts, scores, model["threshold"], hits, settings, peak_feature(scores, feats))
+    threshold = -np.inf if policy == "always_violation" else model["threshold"]
+    found = decide(starts, scores, threshold, hits, settings, peak_feature(scores, feats))
+    if policy == "always_violation" and not found:  # a clip shorter than one window has no score at all
+        found = [Found(FALLBACK_TYPE, 0.0, "action")]
+    if mode == "prior":
+        found = [f if f.from_hit else _at_prior(f, duration(path)) for f in found]
     violations = []
     for f in found[:MAX_VIOLATIONS]:
         frames = evidence_frames(path, f.timecode_sec, f.kind)
@@ -108,6 +135,11 @@ def analyze(
             )
         )
     return violations
+
+
+def _at_prior(f: Found, seconds: float) -> Found:
+    """The violation at the prior's second, frames spread around it; a heuristic hit keeps its own onset."""
+    return replace(f, timecode_sec=max(0.0, prior_fraction() * seconds), kind="prior")
 
 
 def score_windows(seconds: np.ndarray, emb: np.ndarray, clf) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

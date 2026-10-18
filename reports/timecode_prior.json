@@ -1,0 +1,20 @@
+{
+  "fraction": 0.6692166808140532,
+  "n_violation_videos": 21,
+  "n_labels": 22,
+  "scheme": "leave-one-video-out, duplicates merged",
+  "prior_loo": {
+    "median_abs_dt": 2.827176781002639,
+    "share_within_1s": 0.19047619047619047,
+    "share_within_2s": 0.42857142857142855,
+    "share_within_3s": 0.5714285714285714,
+    "share_within_5s": 0.8571428571428571
+  },
+  "midpoint": {
+    "median_abs_dt": 3.5999999999999996,
+    "share_within_1s": 0.19047619047619047,
+    "share_within_2s": 0.38095238095238093,
+    "share_within_3s": 0.38095238095238093,
+    "share_within_5s": 0.6666666666666666
+  }
+}

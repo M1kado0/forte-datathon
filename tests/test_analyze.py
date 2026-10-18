@@ -224,3 +224,39 @@ def test_saved_settings_load_and_name_known_things():
     assert settings.heuristics in HEURISTIC_CONFIGS
     assert settings.allowed <= set(HEURISTIC_TYPES)
     assert settings.vote.types <= set(HEURISTIC_TYPES)
+
+
+def test_switches_default_to_mains_behaviour():
+    # flipping either is a P1 decision (docs/research/cv-audit.md); main = classifier verdict, peak timecode
+    from src import config
+
+    assert config.VERDICT_POLICY == "classifier"
+    assert config.TIMECODE_MODE == "peak"
+
+
+def test_always_violation_flags_a_clip_whose_windows_all_score_below_the_threshold(tmp_path):
+    clip = make_clip(tmp_path / "clip.mov", {9: 60})  # one faint second: every window far below THRESHOLD
+    assert analyze(clip, embedder=brightness_embedder, model=FAKE_MODEL) == []
+    violations = analyze(
+        clip, embedder=brightness_embedder, model=FAKE_MODEL, verdict_policy="always_violation"
+    )
+    assert_contract(violations)
+    assert [v.type for v in violations] == [FALLBACK_NAME]
+    assert violations[0].timecode_sec == pytest.approx(9.5, abs=0.6)  # still the peak window
+
+
+def test_prior_timecode_puts_the_fallback_at_the_label_fraction(tmp_path, monkeypatch):
+    monkeypatch.setattr(analyze_mod, "prior_fraction", lambda: 0.5)
+    clip = make_clip(tmp_path / "clip.mov", {4: BRIGHT})
+    violations = analyze(clip, embedder=brightness_embedder, model=FAKE_MODEL, timecode_mode="prior")
+    assert_contract(violations)
+    assert violations[0].timecode_sec == pytest.approx(SECONDS * 0.5, abs=0.2)
+    stamps = [f.timestamp_sec for f in violations[0].evidence_frames]
+    assert max(stamps) - min(stamps) >= 5.5  # frames spread +-3 s around a guessed second
+
+
+def test_unknown_switch_value_is_refused(tmp_path):
+    with pytest.raises(ValueError):
+        analyze(
+            make_clip(tmp_path / "c.mov"), embedder=brightness_embedder, model=FAKE_MODEL, verdict_policy="x"
+        )
