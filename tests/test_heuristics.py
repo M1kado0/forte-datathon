@@ -348,12 +348,12 @@ def test_the_track_schema_rejects_a_box_without_area():
         ("id_not_presented", lambda: payout(), Thresholds(min_payout_sec=14.0)),
     ],
     ids=[
-        "cash min_away_sec",
-        "cash desk_radius",
-        "cash gap_sec",
-        "laptop min_away_sec",
-        "laptop laptop_radius",
-        "laptop laptop_conf",
+        "cash-min_away_sec",
+        "cash-desk_radius",
+        "cash-gap_sec",
+        "laptop-min_away_sec",
+        "laptop-laptop_radius",
+        "laptop-laptop_conf",
         "min_hold_sec",
         "min_payout_sec",
     ],
@@ -385,9 +385,8 @@ def test_the_seat_radius_decides_who_counts_as_standing_at_the_seat():
     default = hits_of(CASH_LEFT_ON_DESK, df)
     narrow = hits_of(CASH_LEFT_ON_DESK, df, thresholds=Thresholds(seat_radius=0.4))
 
-    assert (
-        default == []
-    )  # taken for the cashier's stand-in at the seat, so the desk is never left alone for 3 s
+    # the client is taken for the cashier's stand-in, so the seat is never empty for 3 s
+    assert default == []
     assert [(h.start_sec, h.end_sec) for h in narrow] == [(10.0, 19.75)]  # too far from the seat: a client
 
 
