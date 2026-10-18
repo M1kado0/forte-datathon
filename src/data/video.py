@@ -45,6 +45,21 @@ def iter_frames(path: str | Path, fps: float = DEFAULT_FPS) -> Iterator[tuple[fl
         cap.release()
 
 
+def duration(path: str | Path) -> float:
+    """Length of the clip in seconds, from the container header (frame count / fps), without decoding."""
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    cap = cv2.VideoCapture(str(path))
+    try:
+        src_fps = cap.get(cv2.CAP_PROP_FPS)
+        if not cap.isOpened() or not src_fps > 0:
+            raise ValueError(f"{path} has no usable fps in its header")
+        return cap.get(cv2.CAP_PROP_FRAME_COUNT) / src_fps
+    finally:
+        cap.release()
+
+
 def main(argv: list[str]) -> None:
     path = argv[0]
     fps = float(argv[1]) if len(argv) > 1 else DEFAULT_FPS

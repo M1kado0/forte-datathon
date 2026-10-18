@@ -4,9 +4,6 @@ Frames are decoded and scored locally; nothing leaves the machine. Run:
     uv run python -m src.features.cash_check [--no-log]
 """
 
-import csv
-import datetime as dt
-import json
 import os
 import sys
 from dataclasses import dataclass
@@ -16,9 +13,10 @@ from typing import NamedTuple
 import numpy as np
 import pandas as pd
 
-from src.config import EXPERIMENTS, VIDEOS_DIR, WEIGHTS
+from src.config import VIDEOS_DIR, WEIGHTS
 from src.data.labels import build_labels, load_labels, read_xlsx
 from src.data.video import iter_frames
+from src.features.experiments import append_row
 
 PERSON_THRESHOLD = 0.5
 CASH_THRESHOLD = 0.1  # OWLv2 scores are low by design; 0.1 is the value its authors use for demos
@@ -201,20 +199,7 @@ def report(rows: list[Row]) -> dict:
     return s
 
 
-def log_experiment(summary: dict) -> None:
-    """Append one row keyed by the file's own header; the metrics go to params (stub header has no slot)."""
-    with EXPERIMENTS.open(newline="") as f:
-        header = next(csv.reader(f))
-    row = {
-        "ts": dt.datetime.now().isoformat(timespec="seconds"),
-        "note": "cash-check-dfine-owlv2",
-        "params": json.dumps(summary, ensure_ascii=False),
-    }
-    with EXPERIMENTS.open("a", newline="") as f:
-        csv.DictWriter(f, fieldnames=header, restval="").writerow(row)
-
-
 if __name__ == "__main__":
     summary = report(run())
     if "--no-log" not in sys.argv:
-        log_experiment(summary)
+        append_row("cash-check-dfine-owlv2", summary)

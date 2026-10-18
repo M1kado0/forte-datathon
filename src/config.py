@@ -22,6 +22,7 @@ RULES_MD = ROOT / "docs" / "RULES.md"  # human copy of the type table, synced by
 ADILET_TEXTS = DATA_EXTERNAL / "adilet"  # page text of each act cited in rules.yaml, saved 18.10.2026
 LABELS_XLSX = DATA_RAW / "open_labels.xlsx"  # organizers' sheet (T04)
 VIDEOS_DIR = DATA_RAW / "videos"
+TRACKS_DIR = DATA_PROCESSED / "tracks"  # per-video track caches (#32), one folder per detector setting
 LABELS_CSV = ROOT / "data" / "labels.csv"  # cleaned labels, contract in contracts/data.py
 TYPES_CSV = (
     ROOT / "data" / "violation_types.csv"
