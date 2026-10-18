@@ -46,20 +46,20 @@ class Detector(Protocol):
     def open_vocab(self, frames: Sequence[np.ndarray]) -> list[list[Box]]: ...
 
 
-def owl_groups() -> dict[tuple[str, str], tuple[str, ...]]:
-    """(kind, label) -> the queries whose best score decides the box."""
+def owl_groups(extra: Sequence[str] | None = None) -> dict[tuple[str, str], tuple[str, ...]]:
+    """(kind, label) -> the queries whose best score decides the box. `extra` replaces EXTRA_QUERIES (checks)."""
     groups: dict[tuple[str, str], tuple[str, ...]] = {
         ("cash", "cash"): CASH_QUERIES,
         ("document", "document"): DOCUMENT_QUERIES,
     }
-    groups.update({("object", q): (q,) for q in EXTRA_QUERIES})
+    groups.update({("object", q): (q,) for q in (EXTRA_QUERIES if extra is None else extra)})
     return groups
 
 
 class LocalDetector:
     """Loads both models once. `coco` and `open_vocab` take a batch of BGR frames of one size."""
 
-    def __init__(self) -> None:
+    def __init__(self, extra_queries: Sequence[str] | None = None) -> None:
         os.environ.setdefault("HF_HUB_OFFLINE", "1")  # before transformers is imported
         import torch
         from transformers import AutoModelForObjectDetection, AutoTokenizer, Owlv2ForObjectDetection
@@ -79,7 +79,7 @@ class LocalDetector:
         self.owl = (
             Owlv2ForObjectDetection.from_pretrained(WEIGHTS / "owlv2-base").to(self.device, self.dtype).eval()
         )
-        self.groups = owl_groups()
+        self.groups = owl_groups(extra_queries)
         queries = [q for qs in self.groups.values() for q in qs]
         tokens = AutoTokenizer.from_pretrained(WEIGHTS / "owlv2-base")(
             queries, padding="max_length", max_length=16, truncation=True, return_tensors="pt"
