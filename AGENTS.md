@@ -100,15 +100,16 @@ Test only deterministic code:
 ## Front-end rules (Forte brand — non-negotiable)
 - Tokens live only in `web/src/index.css`. Use them via Tailwind classes (`bg-primary`, `text-forte-dark`…).
 - Font: Open Sans for all UI text (700 headings, 600 labels, 400 body); one display face
-  (Playfair Display 400) allowed for page/section titles only. Palette: Magenta `#A31551` primary,
-  Dark Magenta `#4A0221`, Sky Blue `#61CFFF` (charts, sparingly), Coral `#FC9385`.
-  Hero gradient Dark Magenta → Coral optional. Logo = `web/public/forte-logo.svg`, never recolored.
+  (Playfair Display 400) allowed for page/section titles only; Handjet 500 for team names only.
+  Palette: Magenta `#A31551` primary, Dark Magenta `#4A0221`, Sky Blue `#61CFFF` (charts, sparingly),
+  Coral `#FC9385`. Hero gradient Dark Magenta → Coral optional.
+  Logo = official file (`web/public/forte-logo.svg` or its PNG export `forte-logo.png`), never recolored.
 - One primary (magenta) action per screen. The first screen shows logo, title and the upload
   (or one CTA that opens it in place). Decoration never delays the upload by more than 1 s.
 - UI text in Russian, short verb-led labels ("Проверить клиента"). Money: `1 250 000 ₸` (thin-space thousands; use `formatKzt`).
 - Banned: purple-blue gradients, frosted-glass panels behind text, cards inside cards, grey text on colour,
   emoji/icon tile above every heading, lorem ipsum, rainbow charts (charts = grey + one accent).
-- Motion: respect `prefers-reduced-motion`; autoplay media muted and pausable;
+- Motion: respect `prefers-reduced-motion`; autoplay media muted and stopped while off-screen;
   no identifiable people next to violation wording.
 - Every screen has loading, empty and error states.
 - Design work goes through Impeccable (`/impeccable craft|critique|audit|polish`); brand text in `docs/IMPECCABLE_BRAND.md`.

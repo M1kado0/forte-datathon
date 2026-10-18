@@ -5,16 +5,18 @@
 **Mandatory — do not override with defaults:**
 1. Font: **Open Sans** for UI text (bundled via @fontsource). Weights: 700 headings, 600 labels, 400 body.
    Playfair Display 400 allowed for display titles (page and section h1/h2) only.
+   Handjet 500 allowed for team names in the About section only.
 2. Palette (official, forte.kz/logo):
    - Forte Magenta `#A31551` — primary; the ONLY strong colour on a screen; primary buttons, highlights.
-   - Dark Magenta `#4A0221` — headings, dark surfaces, hover state of primary.
+   - Dark Magenta `#4A0221` — headings, dark surfaces. Result headings may use the neutral text colour.
    - Sky Blue `#61CFFF` — chart accent, sparingly.
    - Coral `#FC9385` — warm secondary accent.
    - Hero gradient: Dark Magenta → Coral, 135°, optional; at most one per screen.
 3. Neutrals: white or warm off-white bg; text, muted text, border and semantic colours (success, warning,
    danger) must pass WCAG AA on their background. Never use magenta as "error".
-4. Radius: cards 16px, buttons/inputs 12px. Shadow `0 4px 16px rgba(74,2,33,.08)`.
-5. Logo: official file only (`web/public/forte-logo.svg`), Forte Magenta on white/light or on Dark Magenta.
+4. Radius: cards 16px, buttons/inputs 8px. Shadow `0 4px 16px rgba(74,2,33,.08)`.
+5. Logo: official file only (`web/public/forte-logo.svg`, or its PNG export `web/public/forte-logo.png`),
+   Forte Magenta on white/light or on Dark Magenta.
    **Never recolour, stretch, or add effects.** Keep clear space around it.
 6. Tokens live only in `web/src/index.css`; components use Tailwind classes mapped to them.
 
@@ -28,8 +30,8 @@ name, the upload or one magenta CTA that opens it in place. Decoration never del
 Result = verdict sentence, the "подсказка, не заключение" line, then per violation: type, timecode,
 description, rule document + пункт, evidence frames.
 
-**Motion:** respect `prefers-reduced-motion`; autoplay media muted and pausable; no identifiable people
-next to violation wording.
+**Motion:** respect `prefers-reduced-motion`; autoplay media muted and stopped while off-screen;
+no identifiable people next to violation wording.
 
 **Banned:** purple-blue gradients · frosted-glass panels behind text · cards inside cards · grey text on colour ·
 emoji or icon tile above every heading · lorem ipsum · rainbow charts (charts = grey + one accent) ·
