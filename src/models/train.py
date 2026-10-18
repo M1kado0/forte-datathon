@@ -12,6 +12,7 @@ import functools
 import json
 import pickle
 import sys
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -236,6 +237,12 @@ def run(nested: bool = False) -> dict:
         shift_threshold(threshold, metrics["nested"]["threshold_shift_logit"]) if nested else threshold
     )
     metrics["saved_threshold"] = saved_threshold
+    if not nested:
+        warnings.warn(
+            f"--skip-nested: window_clf.pkl gets the unshifted threshold {threshold:.4f}; "
+            "run without the flag before serving (ADR 0002)",
+            stacklevel=2,
+        )
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(
             {
