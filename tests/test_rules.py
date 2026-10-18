@@ -159,9 +159,7 @@ ACT_231_CITATION = (
 def test_known_type_returns_name_and_description_ending_with_citation():
     name, description = describe_violation("foreign_object_at_desk", {"object": "кружка"})
     assert name == "Посторонний предмет на столе кассира"
-    assert description.startswith(
-        "Кассир вошла в помещение, положила вещи на стол и продолжила работу. На столе виден предмет: кружка."
-    )
+    assert description.startswith("На столе кассира виден посторонний предмет: кружка.")
     assert description.endswith(f"{ACT_231_CITATION}, п. 12")
 
 
