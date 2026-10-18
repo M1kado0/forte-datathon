@@ -117,6 +117,7 @@ class Found:
     # Both candidate timecodes, so `train` can compare them; timecode_sec is one of them.
     onset_sec: float = 0.0
     peak_sec: float = 0.0
+    from_hit: bool = False  # a heuristic saw it; False = the classifier's peak window (or no window at all)
 
 
 def evidence_kind(type_id: str) -> Kind:
@@ -208,5 +209,9 @@ def _from_hits(hits: list[Hit], starts: np.ndarray, scores: np.ndarray) -> list[
         if any(abs(second - f.timecode_sec) < MIN_GAP_SEC for f in found):
             continue
         facts = {"object": OBJECT_NAMES[hit.label]} if hit.type_id in NEEDS_OBJECT and hit.label else {}
-        found.append(Found(hit.type_id, second, kind, facts, score, hit.start_sec, centre or hit.start_sec))
+        found.append(
+            Found(
+                hit.type_id, second, kind, facts, score, hit.start_sec, centre or hit.start_sec, from_hit=True
+            )
+        )
     return found

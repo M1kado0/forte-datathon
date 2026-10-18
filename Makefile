@@ -43,6 +43,7 @@ all:
 	uv run python -m src.rules.types_doc
 	uv run python -m src.pipeline
 	uv run python -m src.data.insights
+	uv run python -m scripts.timecode_prior
 
 # Public URL for the jury via ngrok (outbound 443; cloudflared is blocked on our networks). Start `make app` first.
 # The URL is printed in the ngrok UI and at http://localhost:4040.

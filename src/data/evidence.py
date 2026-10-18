@@ -14,8 +14,9 @@ JPEG_QUALITY = 85
 OFFSETS_SEC = {
     "state": (0.0, 1.0, 5.0),  # start of the state, then how long it lasts
     "action": (0.0, -1.0, 1.0),  # peak of the action, then just before and just after
+    "prior": (0.0, -3.0, 3.0),  # a guessed second (TIMECODE_MODE=prior): frames spread wider around it
 }
-Kind = Literal["state", "action"]
+Kind = Literal["state", "action", "prior"]
 
 
 def evidence_frames(path: str | Path, timecode_sec: float, kind: Kind = "state") -> list[EvidenceFrame]:
@@ -34,6 +35,9 @@ def evidence_frames(path: str | Path, timecode_sec: float, kind: Kind = "state")
     try:
         if not cap.isOpened():
             raise ValueError(f"cannot decode {path}")
+        # rotate by the container's rotation tag; explicit, since the default differs between OpenCV builds.
+        # Every training clip has tag 0 (cv-audit), so their frames are unchanged.
+        cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 1)
         src_fps = cap.get(cv2.CAP_PROP_FPS)
         if not src_fps > 0:  # 0 or NaN from a broken container header
             raise ValueError(f"{path} has no usable fps in its header")

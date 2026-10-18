@@ -1,8 +1,10 @@
 """Branch A: DINOv2-small frame embeddings at native resolution, cached per video.
 
-Frames keep their native resolution: padded with black to a square whose side is a multiple of the patch
-size (no center crop, no resize). The cache holds the frame seconds and embeddings and is dropped when
-the settings that shaped them change, so a rerun costs nothing and never reuses stale vectors.
+Frames keep their native resolution up to MAX_SIDE on the long side, then are padded with black to a square
+whose side is a multiple of the patch size (no center crop). The 464x848 training clips are never resized; a
+larger upload is shrunk to that size first, so it costs what a training frame costs. The cache holds the
+frame seconds and embeddings and is dropped when the settings that shaped them change, so a rerun costs
+nothing and never reuses stale vectors.
 """
 
 from __future__ import annotations
@@ -25,6 +27,10 @@ BATCH = 8  # native 854x854 frames are 3721 tokens each
 PATCH = 14
 MODEL_NAME = "dinov2-small"
 EMBED_DIM = 768  # CLS (384) ++ mean of the patch tokens that cover the frame (384)
+# Long-side cap, applied in embed_video before batching (so the patch mask follows the resized frame). A 1080p
+# frame padded to a square is ~5x the tokens and ~25x the attention of a training frame and would overrun the
+# job timeout. 848 is the training clips' long side, so they pass unchanged and FINGERPRINT stays the same.
+MAX_SIDE = 848
 FINGERPRINT = f"{MODEL_NAME}|cls+meanpatch-on-frame|fps={EMBED_FPS}|pad-to-multiple-of-{PATCH}"
 CACHE_DIR = DATA_PROCESSED / "embeddings"
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
@@ -37,6 +43,15 @@ def pad_to_square(frame: np.ndarray, multiple: int = 1) -> np.ndarray:
     side = -(-max(h, w) // multiple) * multiple
     top, left = (side - h) // 2, (side - w) // 2
     return cv2.copyMakeBorder(frame, top, side - h - top, left, side - w - left, cv2.BORDER_CONSTANT, value=0)
+
+
+def cap_long_side(frame: np.ndarray, max_side: int = MAX_SIDE) -> np.ndarray:
+    """The frame itself when its long side is <= max_side, else shrunk to that long side (aspect kept)."""
+    h, w = frame.shape[:2]
+    if max(h, w) <= max_side:
+        return frame
+    scale = max_side / max(h, w)
+    return cv2.resize(frame, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA)
 
 
 def frame_patch_mask(h: int, w: int, multiple: int = PATCH) -> np.ndarray:
@@ -92,7 +107,7 @@ def embed_video(
     batch: list[np.ndarray] = []
     for second, frame in iter_frames(path, fps):
         seconds.append(second)
-        batch.append(frame)
+        batch.append(cap_long_side(frame))
         if len(batch) == BATCH:
             chunks.append(embedder(batch))
             batch = []
