@@ -43,7 +43,7 @@ def build_insights(df: pd.DataFrame) -> list[dict]:
 
 def main(stub: bool) -> None:
     if not stub:
-        print("metrics:", {k: v for k, v in real_train.run().items() if k != "video_scores"})
+        print("metrics:", real_train.summary(real_train.run()))
         return
     df = make_stub()
     df = StubSchema.validate(df)
