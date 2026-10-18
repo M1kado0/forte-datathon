@@ -117,7 +117,7 @@ def _switched_on(params: dict, word: str) -> bool:
 COMPARISONS = [
     Comparison(
         "dinov2_vs_siglip", "DINOv2-small лучше SigLIP-base", False,
-        lambda r: r["note"].startswith("siglip"), "note начинается с `siglip`",
+        lambda r: r["note"] == "siglip-base-logreg-lovo", "note = `siglip-base-logreg-lovo` (тот же LOVO протокол)",
     ),
     Comparison(
         "whole_frame_vs_crops", "Эмбеддинг всего кадра лучше эмбеддингов кропов", False,

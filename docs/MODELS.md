@@ -13,6 +13,11 @@
 | dfine-small | `ustc-community/dfine-small-coco` | детекция людей и объектов (D-FINE-S) | Apache-2.0 | 41 MB |
 | owlv2-base | `google/owlv2-base-patch16-ensemble` | open-vocabulary детекция (OWLv2) | Apache-2.0 | 620 MB |
 
+SigLIP now supplies the default frame embeddings; `FORTE_EMBEDDER=dinov2-small`
+selects the previous encoder. Both use local weights only. Reproduce the comparison
+with `uv run python -m src.models.compare`; protocol and preprocessing details are in
+[`research/siglip-comparison.md`](research/siglip-comparison.md).
+
 ## Библиотеки
 
 | Пакет | Версия | Лицензия | Примечание |

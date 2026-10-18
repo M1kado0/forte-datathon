@@ -1,13 +1,15 @@
 """Paths, seeds and product copy. Everything else imports from here."""
 
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_RAW = ROOT / "data" / "raw"
-DATA_PROCESSED = ROOT / "data" / "processed"
+DATA_ROOT = Path(os.environ.get("FORTE_DATA_ROOT", ROOT / "data"))
+DATA_RAW = DATA_ROOT / "raw"
+DATA_PROCESSED = DATA_ROOT / "processed"
 DATA_EXTERNAL = ROOT / "data" / "external"
 MODELS = ROOT / "models"
-WEIGHTS = MODELS / "weights"  # filled once by `make weights`; loaded offline afterwards
+WEIGHTS = Path(os.environ.get("FORTE_WEIGHTS_DIR", MODELS / "weights"))
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 FONTS = REPORTS / "fonts"  # Open Sans TTF for the figures, so PNGs rebuild the same on every machine
@@ -21,9 +23,11 @@ TYPES_MD = (
 RULES_MD = ROOT / "docs" / "RULES.md"  # human copy of the type table, synced by tests/test_rules.py
 ADILET_TEXTS = DATA_EXTERNAL / "adilet"  # page text of each act cited in rules.yaml, saved 18.10.2026
 LABELS_XLSX = DATA_RAW / "open_labels.xlsx"  # organizers' sheet (T04)
-VIDEOS_DIR = DATA_RAW / "videos"
+VIDEOS_DIR = DATA_RAW / "videos" if (DATA_RAW / "videos").is_dir() else DATA_RAW
+SELF_VIDEOS_DIR = DATA_ROOT / "self_videos"
+SELF_LABELS_CSV = DATA_ROOT / "labels_self.csv"
 TRACKS_DIR = DATA_PROCESSED / "tracks"  # per-video track caches (#32), one folder per detector setting
-LABELS_CSV = ROOT / "data" / "labels.csv"  # cleaned labels, contract in contracts/data.py
+LABELS_CSV = DATA_ROOT / "labels.csv"  # cleaned labels, contract in contracts/data.py
 TYPES_CSV = (
     ROOT / "data" / "violation_types.csv"
 )  # team-set type per violation label, kept apart so a rebuild keeps it (#26)

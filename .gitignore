@@ -8,6 +8,7 @@ node_modules/
 web/dist/
 *.tsbuildinfo
 data/raw/*
+data/self_videos/
 data/processed/*
 !data/**/.gitkeep
 /models/

@@ -94,6 +94,15 @@ def test_equal_recall_and_fp_fall_back_to_timecode_error():
     assert verdicts(table(baseline(fp=0.9, dt=5.0), siglip))["dinov2_vs_siglip"] == "подтверждена"
 
 
+def test_siglip_comparison_does_not_mix_holdout_and_layout_with_lovo():
+    runs = table(
+        baseline(),
+        variant("siglip-base-self-held-out", fp=0.0),
+        variant("siglip-base-logreg-leave-one-layout-out", fp=0.0),
+    )
+    assert verdicts(runs)["dinov2_vs_siglip"] == "не проверена"
+
+
 def test_a_tie_confirms_no_claim_that_one_side_is_better():
     tie = variant("siglip-base-logreg-lovo", fp=0.9, dt=5.0)  # same as the baseline on every metric
     assert verdicts(table(baseline(fp=0.9, dt=5.0), tie))["dinov2_vs_siglip"] == "отвергнута"
