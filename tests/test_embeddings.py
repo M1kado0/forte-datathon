@@ -10,6 +10,7 @@ from src.features.embeddings import (
     load_or_embed,
     pad_to_square,
     preprocess,
+    preprocess_siglip,
     window_features,
 )
 
@@ -31,6 +32,24 @@ def test_pad_to_patch_multiple_keeps_native_pixels():
 def test_preprocess_is_native_resolution():
     side = 848 // PATCH * PATCH + PATCH
     assert preprocess(np.zeros((848, 464, 3), dtype=np.uint8)).shape == (3, side, side)
+
+
+def test_siglip_converts_bgr_to_rgb_and_normalizes():
+    frame = np.zeros((20, 40, 3), dtype=np.uint8)
+    frame[:, :, 2] = 255
+    out = preprocess_siglip(frame)
+    assert out.shape == (3, 224, 224)
+    assert out.dtype == np.float32
+    np.testing.assert_array_equal(out[:, 100, 100], [1.0, -1.0, -1.0])
+
+
+def test_siglip_preserves_both_edges_of_wide_frame():
+    frame = np.zeros((20, 100, 3), dtype=np.uint8)
+    frame[:, :10, 2] = 255
+    frame[:, -10:, 0] = 255
+    out = preprocess_siglip(frame)
+    assert out[0, 112, 0] == 1.0
+    assert out[2, 112, -1] == 1.0
 
 
 def test_window_features_mean_and_empty_window():

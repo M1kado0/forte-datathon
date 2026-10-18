@@ -1,4 +1,4 @@
-"""Branch A: DINOv2 window embeddings -> logistic regression, leave-one-video-out CV, ADR 0002 threshold.
+"""Branch A: local window embeddings -> logistic regression, leave-one-video-out CV, ADR 0002 threshold.
 
     uv run python -m src.models.train
 
@@ -33,6 +33,7 @@ from src.data.labels import load_labels
 from src.features.embeddings import (
     EMBED_FPS,
     FINGERPRINT,
+    MODEL_NAME,
     Embedder,
     embed_video,
     load_or_embed,
@@ -117,6 +118,7 @@ def build_dataset(labels: pd.DataFrame) -> tuple[list[str], list[Clip]]:
     embedder = functools.cache(Embedder)  # built once, and only if some video is not cached yet
     clips = []
     for vid in ids:
+        print(f"embedding {MODEL_NAME}: {vid}", flush=True)
         seconds, emb, elapsed = load_or_embed(vid, video_path(files[vid]), embedder)
         duration = float(seconds[-1]) + 1.0 / EMBED_FPS if len(seconds) else 0.0
         windows = make_windows(duration, by_video[vid])
@@ -350,6 +352,7 @@ def run(nested: bool = True) -> dict:
         }
     )
     metrics |= {
+        "embedding": FINGERPRINT,
         "branch_a": branch_a,  # the window classifier alone, as before #34
         "vote": {
             "enabled": settings.vote.enabled,  # kept only if the OR adds no false positive (ADR 0005)
@@ -412,7 +415,7 @@ def run(nested: bool = True) -> dict:
         )
     (REPORTS / "metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False))
     write_report(metrics, labels)
-    log_experiment("dinov2-small-logreg-lovo", metrics)
+    log_experiment(f"{MODEL_NAME}-logreg-lovo", metrics)
     log_layout_experiment(metrics)
     if nested:
         log_nested_experiment(metrics)
@@ -449,10 +452,10 @@ def log_experiment(note: str, metrics: dict) -> None:
                 kept = list(reader)
     if kept is None:
         with open(EXPERIMENTS, "a", newline="") as f:
-            csv.DictWriter(f, EXPERIMENT_COLUMNS).writerow(row)
+            csv.DictWriter(f, EXPERIMENT_COLUMNS, lineterminator="\n").writerow(row)
         return
     with open(EXPERIMENTS, "w", newline="") as f:
-        w = csv.DictWriter(f, EXPERIMENT_COLUMNS)
+        w = csv.DictWriter(f, EXPERIMENT_COLUMNS, lineterminator="\n")
         w.writeheader()
         w.writerows([*kept, row])
 
@@ -461,7 +464,7 @@ def log_nested_experiment(metrics: dict) -> None:
     """A verdict-only row: recall and FP rate of the nested check, no timecodes or types."""
     nested = metrics["nested"]
     log_experiment(
-        "dinov2-small-logreg-nested-threshold",
+        f"{MODEL_NAME}-logreg-nested-threshold",
         {
             "video_recall": nested["nested_video_recall"],
             "fp_rate": nested["nested_fp_rate"],
@@ -476,7 +479,7 @@ def log_layout_experiment(metrics: dict) -> None:
     """The pooled decision on held-out layouts, with each layout's recall and FP rate in params."""
     check = metrics["leave_one_layout_out"]
     log_experiment(
-        "dinov2-small-logreg-leave-one-layout-out",
+        f"{MODEL_NAME}-logreg-leave-one-layout-out",
         {
             **{k: check["pooled"][k] for k in HEADLINE_KEYS},
             "layouts": {

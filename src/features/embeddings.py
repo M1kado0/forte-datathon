@@ -1,8 +1,7 @@
-"""Branch A: DINOv2-small frame embeddings at native resolution, cached per video.
+"""Offline SigLIP frame embeddings; FORTE_EMBEDDER=dinov2-small reproduces the baseline.
 
-Frames keep their native resolution: padded with black to a square whose side is a multiple of the patch
-size (no center crop, no resize). The cache holds the frame seconds and embeddings and is dropped when
-the settings that shaped them change, so a rerun costs nothing and never reuses stale vectors.
+SigLIP uses its pretrained 224-square image transform (whole frame, no crop). DINOv2
+keeps native pixels with square padding. Caches are isolated by model and fingerprint.
 """
 
 from __future__ import annotations
@@ -14,6 +13,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pandas as pd
+from PIL import Image
 
 from src.config import DATA_PROCESSED, VIDEOS_DIR, WEIGHTS
 from src.data.video import iter_frames
@@ -21,12 +21,18 @@ from src.data.video import iter_frames
 os.environ.setdefault("HF_HUB_OFFLINE", "1")  # transformers is imported lazily, after this line
 
 EMBED_FPS = 4.0
-BATCH = 8  # native 854x854 frames are 3721 tokens each
-PATCH = 14
-MODEL_NAME = "dinov2-small"
-EMBED_DIM = 768  # CLS (384) ++ mean of the patch tokens that cover the frame (384)
-FINGERPRINT = f"{MODEL_NAME}|cls+meanpatch-on-frame|fps={EMBED_FPS}|pad-to-multiple-of-{PATCH}"
-CACHE_DIR = DATA_PROCESSED / "embeddings"
+BATCH = 8
+PATCH = 14  # DINOv2 baseline patch size
+MODEL_NAME = os.environ.get("FORTE_EMBEDDER", "siglip-base")
+if MODEL_NAME not in {"dinov2-small", "siglip-base"}:
+    raise ValueError(f"Unknown FORTE_EMBEDDER: {MODEL_NAME!r}")
+EMBED_DIM = 768  # SigLIP pooler; DINOv2 baseline is CLS (384) ++ mean patch (384)
+FINGERPRINT = (
+    f"dinov2-small|cls+meanpatch-on-frame|fps={EMBED_FPS}|pad-to-multiple-of-{PATCH}"
+    if MODEL_NAME == "dinov2-small"
+    else f"siglip-base|pooler|fps={EMBED_FPS}|rgb-bicubic-224|mean=.5|std=.5|fp32"
+)
+CACHE_DIR = DATA_PROCESSED / "embeddings" / MODEL_NAME
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
@@ -57,26 +63,42 @@ def preprocess(frame_bgr: np.ndarray) -> np.ndarray:
     return ((rgb - MEAN) / STD).transpose(2, 0, 1)
 
 
+def preprocess_siglip(frame_bgr: np.ndarray) -> np.ndarray:
+    """Official SigLIP RGB/bicubic 224 transform; all source pixels participate, no crop."""
+    rgb = Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
+    pixels = np.asarray(rgb.resize((224, 224), Image.Resampling.BICUBIC), dtype=np.float32)
+    return ((pixels / 255.0 - 0.5) / 0.5).transpose(2, 0, 1)
+
+
 def cache_path(video_id: str, cache_dir: Path = CACHE_DIR) -> Path:
     return cache_dir / f"{video_id}.npz"
 
 
 class Embedder:
-    """DINOv2-small from models/weights, offline. Embedding = CLS token ++ mean of patch tokens (EMBED_DIM)."""
+    """Selected vision encoder from local weights, returning 768 features per frame."""
 
     def __init__(self) -> None:
         import torch
-        from transformers import AutoModel
+        from transformers import AutoModel, SiglipVisionModel
 
         self.torch = torch
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = AutoModel.from_pretrained(WEIGHTS / MODEL_NAME).to(self.device).eval()
+        model_cls = SiglipVisionModel if MODEL_NAME == "siglip-base" else AutoModel
+        self.model = (
+            model_cls.from_pretrained(WEIGHTS / MODEL_NAME, local_files_only=True).to(self.device).eval()
+        )
 
     def __call__(self, frames_bgr: list[np.ndarray]) -> np.ndarray:
         torch = self.torch
-        x = torch.from_numpy(np.stack([preprocess(f) for f in frames_bgr])).to(self.device)
+        if not frames_bgr:
+            return np.empty((0, EMBED_DIM), dtype=np.float32)
+        transform = preprocess_siglip if MODEL_NAME == "siglip-base" else preprocess
+        x = torch.from_numpy(np.stack([transform(f) for f in frames_bgr])).to(self.device)
         with torch.inference_mode():
-            h = self.model(pixel_values=x).last_hidden_state
+            output = self.model(pixel_values=x)
+        if MODEL_NAME == "siglip-base":
+            return output.pooler_output.float().cpu().numpy()
+        h = output.last_hidden_state
         # frames of one video share a size, so one mask serves the batch; black padding is left out of the mean
         mask = torch.from_numpy(frame_patch_mask(*frames_bgr[0].shape[:2])).to(self.device)
         return torch.cat([h[:, 0], h[:, 1:][:, mask].mean(1)], dim=1).float().cpu().numpy()

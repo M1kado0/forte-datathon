@@ -3,6 +3,7 @@
 import csv
 import itertools
 import json
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -190,7 +191,7 @@ def test_editing_the_code_that_shapes_the_tracks_never_reads_an_old_cache(tmp_pa
 
 
 def test_the_cache_setting_watches_the_decoder_and_the_assembly_as_well_as_the_models():
-    watched = {p.rsplit("/", 1)[-1] for p in tracks.CODE_FILES}
+    watched = {Path(p).name for p in tracks.CODE_FILES}
     assert {"video.py", "tracks.py", "bytetrack.py", "detectors.py"} <= watched
 
 

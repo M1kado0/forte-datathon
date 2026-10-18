@@ -1,0 +1,200 @@
+{
+  "video_recall": 1.0,
+  "fp_rate": 0.25,
+  "n_clean_videos": 4,
+  "n_false_positives": 1,
+  "median_abs_dt": 5.0,
+  "type_accuracy": 0.3333333333333333,
+  "n_typed_right": 2,
+  "n_named": 1,
+  "n_violation_videos": 6,
+  "types_by_video": {
+    "computer_on": {
+      "truth": [
+        "laptop_left_open"
+      ],
+      "found": "other"
+    },
+    "IDnotshown": {
+      "truth": [
+        "id_not_presented"
+      ],
+      "found": "other"
+    },
+    "left_door_open": {
+      "truth": [
+        "cash_room_door_open"
+      ],
+      "found": "other"
+    },
+    "light_on": {
+      "truth": [
+        "other"
+      ],
+      "found": "other"
+    },
+    "person": {
+      "truth": [
+        "outsider_in_cash_room"
+      ],
+      "found": "outsider_in_cash_room"
+    },
+    "phone_left": {
+      "truth": [
+        "foreign_object_at_desk"
+      ],
+      "found": "other"
+    }
+  },
+  "verdicts_by_video": {
+    "computer_on": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 13.0,
+      "video_score": 1.0,
+      "hit_types": [
+        "laptop_left_open"
+      ]
+    },
+    "IDnotshown": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 3.0,
+      "video_score": 0.9848750233650208,
+      "hit_types": []
+    },
+    "left_door_open": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 4.5,
+      "video_score": 0.5926579833030701,
+      "hit_types": []
+    },
+    "light_on": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 7.0,
+      "video_score": 0.261065274477005,
+      "hit_types": [
+        "cash_left_on_desk",
+        "laptop_left_open"
+      ]
+    },
+    "noviolation": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 2.5,
+      "video_score": 0.910700798034668,
+      "hit_types": []
+    },
+    "person": {
+      "flagged": true,
+      "type": "outsider_in_cash_room",
+      "timecode_sec": 8.5,
+      "video_score": 0.9999990463256836,
+      "hit_types": [
+        "cash_left_on_desk",
+        "laptop_left_open",
+        "outsider_in_cash_room"
+      ]
+    },
+    "phone_left": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 21.0,
+      "video_score": 1.0,
+      "hit_types": [
+        "foreign_object_at_desk"
+      ]
+    },
+    "2people_no_violation": {
+      "flagged": false,
+      "type": null,
+      "timecode_sec": null,
+      "video_score": 1.2679736755671911e-05,
+      "hit_types": [
+        "foreign_object_at_desk"
+      ]
+    },
+    "no_violation_counting_and_leaving": {
+      "flagged": false,
+      "type": null,
+      "timecode_sec": null,
+      "video_score": 3.6633986155720777e-07,
+      "hit_types": [
+        "foreign_object_at_desk"
+      ]
+    },
+    "no_violation_giving_money_one_person": {
+      "flagged": false,
+      "type": null,
+      "timecode_sec": null,
+      "video_score": 1.5474972769879969e-06,
+      "hit_types": [
+        "foreign_object_at_desk"
+      ]
+    }
+  },
+  "timecode_choice": {
+    "state": {
+      "n": 1,
+      "onset": 3.5,
+      "peak": 1.5,
+      "nearest_episode": {
+        "n": 3,
+        "onset": 3.5,
+        "peak": 6.0
+      }
+    },
+    "action": {
+      "n": 5,
+      "onset": 5.0,
+      "peak": 6.0
+    }
+  },
+  "n_videos": 10,
+  "threshold": 0.016492531647275273,
+  "timings": {
+    "computer_on": {
+      "embedding_seconds": 2.2027970000053756,
+      "seconds_with_track_cache": 6.925678499988862
+    },
+    "IDnotshown": {
+      "embedding_seconds": 1.746224099988467,
+      "seconds_with_track_cache": 5.486954000007245
+    },
+    "left_door_open": {
+      "embedding_seconds": 1.4777003999915905,
+      "seconds_with_track_cache": 4.257978599998751
+    },
+    "light_on": {
+      "embedding_seconds": 2.7275071000040043,
+      "seconds_with_track_cache": 7.845020100008696
+    },
+    "noviolation": {
+      "embedding_seconds": 3.278223600005731,
+      "seconds_with_track_cache": 8.687801399995806
+    },
+    "person": {
+      "embedding_seconds": 3.6389285000041127,
+      "seconds_with_track_cache": 10.754122300000745
+    },
+    "phone_left": {
+      "embedding_seconds": 2.760706500004744,
+      "seconds_with_track_cache": 8.234116199993878
+    },
+    "2people_no_violation": {
+      "embedding_seconds": 21.429000600008294,
+      "seconds_with_track_cache": 44.71841200000199
+    },
+    "no_violation_counting_and_leaving": {
+      "embedding_seconds": 3.3804872000036994,
+      "seconds_with_track_cache": 9.557584499998484
+    },
+    "no_violation_giving_money_one_person": {
+      "embedding_seconds": 5.362040399995749,
+      "seconds_with_track_cache": 14.732588800005033
+    }
+  },
+  "protocol": "Organizer-only fitting and threshold selection; self videos never used for tuning. Track cache may be warm; timing excludes model load and JPEG evidence."
+}

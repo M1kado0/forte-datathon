@@ -113,7 +113,7 @@ def test_build_labels_points_at_the_distributed_file_name():
 
 def test_build_labels_second_is_integer_not_float():
     csv = build_labels(tiny_xlsx_rows()).to_csv(index=False)
-    assert ",68\n" in csv and "68.0" not in csv
+    assert ",68\n" in csv.replace("\r\n", "\n") and "68.0" not in csv
 
 
 def test_build_labels_rejects_merging_violation_with_clean_video():

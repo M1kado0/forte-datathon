@@ -169,7 +169,7 @@ def write_report(metrics: Mapping, labels) -> list[dict]:
         nested.get("nested_missed", []),
     )
     with open(REPORTS / "errors.csv", "w", newline="") as f:
-        writer = csv.DictWriter(f, COLUMNS)
+        writer = csv.DictWriter(f, COLUMNS, lineterminator="\n")
         writer.writeheader()
         writer.writerows({**r, "checks": "; ".join(r["checks"])} for r in rows)
     (REPORTS / "errors.md").write_text(render_table(rows) + "\n")
