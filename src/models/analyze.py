@@ -29,7 +29,7 @@ from src.features.embeddings import EMBED_FPS, FINGERPRINT, Embedder, embed_vide
 from src.features.tracks import build_tracks
 from src.heuristics import detect
 from src.models.train import load_model
-from src.models.violations import FALLBACK_TYPE, MAX_VIOLATIONS, MIN_GAP_SEC, Settings, decide
+from src.models.violations import FALLBACK_TYPE, MAX_VIOLATIONS, MIN_GAP_SEC, Settings, decide, peak_feature
 from src.models.windows import WINDOW_SEC, make_windows
 from src.rules.describe import describe_violation
 
@@ -85,8 +85,9 @@ def analyze(
             hits = detect((tracks or default_tracks)(path))
         except Exception:  # noqa: BLE001 - heuristics only raise the verdict, so branch A must still answer
             log.exception("branch B failed on %s, answering from branch A alone", path.name)
-    peak = feats[int(np.argmax(scores))] if len(scores) else None
-    found = decide(starts, scores, model["threshold"], hits, settings, settings.knn, peak)
+    found = decide(
+        starts, scores, model["threshold"], hits, settings, settings.knn, peak_feature(scores, feats)
+    )
     violations = []
     for f in found[:MAX_VIOLATIONS]:
         frames = evidence_frames(path, f.timecode_sec, f.kind)

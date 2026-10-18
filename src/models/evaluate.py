@@ -15,7 +15,27 @@ from statistics import median
 import numpy as np
 
 from src.heuristics import Hit, vote
-from src.models.violations import Found, Knn, Settings, Vote, decide, knn_type, timecode_kind, window_score
+from src.heuristics.detect import (
+    CASH_ON_DESK_NEXT_CLIENT,
+    CLIENT_LEFT_DURING_COUNT,
+    COUNT_WITHOUT_CONTROLLER,
+    FOREIGN_OBJECT_AT_DESK,
+    ID_NOT_PRESENTED,
+    OUTSIDER_IN_CASH_ROOM,
+    VALUABLES_LEFT_ON_DESK,
+    WORKPLACE_LEFT,
+)
+from src.models.violations import (
+    FALLBACK_TYPE,
+    Found,
+    Knn,
+    Settings,
+    Vote,
+    decide,
+    evidence_kind,
+    knn_type,
+    window_score,
+)
 from src.models.windows import POSITIVE, WINDOW_SEC, group_of
 
 VOTE_GRID_SEC = (3.0, 4.0, 5.0, 6.0, 8.0, 10.0)  # a hit is at least 3 s long already (Thresholds.min_*_sec)
@@ -25,6 +45,17 @@ MIN_TYPE_PRECISION = (
 )
 MIN_TYPE_VIDEOS = 1  # ... and it was right on at least this many videos (two would leave nothing in a fold)
 MIN_KNN_ANSWERS = 3  # kNN is judged on at least this many answers
+# Every type `detect` can emit, so metrics.json shows the ones that never fire as well (id_not_presented, #54).
+HEURISTIC_TYPES = (
+    WORKPLACE_LEFT,
+    CASH_ON_DESK_NEXT_CLIENT,
+    COUNT_WITHOUT_CONTROLLER,
+    ID_NOT_PRESENTED,
+    OUTSIDER_IN_CASH_ROOM,
+    FOREIGN_OBJECT_AT_DESK,
+    VALUABLES_LEFT_ON_DESK,
+    CLIENT_LEFT_DURING_COUNT,
+)
 
 
 @dataclass
@@ -79,11 +110,7 @@ def fit_allowed(cases: Sequence[Case]) -> tuple[frozenset[str], dict]:
     allowed = frozenset(
         t for t in fired if right[t] >= MIN_TYPE_VIDEOS and right[t] / fired[t] >= MIN_TYPE_PRECISION
     )
-    return allowed, {t: {"right": right[t], "fired": fired[t]} for t in sorted(fired)}
-
-
-def _voted(case: Case, n_sec: float, types: frozenset[str]) -> bool:
-    return vote(case.hits, n_sec, types=types)
+    return allowed, {t: {"right": right[t], "fired": fired[t]} for t in sorted({*HEURISTIC_TYPES, *fired})}
 
 
 def fit_vote(cases: Sequence[Case], threshold: float) -> tuple[Vote, dict]:
@@ -95,16 +122,13 @@ def fit_vote(cases: Sequence[Case], threshold: float) -> tuple[Vote, dict]:
     """
     clean = [c for c in cases if not c.is_violation]
     unflagged = [c for c in clean if not (c.scores.size and c.scores.max() >= threshold)]
+    seen = {h.type_id for c in cases for h in c.hits}
     table = []
     for n_sec in VOTE_GRID_SEC:
-        fires = {t for c in cases for t in {h.type_id for h in c.hits} if _voted(c, n_sec, frozenset({t}))}
-        types = frozenset(
-            t
-            for t in fires
-            if not any(_voted(c, n_sec, frozenset({t})) for c in clean)
-            and any(_voted(c, n_sec, frozenset({t})) for c in cases if c.is_violation)
-        )
-        added = sum(_voted(c, n_sec, types) for c in unflagged) if types else 0
+        alone = {t: [c for c in cases if vote(c.hits, n_sec, types=frozenset({t}))] for t in seen}
+        # a type votes if it fires on some violation video and on no clean one
+        types = frozenset(t for t, fired in alone.items() if fired and all(c.is_violation for c in fired))
+        added = sum(vote(c.hits, n_sec, types=types) for c in unflagged) if types else 0
         table.append({"n_sec": n_sec, "types": sorted(types), "added_false_positives": added})
     ok = [row for row in table if row["types"] and row["added_false_positives"] == 0]
     notes = {"grid": table, "clean_videos": len(clean), "clean_videos_branch_a_misses": len(unflagged)}
@@ -125,7 +149,7 @@ def fit_knn(cases: Sequence[Case], banks: dict[str, tuple[np.ndarray, list[str]]
         for c in cases:
             if not c.is_violation or c.peak_feature is None:
                 continue
-            bank = _bank_without(c.group, banks)
+            bank = _bank(banks, c.group)
             if bank is None:
                 continue
             answer = knn_type(c.peak_feature, Knn(bank[0], bank[1], k, share))
@@ -141,14 +165,15 @@ def fit_knn(cases: Sequence[Case], banks: dict[str, tuple[np.ndarray, list[str]]
     if not good:
         return None, notes
     best = max(good, key=lambda g: (g["right"], -g["answered"]))
-    features, types = _bank_without("", banks) or (np.zeros((0, 0)), np.array([]))
+    features, types = _bank(banks)  # not None: a setting that answered had a bank to answer from
     return Knn(features, types, best["k"], best["min_share"]), notes
 
 
-def _bank_without(
-    group: str, banks: dict[str, tuple[np.ndarray, list[str]]]
+def _bank(
+    banks: dict[str, tuple[np.ndarray, list[str]]], without_group: str | None = None
 ) -> tuple[np.ndarray, np.ndarray] | None:
-    parts = [(x, t) for v, (x, t) in banks.items() if len(t) and group_of(v) != group]
+    """Positive windows of every video outside `without_group` (all of them by default) and their types."""
+    parts = [(x, t) for v, (x, t) in banks.items() if len(t) and group_of(v) != without_group]
     if not parts:
         return None
     return np.concatenate([x for x, _ in parts]), np.array([s for _, t in parts for s in t])
@@ -177,7 +202,7 @@ def lovo(cases: Sequence[Case], threshold: float, banks: dict | None = None, knn
         s, _ = fit_settings(rest, threshold)
         bank = None
         if knn is not None and banks:
-            parts = _bank_without(c.group, banks)
+            parts = _bank(banks, c.group)
             bank = Knn(parts[0], parts[1], knn.k, knn.min_share) if parts else None
         found = run_case(c, threshold, s, bank)
         first.append(found[0] if found else None)
@@ -194,15 +219,12 @@ def summarize(cases: Sequence[Case], first: Sequence[Found | None]) -> dict:
     clean = [(c, f) for c, f in zip(cases, first, strict=True) if not c.is_violation]
     flagged = [(c, f) for c, f in violation if f is not None]
     typed = [(c, f) for c, f in flagged if f.type_id in c.types]
-    named = [(c, f) for c, f in flagged if f.type_id != "other"]
-
-    def med(values: list[float]) -> float | None:
-        return float(median(values)) if values else None
+    named = [(c, f) for c, f in flagged if f.type_id != FALLBACK_TYPE]
 
     return {
         "video_recall": len(flagged) / len(violation) if violation else None,
         "fp_rate": sum(f is not None for _, f in clean) / len(clean) if clean else None,
-        "median_abs_dt": med([_delta(c.truth, f.timecode_sec) for c, f in flagged]),
+        "median_abs_dt": _median([_delta(c.truth, f.timecode_sec) for c, f in flagged]),
         "type_accuracy": len(typed) / len(violation) if violation else None,
         "n_typed_right": len(typed),
         "n_named": len(named),  # videos whose first violation has a type other than the fallback
@@ -227,7 +249,7 @@ def _timecode_choice(cases: Sequence[Case], flagged: Sequence[tuple[Case, Found]
     for c in cases:
         for sec, type_id in c.truth:
             hits = [h for h in c.hits if h.type_id == type_id]
-            if timecode_kind(type_id) != "onset" or not hits:
+            if evidence_kind(type_id) != "state" or not hits:
                 continue
             onset.append(min(abs(h.start_sec - sec) for h in hits))
             peak.append(min(abs((window_score(h, c.starts, c.scores)[1] or h.start_sec) - sec) for h in hits))

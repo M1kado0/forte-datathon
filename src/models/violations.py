@@ -9,7 +9,6 @@ verdict. Pure functions: `train` measures them on leave-one-video-out and saves 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal
 
 import numpy as np
 
@@ -21,12 +20,12 @@ from src.rules.describe import OBJECT_NAMES
 
 FALLBACK_TYPE = "other"  # rules.yaml `fallback: true`
 MAX_VIOLATIONS = 2
-MAX_FALLBACK_VIOLATIONS = 1  # ADR 0005: with no type, one neutral violation per video
 MIN_GAP_SEC = 5.0
 
-# Types that stand while they last: the timecode is the start of the state. Every other type, the fallback
-# included, is an action and gets the score peak (docs/TYPES.md). `train` checks both choices by median |Δt|.
-ONSET_TYPES = frozenset(
+# Types that stand while they last: the timecode is the start of the state and the evidence frames follow it.
+# Every other type, the fallback included, is an action: the timecode is the score peak (docs/TYPES.md).
+# `train` checks both choices by median |Δt| (metrics.json, timecode_choice).
+STATE_TYPES = frozenset(
     {
         "keys_left_on_safe",
         "safe_left_open",
@@ -37,8 +36,6 @@ ONSET_TYPES = frozenset(
         "cash_left_on_desk",
         "cash_on_desk_next_client",
         "outsider_in_cash_room",
-        "workplace_left",
-        "count_without_controller",
     }
 )
 # The description of these needs the object a heuristic saw, which a window embedding does not give.
@@ -79,17 +76,23 @@ class Settings:
 class Found:
     type_id: str
     timecode_sec: float
-    kind: Kind  # which evidence frames to cut: "state" around the start, "action" around the peak
+    kind: (
+        Kind  # "state": timecode is the start and the frames follow it; "action": the peak, frames around it
+    )
     facts: dict[str, str] = field(default_factory=dict)  # fills the description template
     score: float = 0.0  # branch A's strongest window over the violation, for ordering only
-    onset_sec: float = (
-        0.0  # both candidate timecodes, so `train` can compare them; timecode_sec is one of them
-    )
+    # Both candidate timecodes, so `train` can compare them; timecode_sec is one of them.
+    onset_sec: float = 0.0
     peak_sec: float = 0.0
 
 
-def timecode_kind(type_id: str) -> Literal["onset", "peak"]:
-    return "onset" if type_id in ONSET_TYPES else "peak"
+def evidence_kind(type_id: str) -> Kind:
+    return "state" if type_id in STATE_TYPES else "action"
+
+
+def peak_feature(scores: np.ndarray, feats: np.ndarray) -> np.ndarray | None:
+    """Features of the best-scoring window, what kNN looks the type up by; None for a clip with no windows."""
+    return feats[int(np.argmax(scores))] if len(scores) else None
 
 
 def decide(
@@ -118,11 +121,8 @@ def decide(
     type_id = knn_type(peak_feature, knn) if knn is not None and peak_feature is not None else None
     type_id = type_id or FALLBACK_TYPE
     centre = float(starts[peak] + WINDOW_SEC / 2)
-    kind: Kind = "state" if timecode_kind(type_id) == "onset" else "action"
-    onset = timecode(
-        starts, scores, threshold, "onset"
-    )  # not None: this path is only reached by a flagged video
-    return [Found(type_id, centre, kind, {}, float(scores[peak]), onset, centre)]
+    onset = timecode(starts, scores, threshold, "onset")  # not None: only a flagged video gets here
+    return [Found(type_id, centre, evidence_kind(type_id), {}, float(scores[peak]), onset, centre)]
 
 
 def knn_type(feature: np.ndarray | None, bank: Knn | None) -> str | None:
@@ -170,20 +170,10 @@ def _from_hits(hits: list[Hit], starts: np.ndarray, scores: np.ndarray) -> list[
             best[hit.type_id] = (score, hit, centre)
     found: list[Found] = []
     for score, hit, centre in sorted(best.values(), key=lambda b: (-b[0], b[1].start_sec)):
-        onset = timecode_kind(hit.type_id) == "onset"
-        second = hit.start_sec if onset or centre is None else centre
+        kind = evidence_kind(hit.type_id)
+        second = hit.start_sec if kind == "state" or centre is None else centre
         if any(abs(second - f.timecode_sec) < MIN_GAP_SEC for f in found):
             continue
         facts = {"object": OBJECT_NAMES[hit.label]} if hit.type_id in NEEDS_OBJECT and hit.label else {}
-        found.append(
-            Found(
-                hit.type_id,
-                second,
-                "state" if onset else "action",
-                facts,
-                score,
-                hit.start_sec,
-                centre or hit.start_sec,
-            )
-        )
+        found.append(Found(hit.type_id, second, kind, facts, score, hit.start_sec, centre or hit.start_sec))
     return found

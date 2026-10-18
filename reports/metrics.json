@@ -78,9 +78,21 @@
         "right": 1,
         "fired": 4
       },
+      "id_not_presented": {
+        "right": 0,
+        "fired": 0
+      },
       "outsider_in_cash_room": {
         "right": 2,
         "fired": 2
+      },
+      "valuables_left_on_desk": {
+        "right": 0,
+        "fired": 0
+      },
+      "workplace_left": {
+        "right": 0,
+        "fired": 0
       }
     },
     "n_typed_right": 2,
@@ -212,7 +224,33 @@
         ],
         "found": "other"
       }
-    }
+    },
+    "id_not_presented_sweep": [
+      {
+        "min_payout_sec": 3.0,
+        "fired_right": 0,
+        "fired_clean": 0,
+        "fired_other_type": 0
+      },
+      {
+        "min_payout_sec": 5.0,
+        "fired_right": 0,
+        "fired_clean": 0,
+        "fired_other_type": 0
+      },
+      {
+        "min_payout_sec": 8.0,
+        "fired_right": 0,
+        "fired_clean": 0,
+        "fired_other_type": 0
+      },
+      {
+        "min_payout_sec": 15.0,
+        "fired_right": 0,
+        "fired_clean": 0,
+        "fired_other_type": 0
+      }
+    ]
   },
   "knn": {
     "enabled": false,

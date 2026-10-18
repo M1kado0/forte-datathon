@@ -34,7 +34,9 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   forgets cash on the desk reads as that too (X-26, which has no heuristic).
 - id_not_presented does not see the identification itself, only whether a document shows up at the counter while
   cash is there. A document held below the counter, out of frame or shown as a digital document on a
-  phone fires it too, and so does a document prompt missing from #32. It needs the closest look on LOVO.
+  phone fires it too, and so does a document prompt missing from #32. On the real tracks it fires on no video at any
+  min_payout_sec tried (reports/metrics.json, types.id_not_presented_sweep), X-2 included, so that threshold is not
+  what stops it and the type is never named (#34).
 """
 
 from dataclasses import dataclass

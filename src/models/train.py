@@ -13,7 +13,7 @@ import csv
 import functools
 import json
 import pickle
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 
 import numpy as np
@@ -35,8 +35,11 @@ from src.features.embeddings import (
     video_path,
     window_features,
 )
-from src.heuristics import Hit, detect
+from src.heuristics import Hit, Thresholds, detect
+from src.heuristics.detect import ID_NOT_PRESENTED
+from src.heuristics.thresholds import DEFAULT
 from src.models.evaluate import Case, bank_windows, fit_settings, lovo
+from src.models.violations import peak_feature
 from src.models.windows import (
     NEGATIVE,
     POSITIVE,
@@ -119,16 +122,40 @@ def cross_validate(ids: list[str], clips: list[Clip]) -> list[np.ndarray]:
     return scores
 
 
-def heuristic_hits(files: dict[str, str]) -> dict[str, list[Hit]]:
+PAYOUT_GRID_SEC = (3.0, 5.0, 8.0, 15.0)  # min_payout_sec values tried for id_not_presented (#54)
+
+
+def heuristic_hits(files: dict[str, str], thresholds: Thresholds = DEFAULT) -> dict[str, list[Hit]]:
     """Heuristic hits of each video, from its cached tracks (built once on a miss)."""
     detector = functools.cache(LocalDetector)
     hits = {}
     for vid, file in files.items():
         tracks = track_cache.load_tracks(video_path(file))
         hits[vid] = detect(
-            tracks if tracks is not None else track_cache.get_tracks(video_path(file), detector())
+            tracks if tracks is not None else track_cache.get_tracks(video_path(file), detector()),
+            thresholds=thresholds,
         )
     return hits
+
+
+def payout_sweep(labels: pd.DataFrame, ids: list[str]) -> list[dict]:
+    """Videos where id_not_presented fires at each min_payout_sec, split by what the video is labelled with."""
+    files = labels.drop_duplicates("video_id").set_index("video_id")["file"].to_dict()
+    clean = set(labels.loc[labels["verdict"] == "no_violation", "video_id"])
+    right = set(labels.loc[labels["violation_type"] == ID_NOT_PRESENTED, "video_id"])
+    sweep = []
+    for min_payout in PAYOUT_GRID_SEC:
+        hits = heuristic_hits({v: files[v] for v in ids}, replace(DEFAULT, min_payout_sec=min_payout))
+        fired = {v for v in ids if any(h.type_id == ID_NOT_PRESENTED for h in hits[v])}
+        sweep.append(
+            {
+                "min_payout_sec": min_payout,
+                "fired_right": len(fired & right),
+                "fired_clean": len(fired & clean),
+                "fired_other_type": len(fired - right - clean),
+            }
+        )
+    return sweep
 
 
 def build_cases(
@@ -141,8 +168,9 @@ def build_cases(
     for vid, clip, s in zip(ids, clips, scores, strict=True):
         rows = labels[(labels["video_id"] == vid) & (labels["verdict"] == "violation")]
         truth = [(int(sec), t) for sec, t in zip(rows["second"], rows["violation_type"], strict=True)]
-        peak = clip.feats[int(np.argmax(s))] if len(s) else None
-        cases.append(Case(vid, clip.windows["start"].to_numpy(), s, peak, hits[vid], truth))
+        cases.append(
+            Case(vid, clip.windows["start"].to_numpy(), s, peak_feature(s, clip.feats), hits[vid], truth)
+        )
         banks[vid] = bank_windows(clip.windows, clip.feats, truth)
     return cases, banks
 
@@ -185,6 +213,7 @@ def run() -> dict:
             "n_typed_right": final["n_typed_right"],
             "n_named": final["n_named"],
             "by_video": final["types_by_video"],
+            "id_not_presented_sweep": payout_sweep(labels, ids),
         },
         "knn": {"enabled": settings.knn is not None, **notes["knn"]},
         "timecode_choice": final["timecode_choice"],

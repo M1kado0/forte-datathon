@@ -4,9 +4,8 @@ A hit already passed its type's thresholds, so it is confident. The vote only ra
 "violation" and never lowers it: silence is not "no violation". N is passed in, #34 picks it on LOVO.
 
 A type may vote only if it fires on no clean video at that N. `train` (src/models/evaluate.py) picks the types and N on
-leave-one-video-out and saves them with the model; they are in reports/metrics.json under "vote". Real tracks
-left outsider_in_cash_room alone: foreign_object_at_desk fires on 2 of 19 clean videos at 3 s. The constant below
-is the earlier stand-in set, kept for tests that call `vote` without settings.
+leave-one-video-out and saves them with the model; the counts per type and N are in reports/metrics.json under
+"vote". The constant below is the earlier stand-in set, kept for tests that call `vote` without settings.
 """
 
 from collections.abc import Collection, Iterable

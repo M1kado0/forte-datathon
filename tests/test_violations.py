@@ -12,8 +12,8 @@ from src.models.violations import (
     Settings,
     Vote,
     decide,
+    evidence_kind,
     knn_type,
-    timecode_kind,
 )
 
 OUTSIDER, OBJECT, LEFT = "outsider_in_cash_room", "foreign_object_at_desk", "client_left_during_count"
@@ -35,12 +35,12 @@ def run(hits, scores, vote=VOTE, knn=None, peak_feat=None):
     return decide(STARTS, scores, THRESHOLD, hits, replace(SETTINGS, vote=vote), knn, peak_feat)
 
 
-def test_timecode_kind_is_start_for_states_and_peak_for_actions():
-    assert timecode_kind(OUTSIDER) == "onset"
-    assert timecode_kind("keys_left_on_safe") == "onset"
-    assert timecode_kind(LEFT) == "peak"
-    assert timecode_kind("collector_id_not_shown") == "peak"
-    assert timecode_kind(FALLBACK_TYPE) == "peak"
+def test_evidence_kind_is_state_for_scenarios_that_last_and_action_for_the_rest():
+    assert evidence_kind(OUTSIDER) == "state"
+    assert evidence_kind("keys_left_on_safe") == "state"
+    assert evidence_kind(LEFT) == "action"
+    assert evidence_kind("collector_id_not_shown") == "action"
+    assert evidence_kind(FALLBACK_TYPE) == "action"
 
 
 def test_nothing_flagged_and_no_vote_is_no_violation():
