@@ -29,7 +29,7 @@ X-29,Х-29.mov,no_violation,,,facing
 X-30,Х-30.mov,violation,13,outsider_in_cash_room,facing
 X-31,Х-31.mov,no_violation,,,facing
 X-32,Х-32.mov,violation,5,cash_room_door_open,facing
-X-33,Х-33.mov,violation,6,cash_room_door_open,facing
+X-33,Х-33.mov,violation,6,outsider_in_cash_room,facing
 X-34,Х-34.mov,violation,13,client_left_during_count,back
 X-35,Х-35.mov,no_violation,,,back
 X-37,Х-37.mov,no_violation,,,back
