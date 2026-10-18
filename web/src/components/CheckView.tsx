@@ -12,6 +12,7 @@ export function CheckView() {
   const [rulesLoading, setRulesLoading] = useState(true);
   const [rulesError, setRulesError] = useState("");
   const [error, setError] = useState("");
+  const [modelLoaded, setModelLoaded] = useState<boolean | null>(null);
   const active = useRef(0);
   useEffect(() => () => { active.current += 1; }, []);
   async function loadRules() {
@@ -22,6 +23,15 @@ export function CheckView() {
     finally { setRulesLoading(false); }
   }
   useEffect(() => { void loadRules(); }, []);
+  useEffect(() => {
+    let disposed = false;
+    // Health is advisory; a failed request must not block results or imply demo mode.
+    void api.health().then(
+      health => { if (!disposed) setModelLoaded(health.model_loaded); },
+      () => { if (!disposed) setModelLoaded(null); },
+    );
+    return () => { disposed = true; };
+  }, [job?.status]);
 
   async function analyze() {
     if (!file || busy) return;
@@ -70,22 +80,22 @@ export function CheckView() {
         </form>
       </div>
       <section aria-live="polite" aria-busy={busy} className="results-section space-y-5">
-        <p className="demo-notice"><span>Демонстрационный режим</span>Результат и сплошной кадр не связаны с содержимым видео.</p>
+        {modelLoaded === false && <p className="demo-notice"><span>Демонстрационный режим</span>Результат и сплошной кадр не связаны с содержимым видео.</p>}
         {busy && <><p role="status">{uploading ? "Загружаем видео…" : "Обрабатываем видео…"}</p><Skeleton className="h-20 w-full rounded-btn" /></>}
         {error && <ErrorBox message={error} onRetry={() => { void analyze(); }} />}
         {job?.status === "done" && <>
-          <h2 className="text-2xl font-bold text-forte-dark">{job.verdict === "violation" ? "Обнаружены признаки возможных нарушений" : "Нарушение не обнаружено"}</h2>
+          <h2 className="text-2xl font-bold text-foreground">{job.verdict === "violation" ? "Обнаружены признаки возможных нарушений" : "Нарушение не обнаружено"}</h2>
           <p>Результат — подсказка для проверки человеком, а не заключение.</p>
           {job.violations.length > 0 && rulesLoading && <p role="status">Загружаем нормативные источники…</p>}
           {job.violations.length > 0 && rulesError && <ErrorBox message={rulesError} onRetry={() => { void loadRules(); }} />}
-          {!rulesLoading && !rulesError && job.violations.map((violation, index) => {
+          {job.violations.map((violation, index) => {
             const metadata = rules.find(rule => rule.id === violation.type || rule.name === violation.type);
             const suffix = metadata?.citation_suffix ? ` ${metadata.citation_suffix}` : "";
             const description = suffix && violation.description.endsWith(suffix)
               ? violation.description.slice(0, -suffix.length) : violation.description;
             return <article key={index} className="result-article space-y-4">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h3 className="min-w-0 break-words text-xl font-bold text-forte-dark">{metadata?.name ?? violation.type}</h3>
+                <h3 className="min-w-0 break-words text-xl font-bold text-foreground">{metadata?.name ?? violation.type}</h3>
                 <p className="shrink-0 font-semibold">Таймкод: {violation.timecode_sec} с</p>
               </div>
               <p className="max-w-prose break-words leading-relaxed">{description}</p>

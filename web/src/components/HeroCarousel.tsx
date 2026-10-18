@@ -58,7 +58,12 @@ function DepthRibbon({ running, reduced, selected }: { running: boolean; reduced
   </div>;
 }
 
-export function HeroCarousel({ uploadOpen, onUploadChange }: { uploadOpen: boolean; onUploadChange: (open: boolean) => void }) {
+export function HeroCarousel({ uploadOpen, onUploadChange, paused, onPauseChange }: {
+  uploadOpen: boolean;
+  onUploadChange: (open: boolean) => void;
+  paused: boolean;
+  onPauseChange: (paused: boolean) => void;
+}) {
   const [selected, setSelected] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -72,7 +77,7 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: { uploadOpen: boole
   const upload = useRef<HTMLDivElement>(null);
   const videos = useRef<(HTMLVideoElement | null)[]>([]);
   const ctas = useRef<(HTMLButtonElement | null)[]>([]);
-  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
   const snapshot = useRef<{ rect: DOMRect; height: number } | null>(null);
   const animations = useRef<Animation[]>([]);
   const lock = useRef(false);
@@ -150,16 +155,35 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: { uploadOpen: boole
   useEffect(() => {
     videos.current.forEach((player, index) => {
       if (!player) return;
-      if (index === selected && !expanded && canAnimate) void player.play().catch(() => { /* Keep the poster when browser autoplay is unavailable. */ });
+      if (index === selected && !expanded && canAnimate && !paused) void player.play().catch(() => { /* Keep the poster when browser autoplay is unavailable. */ });
       else player.pause();
     });
-  }, [selected, expanded, canAnimate]);
+  }, [selected, expanded, canAnimate, paused]);
+
+  useEffect(() => {
+    const cancel = () => {
+      const id = pointer.current?.id;
+      pointer.current = null;
+      if (id !== undefined && stage.current?.hasPointerCapture(id)) stage.current.releasePointerCapture(id);
+    };
+    window.addEventListener("blur", cancel);
+    return () => { window.removeEventListener("blur", cancel); cancel(); };
+  }, []);
+
+  function swipeStart(event: PointerEvent<HTMLDivElement>) {
+    if (expanded || moving || slideBusy || !event.isPrimary || event.button !== 0 || pointer.current) return;
+    if ((event.target as HTMLElement).closest("button, a, input")) return;
+    if (event.pointerType === "mouse") event.preventDefault();
+    pointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
 
   function swipeEnd(event: PointerEvent<HTMLDivElement>) {
-    if (!pointer.current) return;
+    if (pointer.current?.id !== event.pointerId) return;
     const dx = event.clientX - pointer.current.x, dy = event.clientY - pointer.current.y;
-    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) go(selected + (dx < 0 ? 1 : -1));
     pointer.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) go(selected + (dx < 0 ? 1 : -1));
   }
 
   return <section id="home" className="hero-section" aria-labelledby="hero-title" tabIndex={-1}>
@@ -175,16 +199,17 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: { uploadOpen: boole
       <div className="cinema-stage" ref={stage}
         onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
         onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
-        onPointerDown={event => { if (!expanded && event.pointerType !== "mouse") pointer.current = { x: event.clientX, y: event.clientY }; }}
-        onPointerUp={swipeEnd} onPointerCancel={() => { pointer.current = null; }}>
-        <DepthRibbon running={canAnimate && !expanded && !hovered && !focused} reduced={reduced} selected={selected} />
+        onPointerDown={swipeStart} onPointerUp={swipeEnd}
+        onPointerCancel={event => { if (pointer.current?.id === event.pointerId) pointer.current = null; }}
+        onLostPointerCapture={event => { if (pointer.current?.id === event.pointerId) pointer.current = null; }}>
+        <DepthRibbon running={canAnimate && !paused && !expanded && !hovered && !focused} reduced={reduced} selected={selected} />
         <div className="morph-surface" ref={surface}>
-          <div className="feature-films" role="region" aria-roledescription="карусель" aria-label="Иллюстрации кассовых операций" aria-hidden={expanded} {...{ inert: expanded || moving ? "" : undefined }}>
+          <div className="feature-films" aria-hidden={expanded} {...{ inert: expanded || moving ? "" : undefined }}>
             {scenes.map((item, index) => <div key={item.id} className="cinema-panel" data-position={index === selected ? "active" : "inactive"} aria-hidden={index !== selected} {...{ inert: index !== selected ? "" : undefined }}>
               <img src={`/demo/${item.id}.jpg`} alt="" width="1280" height="720" draggable={false} />
               <video ref={element => { videos.current[index] = element; }} src={`/demo/${item.id}.webm`} poster={`/demo/${item.id}.jpg`} muted loop playsInline preload="none"
                 aria-label={item.title} onError={() => { if (index === selected) setFailed(true); }} />
-              <div className="cinema-label"><span>Иллюстрация</span><span>{String(index + 1).padStart(2, "0")} / 03</span></div>
+              <div className="cinema-label"><span>Иллюстрация</span><span>{String(index + 1).padStart(2, "0")} / {String(scenes.length).padStart(2, "0")}</span></div>
               <button ref={element => { ctas.current[index] = element; }} className="primary-link slide-cta" type="button" onClick={() => changeView(true)} disabled={moving || slideBusy} aria-expanded={expanded} aria-controls="upload-panel">Проверить своё видео <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6" /></svg></button>
             </div>)}
           </div>
@@ -201,7 +226,7 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: { uploadOpen: boole
         <div className="footage-caption section-shell"><span>Постановочные кадры Pexels, не банковское CCTV.</span><a href={scene.url} target="_blank" rel="noopener noreferrer">{scene.author} / Pexels</a></div>
         <p className="hero-reassurance section-shell" data-reveal>Локальная обработка. Решение — за человеком.</p>
       </div>
-      <SponsorMarquee />
+      <SponsorMarquee paused={paused} onPauseChange={onPauseChange} />
     </div>
   </section>;
 }

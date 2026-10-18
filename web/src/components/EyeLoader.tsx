@@ -7,7 +7,7 @@ export function EyeLoader() {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const dismiss = () => setVisible(false);
     if (motion.matches) dismiss();
-    const timer = window.setTimeout(dismiss, 2600);
+    const timer = window.setTimeout(dismiss, 950);
     motion.addEventListener("change", dismiss);
     window.addEventListener("keydown", dismiss, { once: true });
     window.addEventListener("pointerdown", dismiss, { once: true });

@@ -141,6 +141,7 @@ try {
     await page.waitForFunction(() => document.querySelector('.cinema').dataset.moving === 'false');
     assert.equal(await page.locator('.upload-target').isVisible(), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    const sponsorNames = await page.locator('.partners img[alt]:not([alt=""])').evaluateAll(images => images.map(image => image.alt));
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.waitForFunction(() => document.querySelectorAll('[data-reveal-pending]').length === 0);
     await page.reload();
@@ -149,7 +150,7 @@ try {
     assert.equal(await page.locator('.about-particles').evaluate(el => getComputedStyle(el).opacity), '1');
     assert.equal(await page.locator('.about-particle').first().evaluate(el => getComputedStyle(el).animationName), 'none');
     assert.equal(await page.evaluate(() => window.revealStarts.length), 0);
-    assert.equal(await page.locator('.partner-slot:visible').count(), 3);
+    assert.deepEqual(await page.locator('.partner-slot:visible img').evaluateAll(images => images.map(image => image.alt)), sponsorNames);
     await scrollTo(page, '.partners', 280);
     await capture(page, `${width}-logos-reduced`);
     await page.locator('.hero-title').hover();

@@ -12,7 +12,8 @@ try {
   await page.waitForFunction(()=>{const v=document.querySelector('.cinema-panel[data-position="active"] video');return v && v.videoWidth>0 && !v.paused;});
   await page.screenshot({path:`${out}/${width}-hero.png`});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  assert.equal(await page.locator('.cinema-controls, .partners-caption, .motion-toggle').count(),0);
+  assert.equal(await page.locator('.cinema-controls, .partners-caption').count(),0);
+  assert.equal(await page.getByRole('button', {name:'Приостановить анимацию'}).count(),1);
   assert.equal(await page.locator('.partners').count(),1);
   assert.equal(await page.locator('#home .carousel-meta + .partners').count(),1);
   for(const selector of ['#hero-title','.about-title']) {

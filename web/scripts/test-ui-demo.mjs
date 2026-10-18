@@ -1,4 +1,4 @@
-﻿// Browser-only synthetic fixtures. Never reads or uploads dataset videos.
+// Browser-only synthetic fixtures. Never reads or uploads dataset videos.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -33,17 +33,19 @@ try {
   const chooser = await chooserPromise;
   await chooser.setFiles({name:'keyboard.mov', mimeType:'video/quicktime', buffer:Buffer.from('synthetic')});
   assert.equal(await submit.isEnabled(), true);
-  assert.equal(await page.locator('.partners-caption, .motion-toggle, .cinema-controls').count(), 0);
+  assert.equal(await page.locator('.partners-caption, .cinema-controls').count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Приостановить анимацию' }).count(), 1);
   await page.locator('.partners').scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>document.querySelector('.marquee-track').dataset.paused==='false');
   assert.equal(await page.locator('.marquee-track').evaluate(e=>getComputedStyle(e).animationPlayState), 'running');
   const loop = await page.locator('.marquee-track').evaluate(e=>({width:e.getBoundingClientRect().width,group:e.firstElementChild.getBoundingClientRect().width}));
   assert.equal(loop.width,loop.group*2);
+  const sponsorNames = await page.locator('.partners img[alt]:not([alt=""])').evaluateAll(images => images.map(image => image.alt));
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.reload();
   assert.equal(await page.locator('.eye-loader:visible').count(),0);
   assert.equal(await page.locator('.marquee-track').evaluate(e=>getComputedStyle(e).animationName),'none');
-  assert.equal(await page.locator('.partner-slot:visible').count(),3);
+  assert.deepEqual(await page.locator('.partner-slot:visible img').evaluateAll(images => images.map(image => image.alt)), sponsorNames);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.deepEqual(errors,[]);
   console.log('UI demo: invalid format, drag/drop, uppercase MOV, removal, keyboard picker, automatic marquee, seamless group geometry, reduced motion — PASS');

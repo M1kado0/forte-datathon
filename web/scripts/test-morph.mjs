@@ -90,7 +90,7 @@ try {
  assert.match(response.request().headers()['content-type'],/multipart\/form-data; boundary=/);
  const {job_id}=await response.json();assert.ok(job_id);
  await page.waitForFunction(()=>document.querySelector('.results-section h2'));
- assert.equal(await page.locator('.demo-notice').isVisible(),true);
+ assert.equal(await page.locator('.demo-notice').isVisible(),health.model_loaded === false);
  assert.equal(await page.locator('.results-section').getAttribute('aria-busy'),'false');
  await page.locator('.back-to-carousel').click();await settle(page);
  await page.locator('.cinema-panel[data-position="active"] .slide-cta').click();await settle(page);

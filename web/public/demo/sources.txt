@@ -1,4 +1,4 @@
-﻿Forte Datathon UI demo — footage provenance
+Forte Datathon UI demo — footage provenance
 Retrieved: 2026-10-17
 
 All clips are locally hosted, silent, approximately eight-second derivatives.
@@ -37,4 +37,3 @@ src/rules/rules.yaml has seven named categories and an 'other' fallback.
 src/heuristics/detect.py implements workplace_left, cash_on_desk_next_client,
 count_without_controller and id_not_presented. Stock clips provide cash-handling
 context for these checks but do not demonstrate that their conditions are met.
-api/main.py still defaults to analyze_stub; the analysis UI retains that notice.
