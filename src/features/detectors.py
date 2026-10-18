@@ -22,7 +22,7 @@ COCO_MIN_CONF = 0.2  # D-FINE boxes below this are never emitted; the heuristics
 CASH_QUERIES = ("a photo of banknotes", "a stack of cash")  # as in the #19 check
 DOCUMENT_QUERIES = ("an identity document", "a passport")
 # Queries added only when they passed #70 (ADR 0005: keys on the safe, open safe, open door). Each becomes
-# kind "object" with the query text as its label. #70 is not closed yet, so none is on.
+# kind "object" with the query text as its label. #70 ran (src.features.adr5_check): no query passed, so none is on.
 EXTRA_QUERIES: tuple[str, ...] = ()
 OWL_MIN_CONF = 0.1  # OWLv2 scores are low by design; the heuristics' cash_min and doc_min are the same
 OWL_NMS_IOU = 0.5
