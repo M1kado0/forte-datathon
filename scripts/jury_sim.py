@@ -142,11 +142,11 @@ def failed(outcomes: list[Outcome]) -> list[str]:
     return [f"{item.clip}: {item.problem}" for item in outcomes if not item.ok]
 
 
-def stress_failures(solo_sec: float, wall_sec: float, outcomes: list[Outcome]) -> list[str]:
+def stress_failures(solo: Outcome, wall_sec: float, outcomes: list[Outcome]) -> list[str]:
     """The 45 s limit is for one clip processed alone: with one worker, clips in a batch wait in the queue."""
-    problems = []
-    if solo_sec >= CLIP_LIMIT_SEC:
-        problems.append(f"один клип занял {solo_sec:.1f} s >= {CLIP_LIMIT_SEC:.0f} s")
+    problems = failed([solo])
+    if solo.ok and solo.seconds >= CLIP_LIMIT_SEC:
+        problems.append(f"один клип занял {solo.seconds:.1f} s >= {CLIP_LIMIT_SEC:.0f} s")
     if wall_sec >= STRESS_LIMIT_SEC:
         problems.append(f"стресс {wall_sec:.1f} s >= {STRESS_LIMIT_SEC:.0f} s")
     return problems + failed(outcomes)
@@ -204,7 +204,7 @@ async def main(args: argparse.Namespace) -> int:
                         longs.append(target)
                 except subprocess.CalledProcessError as error:
                     raise SystemExit(f"ffmpeg не собрал длинный клип (код {error.returncode})") from None
-                solo, _ = await run_batch(client, longs[:1], STRESS_LIMIT_SEC)
+                solo, _ = await run_batch(client, longs[:1], CLIP_LIMIT_SEC + 15)
                 stress, wall = await run_batch(client, longs, STRESS_LIMIT_SEC + 60)
             report("Один клип без очереди", solo)
             report("Стресс", stress)
@@ -213,7 +213,7 @@ async def main(args: argparse.Namespace) -> int:
                 f"стресс {len(stress)} клипов = {wall:.1f} s (порог {STRESS_LIMIT_SEC:.0f}), "
                 f"самый долгий в очереди = {max(item.seconds for item in stress):.1f} s"
             )
-            failures += failed(solo) + stress_failures(solo[0].seconds, wall, stress)
+            failures += stress_failures(solo[0], wall, stress)
 
     print("ПРОШЛО" if not failures else "НЕ ПРОШЛО:\n  " + "\n  ".join(failures))
     return 1 if failures else 0

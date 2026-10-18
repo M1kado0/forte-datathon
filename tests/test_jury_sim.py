@@ -93,12 +93,20 @@ def test_pick_clips_cycles_through_available_files(tmp_path):
 
 def test_stress_judges_solo_clip_time_not_queue_wait():
     batch = [Outcome(f"s{i}.mov", 22.0 * (i + 1), True) for i in range(8)]  # one worker: the last waits 176 s
-    assert stress_failures(solo_sec=20.2, wall_sec=177.3, outcomes=batch) == []
+    solo = Outcome("s0.mov", 20.2, True)
+    assert stress_failures(solo, wall_sec=177.3, outcomes=batch) == []
 
 
-def test_stress_fails_on_slow_solo_clip_slow_batch_or_error():
-    batch = [Outcome("s0.mov", 10.0, False, "timeout after 360 s")]
-    problems = stress_failures(solo_sec=50.0, wall_sec=310.0, outcomes=batch)
-    assert len(problems) == 3
-    assert any("50.0" in text and "45" in text for text in problems)
-    assert any("310.0" in text and "300" in text for text in problems)
+def test_stress_fails_on_slow_solo_clip_or_slow_batch():
+    batch = [Outcome("s0.mov", 10.0, True)]
+    problems = stress_failures(Outcome("s0.mov", 50.0, True), wall_sec=310.0, outcomes=batch)
+    assert problems == ["один клип занял 50.0 s >= 45 s", "стресс 310.0 s >= 300 s"]
+
+
+def test_stress_reports_each_failure_once():
+    timed_out = Outcome("s0.mov", 60.0, False, "timeout after 60 s")
+    assert stress_failures(timed_out, wall_sec=100.0, outcomes=[]) == ["s0.mov: timeout after 60 s"]
+    broken = Outcome("s1.mov", 10.0, False, "schema: x")
+    assert stress_failures(Outcome("s0.mov", 20.0, True), wall_sec=100.0, outcomes=[broken]) == [
+        "s1.mov: schema: x"
+    ]
