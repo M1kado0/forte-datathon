@@ -10,6 +10,7 @@ MODELS = ROOT / "models"
 WEIGHTS = MODELS / "weights"  # filled once by `make weights`; loaded offline afterwards
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
+FONTS = REPORTS / "fonts"  # Open Sans TTF for the figures, so PNGs rebuild the same on every machine
 WEB_DIST = ROOT / "web" / "dist"
 INSIGHTS_MD = ROOT / "docs" / "INSIGHTS.md"  # hypothesis table, built by src/data/insights.py (make all)
 EXPERIMENTS = ROOT / "experiments.csv"  # append-only run log; tests redirect it to a tmp file

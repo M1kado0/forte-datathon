@@ -8,7 +8,7 @@ import json
 
 import pandas as pd
 
-from src.data.insights import BASELINE_NOTE, build_charts, build_hypotheses, load_runs, render_md
+from src.data.insights import BASELINE_NOTE, build_hypotheses, load_runs, render_md
 
 COLUMNS = ["ts", "note", "params", "video_recall", "fp_rate", "median_abs_dt"]
 
@@ -32,7 +32,7 @@ def verdicts(runs: pd.DataFrame) -> dict[str, str]:
 def test_peak_beats_onset_is_confirmed_from_the_latest_baseline_row():
     h = {h.id: h for h in build_hypotheses(load_runs(table(baseline(dt=5.0))))}["peak_vs_onset"]
     assert h.verdict == "подтверждена"
-    assert "5,0" in h.number and "9,5" in h.number
+    assert "5,0" in h.numbers and "9,5" in h.numbers
 
 
 def test_onset_not_worse_than_peak_is_rejected():
@@ -94,6 +94,23 @@ def test_equal_recall_and_fp_fall_back_to_timecode_error():
     assert verdicts(table(baseline(fp=0.9, dt=5.0), siglip))["dinov2_vs_siglip"] == "подтверждена"
 
 
+def test_a_tie_confirms_no_claim_that_one_side_is_better():
+    tie = variant("siglip-base-logreg-lovo", fp=0.9, dt=5.0)  # same as the baseline on every metric
+    assert verdicts(table(baseline(fp=0.9, dt=5.0), tie))["dinov2_vs_siglip"] == "отвергнута"
+
+
+def test_crop_matcher_ignores_a_center_crop_switch_that_is_off():
+    runs = table(baseline(), variant("dinov2-x", fp=0.1, center_crop=False))
+    assert verdicts(runs)["whole_frame_vs_crops"] == "не проверена"
+    runs = table(baseline(), variant("dinov2-x", fp=0.1, crops=True))
+    assert verdicts(runs)["whole_frame_vs_crops"] == "отвергнута"
+
+
+def test_window_matcher_ignores_the_default_window_length():
+    runs = table(baseline(), variant("dinov2-w2", fp=0.1, window_sec=2.0))
+    assert verdicts(runs)["window_length"] == "не проверена"
+
+
 def test_variants_are_found_by_note_or_params_key():
     runs = table(
         baseline(),
@@ -123,23 +140,23 @@ def test_cash_check_verdict_follows_its_own_pass_flag():
     assert verdicts(table(baseline()))["cash_check"] == "не проверена"
 
 
-def test_threshold_hypothesis_needs_full_recall_and_at_most_half_of_clean_videos_flagged():
-    assert verdicts(table(baseline(recall=1.0, fp=0.95)))["threshold_fp"] == "отвергнута"
-    assert verdicts(table(baseline(recall=1.0, fp=0.5)))["threshold_fp"] == "подтверждена"
-    assert verdicts(table(baseline(recall=0.9, fp=0.1)))["threshold_fp"] == "отвергнута"
-    assert verdicts(table(cash_check(True)))["threshold_fp"] == "не проверена"
+def test_there_is_no_hypothesis_with_a_threshold_nobody_agreed_on():
+    ids = [h.id for h in build_hypotheses(load_runs(table(baseline(fp=0.95))))]
+    assert ids == [
+        "dinov2_vs_siglip", "whole_frame_vs_crops", "window_length", "median_subtraction",
+        "peak_vs_onset", "heuristic_vote", "cash_check",
+    ]  # fmt: skip
 
 
 def test_numbers_use_the_runs_values():
-    h = {h.id: h for h in build_hypotheses(load_runs(table(baseline(fp=0.95), cash_check(False))))}
-    assert "95%" in h["threshold_fp"].number
-    assert "55%" in h["cash_check"].number
+    h = {h.id: h for h in build_hypotheses(load_runs(table(baseline(dt=5.0), cash_check(False))))}
+    assert "5,0" in h["peak_vs_onset"].numbers
+    assert "55%" in h["cash_check"].numbers
 
 
 def test_md_has_one_row_per_hypothesis_and_counts_the_tested_ones():
-    runs = load_runs(table(baseline(fp=0.95), cash_check(False)))
-    hyps = build_hypotheses(runs)
-    md = render_md(hyps, build_charts(runs))
+    hyps = build_hypotheses(load_runs(table(baseline(), cash_check(False))))
+    md = render_md(hyps)
     rows = [line for line in md.splitlines() if line.startswith("| H")]
     assert len(rows) == len(hyps)
     tested = sum(h.verdict != "не проверена" for h in hyps)
@@ -147,12 +164,19 @@ def test_md_has_one_row_per_hypothesis_and_counts_the_tested_ones():
     assert all(any(v in row for v in ("подтверждена", "отвергнута", "не проверена")) for row in rows)
 
 
+def test_md_links_a_figure_only_for_hypotheses_that_have_a_chart():
+    hyps = build_hypotheses(load_runs(table(baseline(), cash_check(False))))
+    md = render_md(hyps)
+    row = {h.id: next(line for line in md.splitlines() if h.claim in line) for h in hyps}
+    assert "peak_vs_onset.png" in row["peak_vs_onset"] and "cash_check.png" in row["cash_check"]
+    assert ".png" not in row["dinov2_vs_siglip"]
+
+
 def test_chart_titles_state_the_conclusion_with_the_runs_numbers():
-    charts = {c.file: c for c in build_charts(load_runs(table(baseline(dt=5.0, fp=0.95), cash_check(False))))}
-    assert "5,0" in charts["peak_vs_onset.png"].title and "9,5" in charts["peak_vs_onset.png"].title
-    assert "95%" in charts["threshold_fp.png"].title
-    assert "55%" in charts["cash_check.png"].title
+    hyps = {h.id: h for h in build_hypotheses(load_runs(table(baseline(dt=5.0), cash_check(False))))}
+    assert "5,0" in hyps["peak_vs_onset"].chart.title and "9,5" in hyps["peak_vs_onset"].chart.title
+    assert "55%" in hyps["cash_check"].chart.title
 
 
 def test_a_hypothesis_without_data_gets_no_chart():
-    assert build_charts(load_runs(table(variant("stub-x")))) == []
+    assert all(h.chart is None for h in build_hypotheses(load_runs(table(variant("stub-x")))))
