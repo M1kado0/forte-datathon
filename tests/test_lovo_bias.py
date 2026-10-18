@@ -4,14 +4,17 @@ import numpy as np
 
 from scripts.lovo_bias import (
     balanced_folds,
+    centre_on_start,
     drop_folds,
     fp_at_full_recall,
     knn_scores,
+    max_minus_median,
     nearest_twin,
     normal_bank,
     pair_auc,
     pair_folds,
     random_stand_in,
+    recall_at_fp,
     top_mean,
 )
 from src.models.windows import NEGATIVE, POSITIVE, UNLABELED
@@ -134,3 +137,28 @@ def test_pair_folds_can_also_remove_a_dropped_clip_per_member_of_the_pair():
     dropped = np.array([6, 6, 6, 6, 6, 6, 0, 0, 0, 0])
     for train, pos, neg in pair_folds(IDS, VIOLATION, dropped):
         assert not {pos, neg, dropped[pos], dropped[neg]} & set(train.tolist())
+
+
+def test_centre_on_start_subtracts_the_mean_of_the_first_windows_from_every_window():
+    feats = np.array([[1.0, 1.0], [3.0, 3.0], [5.0, 5.0]])
+    assert np.allclose(centre_on_start(feats, 2), [[-1.0, -1.0], [1.0, 1.0], [3.0, 3.0]])
+    # a reference longer than the clip uses the whole clip; an empty clip stays empty
+    assert np.allclose(centre_on_start(feats, 10), feats - 3.0)
+    assert centre_on_start(np.zeros((0, 2)), 4).shape == (0, 2)
+
+
+def test_max_minus_median_is_the_peak_logit_above_the_clips_own_typical_logit():
+    # logits 0, 0, ln 9: the median is 0, so the score is the peak logit ln 9
+    assert np.isclose(max_minus_median([0.5, 0.5, 0.9]), np.log(9))
+    # a clip that scores high everywhere has no peak above its own level
+    assert np.isclose(max_minus_median([0.9, 0.9, 0.9]), 0.0)
+    assert max_minus_median([]) == 0.0
+
+
+def test_recall_at_fp_counts_violations_that_beat_the_clean_clip_just_past_the_allowed_fp():
+    scores = np.array([0.9, 0.7, 0.3, 0.8, 0.6, 0.5, 0.1])
+    violation = np.array([True, True, True, False, False, False, False])
+    # clean scores high to low: 0.8, 0.6, 0.5, 0.1
+    assert recall_at_fp(scores, violation, 0) == 1 / 3  # must beat 0.8: only 0.9
+    assert recall_at_fp(scores, violation, 1) == 2 / 3  # must beat 0.6: 0.9 and 0.7
+    assert recall_at_fp(scores, violation, 4) == 1.0  # every clean clip may be flagged

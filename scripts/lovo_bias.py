@@ -7,6 +7,7 @@ Diagnostics on the cached embeddings, no model and no GPU:
     uv run python -m scripts.lovo_bias d5    do the nearest training clips predict the held-out score?
     uv run python -m scripts.lovo_bias dn2   kNN distance to a bank of normal windows of the same layout
     uv run python -m scripts.lovo_bias lto   leave-twin-out: a clip is scored without its nearest lookalike in training
+    uv run python -m scripts.lovo_bias ref   score each clip against its own start: centred features, max minus median
     uv run python -m scripts.lovo_bias all   everything above
 """
 
@@ -14,11 +15,12 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Iterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.spatial.distance import cdist
+from scipy.special import logit
 from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
@@ -34,6 +36,8 @@ NEIGHBOURS = 5  # D5: nearest training clips
 KNN_K = (1, 5)  # DN2
 TOP_N = 5  # DN2: top-n mean video score
 CONTROL_SEEDS = SEEDS[:5]  # LTO control draws
+REF_WINDOWS = (2, 4, 8)  # REF: windows at the start of a clip that serve as its scene reference (0.5 s apart)
+RECALL_AT_FP = 9  # REF: false positives allowed when reporting recall (half of the clean clips)
 
 
 def _groups(video_ids: Sequence[str]) -> np.ndarray:
@@ -135,6 +139,32 @@ def fp_at_full_recall(scores: Sequence[float], is_violation: Sequence[bool]) -> 
     s = np.asarray(scores, dtype=float)
     bad = np.asarray(is_violation, dtype=bool)
     return int((s[~bad] >= choose_threshold(s, bad)).sum())
+
+
+def recall_at_fp(scores: Sequence[float], is_violation: Sequence[bool], max_fp: int) -> float:
+    """Share of violation videos scoring strictly above the (max_fp + 1)-th highest clean video: recall with max_fp FP."""
+    s = np.asarray(scores, dtype=float)
+    bad = np.asarray(is_violation, dtype=bool)
+    clean = np.sort(s[~bad])[::-1]
+    floor = clean[max_fp] if max_fp < len(clean) else -np.inf
+    return float((s[bad] > floor).mean())
+
+
+def centre_on_start(feats: np.ndarray, n_windows: int) -> np.ndarray:
+    """Window features minus the mean of the clip's first `n_windows` windows: change from the scene at the start.
+
+    Uses the clip alone and no labels, so a service can do the same at inference. It assumes nothing violating
+    happens inside the reference (the earliest label in data/labels.csv is at 5 s).
+    """
+    return feats - feats[:n_windows].mean(axis=0) if len(feats) else feats
+
+
+def max_minus_median(window_scores: Sequence[float]) -> float:
+    """Peak window logit above the clip's own median window logit: a video score that ignores the clip's level."""
+    if not len(window_scores):
+        return 0.0
+    z = logit(np.clip(np.asarray(window_scores, dtype=float), 1e-6, 1 - 1e-6))
+    return float(z.max() - np.median(z))
 
 
 def normal_bank(
@@ -383,7 +413,55 @@ def run_lto(c: Cohort) -> None:
         line("D3 leave-pair", arm, [r[0] for r in runs], [r[1] for r in runs])
 
 
-COMMANDS = ("d2", "d3", "d5", "dn2", "lto", "all")
+def _fit_windows(clips: list[Clip], train: np.ndarray, held_out: Sequence[int]) -> dict[int, np.ndarray]:
+    with threadpool_limits(1):
+        clf = fit_on([clips[i] for i in train])
+        return {
+            i: clf.predict_proba(clips[i].feats)[:, 1] if len(clips[i].feats) else np.zeros(0)
+            for i in held_out
+        }
+
+
+def _oof_windows(clips: list[Clip], folds: list[tuple[np.ndarray, np.ndarray]]) -> list[np.ndarray]:
+    """Out-of-fold probability of every window of every clip."""
+    got = Parallel(n_jobs=-1)(delayed(_fit_windows)(clips, train, val) for train, val in folds)
+    out: list[np.ndarray] = [np.zeros(0)] * len(clips)
+    for fold in got:
+        for i, w in fold.items():
+            out[i] = w
+    return out
+
+
+def run_ref(c: Cohort) -> None:
+    """Does scoring a clip against its own start help? Features centred on the first windows, max minus median.
+
+    Label-free and clip-local. Around 25 variants were tried on these 40 clips before this table, so read the
+    plateau over reference lengths and the twin-out column, not the best single number.
+    """
+    n_clean = int((~c.violation).sum())
+    twin = _clip_twins(c)
+    arms = (("plain", list(lovo_folds(c.ids))), ("twin out", list(drop_folds(c.ids, twin))))
+    variants = [("raw features", c.clips)] + [
+        (f"first {n} centred", [replace(x, feats=centre_on_start(x.feats, n)) for x in c.clips])
+        for n in REF_WINDOWS
+    ]
+    print(
+        f"REF reference-centred scoring; recall is measured with {RECALL_AT_FP} of {n_clean} clean clips flagged"
+    )
+    print("                   features          score         arm        AUC     FP at recall 1.0   recall")
+    for name, clips in variants:
+        for arm, folds in arms:
+            windows = _oof_windows(clips, folds)
+            for score, fn in (("max", video_score), ("max-median", max_minus_median)):
+                s = np.array([fn(w) for w in windows])
+                print(
+                    f"                   {name:<17} {score:<13} {arm:<10} {_auc(s, c.violation):.3f}   "
+                    f"{fp_at_full_recall(s, c.violation):>3}/{n_clean}              "
+                    f"{recall_at_fp(s, c.violation, RECALL_AT_FP):.2f}"
+                )
+
+
+COMMANDS = ("d2", "d3", "d5", "dn2", "lto", "ref", "all")
 
 
 def main(argv: list[str]) -> None:
@@ -404,6 +482,8 @@ def main(argv: list[str]) -> None:
         run_dn2(c)
     if cmd in ("lto", "all"):
         run_lto(c)
+    if cmd in ("ref", "all"):
+        run_ref(c)
 
 
 if __name__ == "__main__":
