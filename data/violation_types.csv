@@ -15,7 +15,7 @@ X-26,9,cash_left_on_desk
 X-28,7,laptop_left_open
 X-30,13,outsider_in_cash_room
 X-32,5,cash_room_door_open
-X-33,6,cash_room_door_open
+X-33,6,outsider_in_cash_room
 X-34,13,client_left_during_count
 X-38,33,cash_on_desk_next_client
 X-40,17,foreign_object_at_desk

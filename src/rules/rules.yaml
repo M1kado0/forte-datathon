@@ -151,7 +151,7 @@ types:
 
   - id: outsider_in_cash_room
     name: Посторонний в кассовом помещении
-    videos: [X-18, X-30]
+    videos: [X-18, X-30, X-33]
     norm: точная
     rules:
       - &p14_8
@@ -192,7 +192,7 @@ types:
 
   - id: cash_room_door_open
     name: Дверь кассового помещения оставлена открытой
-    videos: [X-32, X-33]
+    videos: [X-32]
     norm: ближайшая
     rules:
       - *p14_8
