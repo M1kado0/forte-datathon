@@ -154,7 +154,8 @@ def decide(
     type_id = type_id or FALLBACK_TYPE
     centre = float(starts[peak] + WINDOW_SEC / 2)
     onset = timecode(starts, scores, threshold, "onset")  # not None: only a flagged video gets here
-    return [Found(type_id, centre, evidence_kind(type_id), {}, float(scores[peak]), onset, centre)]
+    # No hit, so no start of a state: the timecode is the peak for kNN's type too, and the frames follow it.
+    return [Found(type_id, centre, "action", {}, float(scores[peak]), onset, centre)]
 
 
 def knn_type(feature: np.ndarray | None, bank: Knn | None) -> str | None:

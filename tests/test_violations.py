@@ -133,9 +133,9 @@ def test_knn_never_names_a_type_that_needs_an_object_fact():
     assert knn_type(np.array([1.0, 0.0]), bank) is None
 
 
-def test_knn_type_replaces_the_fallback_with_its_own_timecode_kind():
+def test_knn_type_replaces_the_fallback_but_has_no_hit_so_it_keeps_the_peak_and_its_frames():
     found = run([], scores_with(w150=0.9), knn=knn_bank(), peak_feat=np.array([0.0, 1.0]))
-    assert [(f.type_id, f.timecode_sec, f.kind) for f in found] == [("laptop_left_open", 15.0, "state")]
+    assert [(f.type_id, f.timecode_sec, f.kind) for f in found] == [("laptop_left_open", 15.0, "action")]
 
 
 @pytest.mark.parametrize("peak_feat", [None, np.array([1.0, 1.0])])
