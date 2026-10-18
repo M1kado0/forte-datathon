@@ -95,6 +95,15 @@ class LocalDetector:
         batch = self.torch.from_numpy(np.stack(frames)).to(self.device)
         return batch.flip(-1).permute(0, 3, 1, 2).float().div_(255)
 
+    def _pixel_boxes(self, centre_wh, scale, w: int, h: int):
+        """Normalised (cx, cy, w, h) -> pixel (x1, y1, x2, y2) inside the w x h frame."""
+        centre_wh = centre_wh.float()
+        xy, size = centre_wh[..., :2], centre_wh[..., 2:]
+        xyxy = (self.torch.cat([xy - size / 2, xy + size / 2], -1) * scale).clamp_(min=0)
+        xyxy[..., 0::2].clamp_(max=w)
+        xyxy[..., 1::2].clamp_(max=h)
+        return xyxy
+
     def coco(self, frames: Sequence[np.ndarray]) -> list[list[Box]]:
         torch = self.torch
         h, w = frames[0].shape[:2]
@@ -104,12 +113,7 @@ class LocalDetector:
         with torch.no_grad():
             out = self.dfine(pixel_values=x.to(self.dtype))
         scores = out.logits.float().sigmoid()[:, :, self.coco_id_list]  # (n, queries, classes kept)
-        centre = out.pred_boxes.float()
-        scale = torch.tensor([w, h, w, h], device=self.device)
-        xyxy = torch.cat([centre[..., :2] - centre[..., 2:] / 2, centre[..., :2] + centre[..., 2:] / 2], -1)
-        xyxy = (xyxy * scale).clamp_(min=0)
-        xyxy[..., 0::2].clamp_(max=w)
-        xyxy[..., 1::2].clamp_(max=h)
+        xyxy = self._pixel_boxes(out.pred_boxes, torch.tensor([w, h, w, h], device=self.device), w, h)
         result: list[list[Box]] = []
         for b in range(len(frames)):
             q, c = (scores[b] >= COCO_MIN_CONF).nonzero(as_tuple=True)
@@ -146,11 +150,7 @@ class LocalDetector:
                 pixel_values=x,
             )
         logits = out.logits.float().sigmoid().view(n, -1, q)  # (n, patches, queries)
-        centre = out.pred_boxes.float()
-        xyxy = torch.cat([centre[..., :2] - centre[..., 2:] / 2, centre[..., :2] + centre[..., 2:] / 2], -1)
-        xyxy = (xyxy * side).clamp_(min=0)
-        xyxy[..., 0::2].clamp_(max=w)
-        xyxy[..., 1::2].clamp_(max=h)
+        xyxy = self._pixel_boxes(out.pred_boxes, side, w, h)  # OWLv2 boxes are relative to the padded square
         result: list[list[Box]] = [[] for _ in range(n)]
         start = 0
         for (kind, label), queries in self.groups.items():

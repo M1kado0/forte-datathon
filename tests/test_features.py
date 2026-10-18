@@ -114,9 +114,18 @@ def test_build_tracks_gives_schema_valid_tracks_of_every_kind(clip):
 
 def test_open_vocabulary_kinds_are_seen_on_every_other_frame_only(clip):
     table = tracks.build_tracks(clip, FakeDetector())
-    assert (
-        table[table["kind"] == "cash"]["t"].nunique() * 2 == table[table["kind"] == "person"]["t"].nunique()
-    )
+    seen = table[table["kind"] == "person"]["t"].nunique()
+    assert table[table["kind"] == "cash"]["t"].nunique() == -(
+        -seen // tracks.OWL_EVERY
+    )  # frames 0, 2, 4, ...
+
+
+def test_the_document_prompt_is_always_on_and_extra_queries_are_objects_named_by_their_text(monkeypatch):
+    assert ("document", "document") in detectors.owl_groups()
+    assert [k for k in detectors.owl_groups() if k[0] == "object"] == []  # nothing passed #70 yet
+    monkeypatch.setattr(detectors, "EXTRA_QUERIES", ("open door",))
+    assert detectors.owl_groups()[("object", "open door")] == ("open door",)
+    assert ("document", "document") in detectors.owl_groups()
 
 
 def test_get_tracks_caches_by_video_and_reads_it_back(clip, tmp_path, monkeypatch):

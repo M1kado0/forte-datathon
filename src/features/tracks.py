@@ -28,13 +28,15 @@ from src.features import detectors
 from src.features.bytetrack import ByteTracker
 from src.features.detectors import Box, Detector
 
-REF_VIDEO = "X-14"  # the 145 s clip the time budget is checked on
+REF_VIDEO = "X-14"  # the longest clip (about 142 s), the one the time budget is checked on
 BATCH = 8  # frames per model call
-OWL_EVERY = (
-    2  # OWLv2 sees every second decoded frame (2/s): it is the slow model, and the heuristics bridge 1 s
-)
-HIGH_CONF = {"person": 0.5, "object": 0.4, "cash": 0.1, "document": 0.1}  # a box above this may start a track
-LOW_CONF = {"person": 0.2, "object": 0.2, "cash": 0.1, "document": 0.1}  # a box above this may continue one
+# OWLv2 sees every second decoded frame (2/s): it is the slow model, and the heuristics bridge gaps up to 1 s
+OWL_EVERY = 2
+# A box above HIGH_CONF may start a track, one above LOW_CONF may continue it. HIGH_CONF is the lowest floor the
+# heuristics use for the kind (person 0.5, object classes 0.3-0.5, see Thresholds), so no box they would read is
+# kept out of the table by the tracker.
+HIGH_CONF = {"person": 0.5, "object": 0.3, "cash": 0.1, "document": 0.1}
+LOW_CONF = {"person": 0.2, "object": 0.2, "cash": 0.1, "document": 0.1}
 COLUMNS = list(TRACKS_SCHEMA.columns)
 
 
@@ -170,7 +172,7 @@ def run(files: Sequence[Path], force: bool) -> dict:
     return {
         "setting": setting_id(),
         "n_videos": len(files),
-        "detect_seconds_ref_video": ref,  # decode + D-FINE + OWLv2 + tracking; branch A adds its own, 45 s together
+        "detect_seconds_ref_video": ref,  # decode + D-FINE + OWLv2 + tracking, without branch A's share
     }
 
 
@@ -179,5 +181,6 @@ if __name__ == "__main__":
     # the files named in labels.csv: X-47 and X-48 are copies of X-4 and X-5 and are left out
     files = [Path(a) for a in args] or [VIDEOS_DIR / f for f in load_labels()["file"].unique()]
     summary = run(files, force="--force" in sys.argv)
-    if "--no-log" not in sys.argv:
+    # a row needs the reference time; a run on a few files only prints
+    if "--no-log" not in sys.argv and summary["detect_seconds_ref_video"] is not None:
         log_experiment(summary)
