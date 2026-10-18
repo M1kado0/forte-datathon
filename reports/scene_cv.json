@@ -1,0 +1,28 @@
+{
+  "features": "proxy-448px-2fps-cpu",
+  "n_scenes": 9,
+  "video": {
+    "video_auc": 0.28822055137844615,
+    "clean_flagged_at_recall_1": 18,
+    "n_clean": 19
+  },
+  "scene": {
+    "video_auc": 0.493734335839599,
+    "clean_flagged_at_recall_1": 19,
+    "n_clean": 19,
+    "nested_video_recall": 0.9047619047619048,
+    "nested_fp_rate": 0.8947368421052632,
+    "nested_missed": [
+      "X-20",
+      "X-22"
+    ],
+    "virtual_camera": {
+      "n_videos": 7,
+      "n_violation": 3,
+      "violation_flagged_native": 3,
+      "violation_flagged_warped": 0,
+      "median_score_native": 0.9954470992088318,
+      "median_score_warped": 1.9434480691415956e-06
+    }
+  }
+}

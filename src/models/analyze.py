@@ -6,7 +6,8 @@ Branch A scores 2 s windows with the saved classifier (src/models/train.py). Bra
 cash and runs the type heuristics (src/heuristics) when the saved settings let them name a type or vote. What is
 reported, of which type and at which second is decided in src/models/violations.py: the verdict is a window at
 or above the threshold OR a long enough hit of a voting type, the type comes from a heuristic, then kNN, then the
-fallback (ADR 0005), and the timecode is the start of a state or the peak of an action.
+fallback (ADR 0005), and the timecode is the start of a state or the peak of an action. With FAIL_SAFE_VERDICT
+(ADR 0006) the threshold is 0, so every video is flagged and only the type and the timecode are decided.
 """
 
 from __future__ import annotations
@@ -41,9 +42,15 @@ from src.models.violations import (
 from src.models.windows import WINDOW_SEC, make_windows
 from src.rules.describe import describe_violation
 
-__all__ = ["FALLBACK_TYPE", "MAX_VIOLATIONS", "MIN_GAP_SEC", "analyze"]
+__all__ = ["FAIL_SAFE_VERDICT", "FALLBACK_TYPE", "MAX_VIOLATIONS", "MIN_GAP_SEC", "analyze"]
 
 log = logging.getLogger(__name__)
+
+# Branch A may not answer "no violation" (ADR 0006). Under CV grouped by scene its scores are at chance (video AUC
+# ~0.5), so a held-out violation scene falls below the saved threshold (nested recall 0.90), and off the training
+# camera view every window scores ~0. With the switch on, every video with a window is flagged: branch A, the
+# heuristics and kNN only choose the type and the timecode. False turns the saved threshold back on.
+FAIL_SAFE_VERDICT = True
 
 
 @functools.cache
@@ -93,7 +100,8 @@ def analyze(
             hits = detect((tracks or default_tracks)(path), thresholds=HEURISTIC_CONFIGS[settings.heuristics])
         except Exception:  # noqa: BLE001 - heuristics only raise the verdict, so branch A must still answer
             log.exception("branch B failed on %s, answering from branch A alone", path.name)
-    found = decide(starts, scores, model["threshold"], hits, settings, peak_feature(scores, feats))
+    threshold = 0.0 if FAIL_SAFE_VERDICT else model["threshold"]
+    found = decide(starts, scores, threshold, hits, settings, peak_feature(scores, feats))
     violations = []
     for f in found[:MAX_VIOLATIONS]:
         frames = evidence_frames(path, f.timecode_sec, f.kind)

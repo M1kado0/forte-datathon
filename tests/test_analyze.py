@@ -95,10 +95,28 @@ def test_fallback_result_is_one_violation_at_the_strongest_peak(tmp_path, peaks,
     assert violations[0].timecode_sec == pytest.approx(expected_sec, abs=0.6)
 
 
-def test_no_window_above_threshold_is_no_violation(tmp_path):
+@pytest.fixture
+def saved_threshold(monkeypatch):
+    """Branch A's own verdict: the saved threshold instead of the fail-safe (ADR 0006)."""
+    monkeypatch.setattr(analyze_mod, "FAIL_SAFE_VERDICT", False)
+
+
+def test_no_window_above_threshold_is_no_violation(tmp_path, saved_threshold):
     violations = run(tmp_path, {})
     assert violations == []
     assert_contract(violations)
+
+
+def test_fail_safe_flags_a_video_whose_windows_all_score_below_the_threshold(tmp_path, monkeypatch):
+    monkeypatch.setattr(analyze_mod, "FAIL_SAFE_VERDICT", True)
+    violations = run(tmp_path, {9: 60})  # one faint second: every window far below THRESHOLD
+    assert_contract(violations)
+    assert [v.type for v in violations] == [FALLBACK_NAME]
+    assert violations[0].timecode_sec == pytest.approx(9.5, abs=0.6)  # still the peak window
+
+
+def test_fail_safe_is_the_serving_default():
+    assert analyze_mod.FAIL_SAFE_VERDICT is True
 
 
 OUTSIDER = "outsider_in_cash_room"
@@ -142,7 +160,7 @@ def test_voting_hit_raises_a_verdict_branch_a_did_not_give(tmp_path):
     assert [v.type for v in violations] == [OUTSIDER_NAME]
 
 
-def test_vote_switched_off_leaves_the_verdict_to_branch_a(tmp_path):
+def test_vote_switched_off_leaves_the_verdict_to_branch_a(tmp_path, saved_threshold):
     no_vote = Settings(allowed=frozenset({OUTSIDER}), vote=Vote(enabled=False))
     assert run_with_tracks(tmp_path, {}, no_vote, people_tracks()) == []
 
