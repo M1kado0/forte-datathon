@@ -51,9 +51,9 @@ Served settings, as `reports/metrics.json` on main records them (the pickle itse
 - **unused functions in served modules:** `load_or_embed` (`embeddings.py:105`) and the fold and threshold
   helpers in `windows.py:58-111`.
 
-Scene-grouped CV (`src/models/scene_cv.py`, `data/scenes.csv`) exists only as **uncommitted** files in a teammate
-checkout, together with an uncommitted default flip (`FAIL_SAFE_VERDICT = True`, which cites an ADR 0006 that is not
-in `docs/adr/`).
+Scene-grouped CV (`src/models/scene_cv.py`, `data/scenes.csv`) is not on main. It is in draft PR #108
+(`fix-the-cv-model`), together with a default flip (`FAIL_SAFE_VERDICT = True`, citing an ADR 0006 that is not in
+`docs/adr/` on main). #108 and this branch both change `analyze.py`, so only one of them should merge.
 
 ## 2. Requirements vs implementation
 
@@ -80,9 +80,9 @@ in `docs/adr/`).
 |---|---|---|---|
 | 1 | Single classifier chain, heuristics not served | **STALE** | #94: branch B runs, and the outsider vote can raise the verdict (`analyze.py:91-95`, `violations.py:144`) |
 | 2 | LOVO AUC 0.33, flags 18/19 clean | CONFIRMED | recomputed from `metrics.json` `video_scores`: AUC 0.3308; at 0.00792 and at 0.00451, 21/21 violations and 18/19 clean flagged; only X-8 is unflagged |
-| 2b | Scene-grouped nested recall 0.90, D-rel AUC ~0.5 | UNVERIFIED by me | only in the uncommitted `reports/scene_cv.json` (proxy features `proxy-448px-2fps-cpu`, not the served embeddings) |
+| 2b | Scene-grouped nested recall 0.90, D-rel AUC ~0.5 | UNVERIFIED by me | only in #108's `reports/scene_cv.json` (proxy features `proxy-448px-2fps-cpu`, not the served embeddings) |
 | 3 | Scores follow the scene | PARTLY | X-3 (clean) 0.9997 and X-12 (clean) 1.0 in OOF scores; the scene-level claim is UNVERIFIED |
-| 4 | Saturation, collapse on a warped view | CONFIRMED / UNVERIFIED | 28/40 OOF scores ≥ 0.5 with the threshold near 1e-2; warp collapse only in the uncommitted proxy run (0/3 warped violations flagged) |
+| 4 | Saturation, collapse on a warped view | CONFIRMED / UNVERIFIED | 28/40 OOF scores ≥ 0.5 with the threshold near 1e-2; warp collapse only in #108's proxy run (0/3 warped violations flagged) |
 | 5 | Paired takes, duplicates | twins CONFIRMED, open; duplicates **handled** | X-47→X-4, X-48→X-5 merged in `labels.py:59-67`; no scene grouping on main |
 | 6 | Labels: one second, 1 camera | CONFIRMED | `labels.py:20-33`; X-4 has 57 and 68 s; states after N+4 are UNLABELED, never positive (`windows.py:24-40`) |
 | 7 | Timecode baselines | MEASURED here | `scripts/timecode_prior.py`: prior 2.83 s, midpoint 3.60 s, peak 5.0 s (`metrics.json`). Within 1 s: **19 %** (4/21) for both, not "about 5 %" |
@@ -103,7 +103,7 @@ reasoning, not measurements.
 
 | # | Defect | Evidence | Criterion at risk | Fix on this branch |
 |---|---|---|---|---|
-| **D1** | **The verdict has no signal and misses on a new view.** In-sample LOVO threshold equal to X-11's score; OOF AUC 0.33; layout shift misses 5/21; proxy warp misses 3/3 | `metrics.json` `threshold`, `video_scores`, `leave_one_layout_out.pooled`; uncommitted `scene_cv.json` | 1 (25), 5 (10). A missed violation is "недопустим" (FAQ 16) | `VERDICT_POLICY=always_violation` (flag, P1 decides) |
+| **D1** | **The verdict has no signal and misses on a new view.** In-sample LOVO threshold equal to X-11's score; OOF AUC 0.33; layout shift misses 5/21; proxy warp misses 3/3 | `metrics.json` `threshold`, `video_scores`, `leave_one_layout_out.pooled`; #108 `scene_cv.json` | 1 (25), 5 (10). A missed violation is "недопустим" (FAQ 16) | `VERDICT_POLICY=always_violation` (flag, P1 decides) |
 | **D2** | **Large uploads time out → `failed`.** No resize before DINOv2; ~5× tokens at 1080p, more at 4K | `embeddings.py:34-57` (main) | every criterion for that video | **fixed**: long side ≤ 848 in `embed_video`, no-op on training clips |
 | **D3** | **Queue is sequential with a 55 s timeout and a reload after each timeout** | `jobs.py:127,131,175-180`; `main.py:33` | 6 (10), and 1-4 for late jobs | none (P1 owns `api/`). D2 removes the most likely timeout |
 | **D4** | **Timecode is the classifier peak, as good as a constant** | median \|Δt\| 5.0 s vs midpoint 3.60 s, prior 2.83 s (LOVO) | 2 (15) | `TIMECODE_MODE=prior` (flag) |
@@ -127,7 +127,9 @@ reasoning, not measurements.
    `test_fingerprint_is_unchanged_by_the_cap`.
 2. **Rotation** set explicitly in `iter_frames` and `evidence_frames`. Measured `CAP_PROP_ORIENTATION_META` = 0
    on all 42 files, and OpenCV 5.0 already defaults `ORIENTATION_AUTO` = 1, so no training frame changes.
-3. **`VERDICT_POLICY`** (`src/config.py`, env var): `classifier` (default, main) | `always_violation`.
+3. **`VERDICT_POLICY`** (env var, read on every call by `src/config.py:verdict_policy`): `classifier` (default,
+   main) | `always_violation`. To flip it on the serving box, add `VERDICT_POLICY=always_violation` to `.env` and
+   run `sudo systemctl restart forte-api`. `api/main.py:35` loads `.env` before the worker is spawned.
 4. **`TIMECODE_MODE`** (env var): `peak` (default, main) | `prior`. `prior` puts a violation no heuristic saw at
    `0.669 × duration`: the median label fraction, from `scripts/timecode_prior.py` →
    `reports/timecode_prior.json`. Its evidence frames sit at −3, 0 and +3 s. A heuristic hit keeps its onset.
@@ -140,10 +142,11 @@ reasoning, not measurements.
   - **OOF on this camera:** the classifier flags 18/19 clean clips (LOVO, threshold chosen in-sample) and has
     AUC 0.33, below chance.
   - **Recall drops whenever the view changes.** Nested LOVO 20/21 (X-11 missed). Leave-one-layout-out pooled
-    16/21. Scene-grouped nested 19/21 and 0/3 warped violations flagged (uncommitted proxy run, not the served
+    16/21. Scene-grouped nested 19/21 and 0/3 warped violations flagged (#108's proxy run, not the served
     embeddings).
-  - **always_violation is 21/21 under every scheme, by construction.** Its cost on LOVO is one more false
-    positive, X-8: 19/19 against 18/19.
+  - **always_violation is 21/21 under every scheme, by construction.** Its cost in false positives:
+    - LOVO: one more, X-8 (19/19 against 18/19);
+    - leave-one-layout-out: six more (19/19 against 13/19).
 - **Trade-off.**
   - It forfeits criterion 1 on every clean hidden video.
   - The classifier already forfeits it on about 95 % of clean videos on the training camera, and on a new

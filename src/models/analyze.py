@@ -26,7 +26,8 @@ import numpy as np
 import pandas as pd
 
 from contracts.schemas import Violation
-from src.config import TIMECODE_MODE, TIMECODE_PRIOR_JSON, VERDICT_POLICY
+from src import config
+from src.config import TIMECODE_PRIOR_JSON
 from src.data.evidence import evidence_frames
 from src.data.video import duration
 from src.features.detectors import LocalDetector
@@ -99,10 +100,10 @@ def analyze(
     timecode_mode: str | None = None,
 ) -> list[Violation]:
     """Violations in one video, strongest first; [] means no violation. The upload is read, never cached.
-    `verdict_policy` and `timecode_mode` default to the switches in src/config.py."""
+    `verdict_policy` and `timecode_mode` default to the VERDICT_POLICY and TIMECODE_MODE env vars (src/config.py)."""
     path = Path(path)
-    policy = verdict_policy or VERDICT_POLICY
-    mode = timecode_mode or TIMECODE_MODE
+    policy = verdict_policy or config.verdict_policy()
+    mode = timecode_mode or config.timecode_mode()
     if policy not in VERDICT_POLICIES or mode not in TIMECODE_MODES:
         raise ValueError(f"unknown VERDICT_POLICY={policy!r} or TIMECODE_MODE={mode!r}")
     model = model or default_model()

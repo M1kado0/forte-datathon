@@ -38,8 +38,16 @@ TIMECODE_PRIOR_JSON = REPORTS / "timecode_prior.json"  # label position prior, s
 # P1's decision. VERDICT_POLICY: "classifier" = saved threshold OR heuristic vote; "always_violation" = every
 # video is flagged and the pipeline only picks type and timecode. TIMECODE_MODE: "peak" = classifier peak;
 # "prior" = fraction-of-duration prior from the training labels, kept for heuristic hits (their onset).
-VERDICT_POLICY = os.environ.get("VERDICT_POLICY", "classifier")
-TIMECODE_MODE = os.environ.get("TIMECODE_MODE", "peak")
+# Read on every call, not at import: api/main.py loads .env after this module is imported.
+
+
+def verdict_policy() -> str:
+    return os.environ.get("VERDICT_POLICY", "classifier")
+
+
+def timecode_mode() -> str:
+    return os.environ.get("TIMECODE_MODE", "peak")
+
 
 SEED = 42
 VERSION = "0.1.0-stub"

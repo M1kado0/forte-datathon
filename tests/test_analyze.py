@@ -226,12 +226,20 @@ def test_saved_settings_load_and_name_known_things():
     assert settings.vote.types <= set(HEURISTIC_TYPES)
 
 
-def test_switches_default_to_mains_behaviour():
+def test_switches_default_to_mains_behaviour(monkeypatch):
     # flipping either is a P1 decision (docs/research/cv-audit.md); main = classifier verdict, peak timecode
     from src import config
 
-    assert config.VERDICT_POLICY == "classifier"
-    assert config.TIMECODE_MODE == "peak"
+    monkeypatch.delenv("VERDICT_POLICY", raising=False)
+    monkeypatch.delenv("TIMECODE_MODE", raising=False)
+    assert config.verdict_policy() == "classifier"
+    assert config.timecode_mode() == "peak"
+
+
+def test_switch_is_read_from_the_environment_at_call_time(tmp_path, monkeypatch):
+    monkeypatch.setenv("VERDICT_POLICY", "always_violation")
+    clip = make_clip(tmp_path / "clip.mov", {9: 60})  # every window below THRESHOLD
+    assert len(analyze(clip, embedder=brightness_embedder, model=FAKE_MODEL)) == 1
 
 
 def test_always_violation_flags_a_clip_whose_windows_all_score_below_the_threshold(tmp_path):
