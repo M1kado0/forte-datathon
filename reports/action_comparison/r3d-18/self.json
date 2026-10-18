@@ -1,0 +1,318 @@
+{
+  "video_recall": 1.0,
+  "fp_rate": 1.0,
+  "median_abs_dt": 8.0,
+  "type_accuracy": 0.16666666666666666,
+  "n_videos": 10,
+  "n_violation_videos": 6,
+  "n_clean_videos": 4,
+  "n_false_positives": 4,
+  "n_typed_right": 1,
+  "localized_labels_within_5s": 4,
+  "n_violation_labels": 6,
+  "by_video": {
+    "computer_on": {
+      "truth": [
+        [
+          7,
+          "laptop_left_open"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "other",
+          "raw_type": "foreign_object_at_desk",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 5.0,
+          "action": "playing organ",
+          "action_score": 0.23092758655548096,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 6.0,
+          "start_sec": 5.0,
+          "end_sec": 7.0,
+          "action": "smoking",
+          "action_score": 0.08966422826051712,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "IDnotshown": {
+      "truth": [
+        [
+          7,
+          "id_not_presented"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "other",
+          "raw_type": "foreign_object_at_desk",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 2.0,
+          "action": "playing organ",
+          "action_score": 0.43785297870635986,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 8.0,
+          "start_sec": 7.0,
+          "end_sec": 11.0,
+          "action": "smoking hookah",
+          "action_score": 0.17124208807945251,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "left_door_open": {
+      "truth": [
+        [
+          4,
+          "cash_room_door_open"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 2.0,
+          "action": "smoking hookah",
+          "action_score": 0.30466365814208984,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 7.0,
+          "start_sec": 6.0,
+          "end_sec": 8.0,
+          "action": "smoking",
+          "action_score": 0.4477405846118927,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "light_on": {
+      "truth": [
+        [
+          15,
+          "other"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "other",
+          "raw_type": "foreign_object_at_desk",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 3.0,
+          "action": "playing organ",
+          "action_score": 0.40379559993743896,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 8.0,
+          "start_sec": 7.0,
+          "end_sec": 10.0,
+          "action": "tossing coin",
+          "action_score": 0.20265430212020874,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "noviolation": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 3.0,
+          "action": "smoking hookah",
+          "action_score": 0.3836819529533386,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 7.0,
+          "start_sec": 6.0,
+          "end_sec": 8.0,
+          "action": "counting money",
+          "action_score": 0.1950114220380783,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "person": {
+      "truth": [
+        [
+          12,
+          "outsider_in_cash_room"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 4.0,
+          "action": "jumpstyle dancing",
+          "action_score": 0.17400574684143066,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 6.0,
+          "start_sec": 5.0,
+          "end_sec": 7.0,
+          "action": "smoking hookah",
+          "action_score": 0.20085415244102478,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "phone_left": {
+      "truth": [
+        [
+          11,
+          "foreign_object_at_desk"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "other",
+          "raw_type": "foreign_object_at_desk",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 4.0,
+          "action": "playing organ",
+          "action_score": 0.3052085041999817,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 10.0,
+          "start_sec": 9.0,
+          "end_sec": 12.0,
+          "action": "smoking hookah",
+          "action_score": 0.2630952298641205,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "2people_no_violation": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "cash_on_desk_next_client",
+          "raw_type": "cash_on_desk_next_client",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 8.0,
+          "action": "cracking neck",
+          "action_score": 0.3160860538482666,
+          "violation_score": 1.0
+        },
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 10.0,
+          "start_sec": 9.0,
+          "end_sec": 11.0,
+          "action": "making bed",
+          "action_score": 0.34419751167297363,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "no_violation_counting_and_leaving": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "detector_not_used",
+          "raw_type": "detector_not_used",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 3.0,
+          "action": "bench pressing",
+          "action_score": 0.27878496050834656,
+          "violation_score": 1.0
+        },
+        {
+          "type": "cash_partially_given",
+          "raw_type": "cash_partially_given",
+          "timecode_sec": 9.0,
+          "start_sec": 8.0,
+          "end_sec": 10.0,
+          "action": "bench pressing",
+          "action_score": 0.28230756521224976,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "no_violation_giving_money_one_person": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "cash_partially_given",
+          "raw_type": "cash_partially_given",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 7.0,
+          "action": "cracking neck",
+          "action_score": 0.2761269807815552,
+          "violation_score": 1.0
+        },
+        {
+          "type": "cash_partially_given",
+          "raw_type": "cash_partially_given",
+          "timecode_sec": 11.0,
+          "start_sec": 10.0,
+          "end_sec": 12.0,
+          "action": "bench pressing",
+          "action_score": 0.4609571099281311,
+          "violation_score": 1.0
+        }
+      ]
+    }
+  },
+  "embedding_seconds": {
+    "computer_on": 2.3313900000066496,
+    "IDnotshown": 1.6474774000089383,
+    "left_door_open": 1.4502519999950891,
+    "light_on": 2.862649300004705,
+    "noviolation": 3.1452818999969168,
+    "person": 3.8212719000002835,
+    "phone_left": 3.221666000012192,
+    "2people_no_violation": 17.927300600000308,
+    "no_violation_counting_and_leaving": 3.5440648999938276,
+    "no_violation_giving_money_one_person": 5.5074197000067215
+  },
+  "protocol": "Previously used self benchmark; no fitting, selection or threshold adjustment on it in this experiment."
+}

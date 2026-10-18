@@ -1,6 +1,7 @@
 """Load the local model for serving; keep an explicit placeholder for contract tests."""
 
 import base64
+import os
 from io import BytesIO
 from pathlib import Path
 
@@ -14,6 +15,11 @@ from src.config import RULES_YAML
 
 def load_analyzer() -> Analyzer:
     """Warm the model's process-wide caches before accepting uploads; fail if weights are missing."""
+    if name := os.environ.get("FORTE_ACTION_MODEL"):
+        from src.models.action_pipeline import ActionAnalyzer
+
+        return ActionAnalyzer(name)
+
     from src.models.analyze import analyze, default_detector, default_embedder, default_model
 
     default_model()

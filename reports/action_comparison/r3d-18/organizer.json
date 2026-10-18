@@ -1,0 +1,2165 @@
+{
+  "lovo": {
+    "video_recall": 1.0,
+    "fp_rate": 0.9473684210526315,
+    "median_abs_dt": 3.4333333333333336,
+    "type_accuracy": 0.0,
+    "n_videos": 40,
+    "n_violation_videos": 21,
+    "n_clean_videos": 19,
+    "n_false_positives": 18,
+    "n_typed_right": 0,
+    "localized_labels_within_5s": 17,
+    "n_violation_labels": 22,
+    "by_video": {
+      "X-1": {
+        "truth": [
+          [
+            22,
+            "cash_partially_given"
+          ]
+        ],
+        "score": 0.1176510751247406,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 14.0,
+            "start_sec": 13.0,
+            "end_sec": 15.0,
+            "action": "using computer",
+            "action_score": 0.6020094752311707,
+            "violation_score": 0.1176510751247406
+          }
+        ]
+      },
+      "X-2": {
+        "truth": [
+          [
+            10,
+            "id_not_presented"
+          ]
+        ],
+        "score": 0.9727190136909485,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 13.0,
+            "start_sec": 10.0,
+            "end_sec": 14.0,
+            "action": "fixing hair",
+            "action_score": 0.10502702742815018,
+            "violation_score": 0.9727190136909485
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 3.0,
+            "start_sec": 2.0,
+            "end_sec": 4.0,
+            "action": "using computer",
+            "action_score": 0.357318639755249,
+            "violation_score": 0.37967202067375183
+          }
+        ]
+      },
+      "X-3": {
+        "truth": [],
+        "score": 0.9994768500328064,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 13.0,
+            "start_sec": 11.0,
+            "end_sec": 14.0,
+            "action": "fixing hair",
+            "action_score": 0.11330695450305939,
+            "violation_score": 0.9994768500328064
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 8.0,
+            "start_sec": 5.0,
+            "end_sec": 9.0,
+            "action": "making bed",
+            "action_score": 0.23694008588790894,
+            "violation_score": 0.9437248706817627
+          }
+        ]
+      },
+      "X-4": {
+        "truth": [
+          [
+            57,
+            "cash_on_desk_next_client"
+          ],
+          [
+            68,
+            "cash_on_desk_next_client"
+          ]
+        ],
+        "score": 0.9773897528648376,
+        "events": [
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 19.0,
+            "start_sec": 17.0,
+            "end_sec": 21.0,
+            "action": "fixing hair",
+            "action_score": 0.19840437173843384,
+            "violation_score": 0.9773897528648376
+          },
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 68.0,
+            "start_sec": 66.0,
+            "end_sec": 70.0,
+            "action": "fixing hair",
+            "action_score": 0.18495172262191772,
+            "violation_score": 0.9596661925315857
+          }
+        ]
+      },
+      "X-5": {
+        "truth": [],
+        "score": 0.9815531969070435,
+        "events": [
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 70.6,
+            "start_sec": 69.6,
+            "end_sec": 71.6,
+            "action": "sanding floor",
+            "action_score": 0.160052090883255,
+            "violation_score": 0.9815531969070435
+          },
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 11.0,
+            "start_sec": 9.0,
+            "end_sec": 13.0,
+            "action": "using computer",
+            "action_score": 0.28874677419662476,
+            "violation_score": 0.7186008095741272
+          }
+        ]
+      },
+      "X-8": {
+        "truth": [],
+        "score": 0.09199170768260956,
+        "events": []
+      },
+      "X-10": {
+        "truth": [],
+        "score": 0.9684310555458069,
+        "events": [
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 6.0,
+            "start_sec": 5.0,
+            "end_sec": 7.0,
+            "action": "sharpening knives",
+            "action_score": 0.11640606075525284,
+            "violation_score": 0.9684310555458069
+          },
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 1.0,
+            "start_sec": 0.0,
+            "end_sec": 2.0,
+            "action": "sharpening knives",
+            "action_score": 0.12077296525239944,
+            "violation_score": 0.9038524031639099
+          }
+        ]
+      },
+      "X-11": {
+        "truth": [
+          [
+            18,
+            "keys_left_on_safe"
+          ]
+        ],
+        "score": 0.15984787046909332,
+        "events": [
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 18.0,
+            "start_sec": 17.0,
+            "end_sec": 19.0,
+            "action": "making bed",
+            "action_score": 0.4787382185459137,
+            "violation_score": 0.15984787046909332
+          }
+        ]
+      },
+      "X-12": {
+        "truth": [],
+        "score": 1.0,
+        "events": [
+          {
+            "type": "keys_left_on_safe",
+            "raw_type": "keys_left_on_safe",
+            "timecode_sec": 36.0,
+            "start_sec": 34.0,
+            "end_sec": 38.0,
+            "action": "moving furniture",
+            "action_score": 0.09934354573488235,
+            "violation_score": 1.0
+          },
+          {
+            "type": "keys_left_on_safe",
+            "raw_type": "keys_left_on_safe",
+            "timecode_sec": 41.0,
+            "start_sec": 39.0,
+            "end_sec": 42.300000000000004,
+            "action": "making bed",
+            "action_score": 0.20903509855270386,
+            "violation_score": 1.0
+          }
+        ]
+      },
+      "X-13": {
+        "truth": [
+          [
+            47,
+            "cash_put_away_uncounted"
+          ]
+        ],
+        "score": 0.990171492099762,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 60.0,
+            "start_sec": 59.0,
+            "end_sec": 64.0,
+            "action": "bookbinding",
+            "action_score": 0.14818859100341797,
+            "violation_score": 0.990171492099762
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 37.0,
+            "start_sec": 36.0,
+            "end_sec": 38.0,
+            "action": "making sushi",
+            "action_score": 0.22178561985492706,
+            "violation_score": 0.894489049911499
+          }
+        ]
+      },
+      "X-14": {
+        "truth": [],
+        "score": 0.9507009983062744,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "valuables_left_on_desk",
+            "timecode_sec": 41.0,
+            "start_sec": 39.0,
+            "end_sec": 43.0,
+            "action": "fixing hair",
+            "action_score": 0.17313194274902344,
+            "violation_score": 0.9507009983062744
+          },
+          {
+            "type": "other",
+            "raw_type": "valuables_left_on_desk",
+            "timecode_sec": 36.0,
+            "start_sec": 35.0,
+            "end_sec": 37.0,
+            "action": "fixing hair",
+            "action_score": 0.2197399139404297,
+            "violation_score": 0.762544572353363
+          }
+        ]
+      },
+      "X-15": {
+        "truth": [
+          [
+            15,
+            "foreign_object_at_desk"
+          ]
+        ],
+        "score": 0.9975855350494385,
+        "events": [
+          {
+            "type": "cash_put_away_uncounted",
+            "raw_type": "cash_put_away_uncounted",
+            "timecode_sec": 14.0,
+            "start_sec": 7.0,
+            "end_sec": 15.0,
+            "action": "bookbinding",
+            "action_score": 0.20598669350147247,
+            "violation_score": 0.9975855350494385
+          },
+          {
+            "type": "cash_put_away_uncounted",
+            "raw_type": "cash_put_away_uncounted",
+            "timecode_sec": 19.866666666666667,
+            "start_sec": 18.866666666666667,
+            "end_sec": 20.866666666666667,
+            "action": "using computer",
+            "action_score": 0.17185741662979126,
+            "violation_score": 0.3812094032764435
+          }
+        ]
+      },
+      "X-16": {
+        "truth": [],
+        "score": 0.9990389347076416,
+        "events": [
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 19.0,
+            "start_sec": 18.0,
+            "end_sec": 21.0,
+            "action": "spraying",
+            "action_score": 0.14385053515434265,
+            "violation_score": 0.9990389347076416
+          },
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 9.0,
+            "action": "sharpening knives",
+            "action_score": 0.13278581202030182,
+            "violation_score": 0.996751070022583
+          }
+        ]
+      },
+      "X-17": {
+        "truth": [
+          [
+            7,
+            "collector_id_not_shown"
+          ]
+        ],
+        "score": 0.8521808981895447,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 9.0,
+            "action": "shredding paper",
+            "action_score": 0.09266965091228485,
+            "violation_score": 0.8521808981895447
+          }
+        ]
+      },
+      "X-18": {
+        "truth": [
+          [
+            20,
+            "outsider_in_cash_room"
+          ]
+        ],
+        "score": 0.9917136430740356,
+        "events": [
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 12.0,
+            "start_sec": 11.0,
+            "end_sec": 14.0,
+            "action": "using computer",
+            "action_score": 0.15631867945194244,
+            "violation_score": 0.9917136430740356
+          }
+        ]
+      },
+      "X-19": {
+        "truth": [],
+        "score": 0.9771404266357422,
+        "events": [
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 41.0,
+            "start_sec": 39.0,
+            "end_sec": 42.0,
+            "action": "sharpening knives",
+            "action_score": 0.27901896834373474,
+            "violation_score": 0.9771404266357422
+          },
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 22.0,
+            "start_sec": 21.0,
+            "end_sec": 24.0,
+            "action": "using computer",
+            "action_score": 0.1922629475593567,
+            "violation_score": 0.9742265343666077
+          }
+        ]
+      },
+      "X-20": {
+        "truth": [
+          [
+            5,
+            "safe_left_open"
+          ]
+        ],
+        "score": 0.5214165449142456,
+        "events": [
+          {
+            "type": "cash_put_away_uncounted",
+            "raw_type": "cash_put_away_uncounted",
+            "timecode_sec": 4.0,
+            "start_sec": 2.0,
+            "end_sec": 5.0,
+            "action": "bookbinding",
+            "action_score": 0.20867480337619781,
+            "violation_score": 0.5214165449142456
+          }
+        ]
+      },
+      "X-21": {
+        "truth": [],
+        "score": 0.9559841752052307,
+        "events": [
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 7.0,
+            "start_sec": 0.0,
+            "end_sec": 19.6,
+            "action": "bookbinding",
+            "action_score": 0.28711405396461487,
+            "violation_score": 0.9559841752052307
+          }
+        ]
+      },
+      "X-22": {
+        "truth": [
+          [
+            14,
+            "keys_left_on_safe"
+          ]
+        ],
+        "score": 0.42737677693367004,
+        "events": [
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 6.0,
+            "start_sec": 5.0,
+            "end_sec": 7.0,
+            "action": "bookbinding",
+            "action_score": 0.12992389500141144,
+            "violation_score": 0.42737677693367004
+          },
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 15.0,
+            "start_sec": 14.0,
+            "end_sec": 16.0,
+            "action": "bookbinding",
+            "action_score": 0.38835012912750244,
+            "violation_score": 0.15687258541584015
+          }
+        ]
+      },
+      "X-23": {
+        "truth": [],
+        "score": 0.9762618541717529,
+        "events": [
+          {
+            "type": "keys_left_on_safe",
+            "raw_type": "keys_left_on_safe",
+            "timecode_sec": 15.0,
+            "start_sec": 10.0,
+            "end_sec": 17.0,
+            "action": "bookbinding",
+            "action_score": 0.30315494537353516,
+            "violation_score": 0.9762618541717529
+          },
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 8.0,
+            "start_sec": 5.0,
+            "end_sec": 10.0,
+            "action": "bookbinding",
+            "action_score": 0.33892399072647095,
+            "violation_score": 0.5111207365989685
+          }
+        ]
+      },
+      "X-24": {
+        "truth": [
+          [
+            8,
+            "valuables_left_on_desk"
+          ]
+        ],
+        "score": 0.9849275350570679,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 7.0,
+            "start_sec": 6.0,
+            "end_sec": 8.0,
+            "action": "front raises",
+            "action_score": 0.13249823451042175,
+            "violation_score": 0.9849275350570679
+          }
+        ]
+      },
+      "X-25": {
+        "truth": [],
+        "score": 0.9782800078392029,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 6.0,
+            "start_sec": 5.0,
+            "end_sec": 8.0,
+            "action": "clean and jerk",
+            "action_score": 0.22755098342895508,
+            "violation_score": 0.9782800078392029
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 12.0,
+            "start_sec": 11.0,
+            "end_sec": 16.0,
+            "action": "bookbinding",
+            "action_score": 0.15011027455329895,
+            "violation_score": 0.8368353247642517
+          }
+        ]
+      },
+      "X-26": {
+        "truth": [
+          [
+            9,
+            "cash_left_on_desk"
+          ]
+        ],
+        "score": 0.5531242489814758,
+        "events": [
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 13.0,
+            "start_sec": 12.0,
+            "end_sec": 15.0,
+            "action": "building cabinet",
+            "action_score": 0.200906902551651,
+            "violation_score": 0.5531242489814758
+          }
+        ]
+      },
+      "X-27": {
+        "truth": [],
+        "score": 0.9611952900886536,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 11.0,
+            "action": "bookbinding",
+            "action_score": 0.24172793328762054,
+            "violation_score": 0.9611952900886536
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 20.0,
+            "start_sec": 15.0,
+            "end_sec": 21.0,
+            "action": "bookbinding",
+            "action_score": 0.17778347432613373,
+            "violation_score": 0.8460525870323181
+          }
+        ]
+      },
+      "X-28": {
+        "truth": [
+          [
+            7,
+            "laptop_left_open"
+          ]
+        ],
+        "score": 0.9964720010757446,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 8.0,
+            "start_sec": 6.0,
+            "end_sec": 10.0,
+            "action": "bookbinding",
+            "action_score": 0.10158504545688629,
+            "violation_score": 0.9964720010757446
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 14.0,
+            "start_sec": 13.0,
+            "end_sec": 15.0,
+            "action": "bookbinding",
+            "action_score": 0.24551813304424286,
+            "violation_score": 0.3056624233722687
+          }
+        ]
+      },
+      "X-29": {
+        "truth": [],
+        "score": 0.8513198494911194,
+        "events": [
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 11.0,
+            "start_sec": 10.0,
+            "end_sec": 12.0,
+            "action": "sharpening knives",
+            "action_score": 0.23140451312065125,
+            "violation_score": 0.8513198494911194
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 16.0,
+            "start_sec": 15.0,
+            "end_sec": 17.0,
+            "action": "building cabinet",
+            "action_score": 0.46623483300209045,
+            "violation_score": 0.17155303061008453
+          }
+        ]
+      },
+      "X-30": {
+        "truth": [
+          [
+            13,
+            "outsider_in_cash_room"
+          ]
+        ],
+        "score": 0.9981411695480347,
+        "events": [
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 7.0,
+            "start_sec": 5.0,
+            "end_sec": 8.0,
+            "action": "situp",
+            "action_score": 0.5577116012573242,
+            "violation_score": 0.9981411695480347
+          },
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 14.0,
+            "start_sec": 11.0,
+            "end_sec": 15.0,
+            "action": "getting a haircut",
+            "action_score": 0.18433859944343567,
+            "violation_score": 0.36926722526550293
+          }
+        ]
+      },
+      "X-31": {
+        "truth": [],
+        "score": 0.9964093565940857,
+        "events": [
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 9.0,
+            "start_sec": 8.0,
+            "end_sec": 10.0,
+            "action": "counting money",
+            "action_score": 0.050650980323553085,
+            "violation_score": 0.9964093565940857
+          },
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 20.0,
+            "start_sec": 18.0,
+            "end_sec": 22.0,
+            "action": "waxing eyebrows",
+            "action_score": 0.2541377544403076,
+            "violation_score": 0.9943291544914246
+          }
+        ]
+      },
+      "X-32": {
+        "truth": [
+          [
+            5,
+            "cash_room_door_open"
+          ]
+        ],
+        "score": 0.9965830445289612,
+        "events": [
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 9.0,
+            "action": "waxing eyebrows",
+            "action_score": 0.10744141787290573,
+            "violation_score": 0.9965830445289612
+          },
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 17.0,
+            "start_sec": 16.0,
+            "end_sec": 21.3,
+            "action": "using computer",
+            "action_score": 0.11848326027393341,
+            "violation_score": 0.9709815979003906
+          }
+        ]
+      },
+      "X-33": {
+        "truth": [
+          [
+            6,
+            "outsider_in_cash_room"
+          ]
+        ],
+        "score": 0.9265278577804565,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 7.0,
+            "start_sec": 5.0,
+            "end_sec": 8.0,
+            "action": "bookbinding",
+            "action_score": 0.10028260946273804,
+            "violation_score": 0.9265278577804565
+          }
+        ]
+      },
+      "X-34": {
+        "truth": [
+          [
+            13,
+            "client_left_during_count"
+          ]
+        ],
+        "score": 0.3015156686306,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 15.0,
+            "start_sec": 14.0,
+            "end_sec": 16.0,
+            "action": "massaging person's head",
+            "action_score": 0.083928681910038,
+            "violation_score": 0.3015156686306
+          }
+        ]
+      },
+      "X-35": {
+        "truth": [],
+        "score": 0.5927402973175049,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 52.0,
+            "start_sec": 50.0,
+            "end_sec": 56.76666666666667,
+            "action": "making bed",
+            "action_score": 0.5739091038703918,
+            "violation_score": 0.5927402973175049
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 9.0,
+            "action": "making bed",
+            "action_score": 0.3836272954940796,
+            "violation_score": 0.35096627473831177
+          }
+        ]
+      },
+      "X-37": {
+        "truth": [],
+        "score": 0.17129144072532654,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 3.0,
+            "start_sec": 2.0,
+            "end_sec": 4.0,
+            "action": "using computer",
+            "action_score": 0.24135172367095947,
+            "violation_score": 0.17129144072532654
+          }
+        ]
+      },
+      "X-38": {
+        "truth": [
+          [
+            33,
+            "cash_on_desk_next_client"
+          ]
+        ],
+        "score": 0.45001286268234253,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 55.0,
+            "start_sec": 54.0,
+            "end_sec": 57.0,
+            "action": "making bed",
+            "action_score": 0.22273758053779602,
+            "violation_score": 0.45001286268234253
+          },
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 25.0,
+            "start_sec": 24.0,
+            "end_sec": 26.0,
+            "action": "making bed",
+            "action_score": 0.4322347939014435,
+            "violation_score": 0.1465497463941574
+          }
+        ]
+      },
+      "X-39": {
+        "truth": [],
+        "score": 0.9897626042366028,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 39.0,
+            "start_sec": 37.0,
+            "end_sec": 40.0,
+            "action": "making bed",
+            "action_score": 0.46397116780281067,
+            "violation_score": 0.9897626042366028
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 50.0,
+            "start_sec": 48.0,
+            "end_sec": 51.0,
+            "action": "shredding paper",
+            "action_score": 0.3799491822719574,
+            "violation_score": 0.9834513664245605
+          }
+        ]
+      },
+      "X-40": {
+        "truth": [
+          [
+            17,
+            "foreign_object_at_desk"
+          ]
+        ],
+        "score": 0.999697208404541,
+        "events": [
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 13.0,
+            "start_sec": 12.0,
+            "end_sec": 17.0,
+            "action": "clean and jerk",
+            "action_score": 0.2548846900463104,
+            "violation_score": 0.999697208404541
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 5.0,
+            "start_sec": 2.0,
+            "end_sec": 8.0,
+            "action": "sharpening knives",
+            "action_score": 0.29011639952659607,
+            "violation_score": 0.9930747747421265
+          }
+        ]
+      },
+      "X-43": {
+        "truth": [],
+        "score": 0.9929571151733398,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 1.0,
+            "start_sec": 0.0,
+            "end_sec": 2.0,
+            "action": "making a sandwich",
+            "action_score": 0.11274339258670807,
+            "violation_score": 0.9929571151733398
+          },
+          {
+            "type": "detector_not_used",
+            "raw_type": "detector_not_used",
+            "timecode_sec": 22.366666666666667,
+            "start_sec": 17.0,
+            "end_sec": 23.366666666666667,
+            "action": "washing hands",
+            "action_score": 0.13763292133808136,
+            "violation_score": 0.9791704416275024
+          }
+        ]
+      },
+      "X-44": {
+        "truth": [
+          [
+            16,
+            "detector_not_used"
+          ]
+        ],
+        "score": 0.6857682466506958,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 19.433333333333334,
+            "start_sec": 18.433333333333334,
+            "end_sec": 20.433333333333334,
+            "action": "building cabinet",
+            "action_score": 0.10845043510198593,
+            "violation_score": 0.6857682466506958
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 3.0,
+            "start_sec": 2.0,
+            "end_sec": 4.0,
+            "action": "making a sandwich",
+            "action_score": 0.09686700999736786,
+            "violation_score": 0.4333018660545349
+          }
+        ]
+      },
+      "X-45": {
+        "truth": [],
+        "score": 0.9999908208847046,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 12.0,
+            "start_sec": 6.0,
+            "end_sec": 14.0,
+            "action": "making a sandwich",
+            "action_score": 0.13932958245277405,
+            "violation_score": 0.9999908208847046
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 20.0,
+            "start_sec": 19.0,
+            "end_sec": 22.0,
+            "action": "making a sandwich",
+            "action_score": 0.1199592724442482,
+            "violation_score": 0.9996174573898315
+          }
+        ]
+      },
+      "X-46": {
+        "truth": [
+          [
+            11,
+            "foreign_object_at_desk"
+          ]
+        ],
+        "score": 0.789420485496521,
+        "events": [
+          {
+            "type": "detector_not_used",
+            "raw_type": "detector_not_used",
+            "timecode_sec": 7.0,
+            "start_sec": 4.0,
+            "end_sec": 9.0,
+            "action": "washing hands",
+            "action_score": 0.29996269941329956,
+            "violation_score": 0.789420485496521
+          },
+          {
+            "type": "detector_not_used",
+            "raw_type": "detector_not_used",
+            "timecode_sec": 14.0,
+            "start_sec": 12.0,
+            "end_sec": 15.0,
+            "action": "washing hands",
+            "action_score": 0.14949721097946167,
+            "violation_score": 0.38484784960746765
+          }
+        ]
+      }
+    },
+    "threshold": 0.1176510751247406,
+    "protocol": "OOF heads; threshold selected on these same scores (optimistic recall)."
+  },
+  "nested": {
+    "video_recall": 1.0,
+    "fp_rate": 0.9473684210526315,
+    "median_abs_dt": 3.4333333333333336,
+    "type_accuracy": 0.0,
+    "n_videos": 40,
+    "n_violation_videos": 21,
+    "n_clean_videos": 19,
+    "n_false_positives": 18,
+    "n_typed_right": 0,
+    "localized_labels_within_5s": 17,
+    "n_violation_labels": 22,
+    "by_video": {
+      "X-1": {
+        "truth": [
+          [
+            22,
+            "cash_partially_given"
+          ]
+        ],
+        "score": 0.1176510751247406,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 14.0,
+            "start_sec": 13.0,
+            "end_sec": 15.0,
+            "action": "using computer",
+            "action_score": 0.6020094752311707,
+            "violation_score": 0.1176510751247406
+          }
+        ]
+      },
+      "X-2": {
+        "truth": [
+          [
+            10,
+            "id_not_presented"
+          ]
+        ],
+        "score": 0.9727190136909485,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 13.0,
+            "start_sec": 10.0,
+            "end_sec": 14.0,
+            "action": "fixing hair",
+            "action_score": 0.10502702742815018,
+            "violation_score": 0.9727190136909485
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 3.0,
+            "start_sec": 2.0,
+            "end_sec": 4.0,
+            "action": "using computer",
+            "action_score": 0.357318639755249,
+            "violation_score": 0.37967202067375183
+          }
+        ]
+      },
+      "X-3": {
+        "truth": [],
+        "score": 0.9994768500328064,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 13.0,
+            "start_sec": 11.0,
+            "end_sec": 14.0,
+            "action": "fixing hair",
+            "action_score": 0.11330695450305939,
+            "violation_score": 0.9994768500328064
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 8.0,
+            "start_sec": 5.0,
+            "end_sec": 9.0,
+            "action": "making bed",
+            "action_score": 0.23694008588790894,
+            "violation_score": 0.9437248706817627
+          }
+        ]
+      },
+      "X-4": {
+        "truth": [
+          [
+            57,
+            "cash_on_desk_next_client"
+          ],
+          [
+            68,
+            "cash_on_desk_next_client"
+          ]
+        ],
+        "score": 0.9773897528648376,
+        "events": [
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 19.0,
+            "start_sec": 17.0,
+            "end_sec": 22.0,
+            "action": "fixing hair",
+            "action_score": 0.19840437173843384,
+            "violation_score": 0.9773897528648376
+          },
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 68.0,
+            "start_sec": 66.0,
+            "end_sec": 70.0,
+            "action": "fixing hair",
+            "action_score": 0.18495172262191772,
+            "violation_score": 0.9596661925315857
+          }
+        ]
+      },
+      "X-5": {
+        "truth": [],
+        "score": 0.9815531969070435,
+        "events": [
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 70.6,
+            "start_sec": 69.6,
+            "end_sec": 71.6,
+            "action": "sanding floor",
+            "action_score": 0.160052090883255,
+            "violation_score": 0.9815531969070435
+          },
+          {
+            "type": "id_not_presented",
+            "raw_type": "id_not_presented",
+            "timecode_sec": 11.0,
+            "start_sec": 9.0,
+            "end_sec": 13.0,
+            "action": "using computer",
+            "action_score": 0.28874677419662476,
+            "violation_score": 0.7186008095741272
+          }
+        ]
+      },
+      "X-8": {
+        "truth": [],
+        "score": 0.09199170768260956,
+        "events": []
+      },
+      "X-10": {
+        "truth": [],
+        "score": 0.9684310555458069,
+        "events": [
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 6.0,
+            "start_sec": 5.0,
+            "end_sec": 7.0,
+            "action": "sharpening knives",
+            "action_score": 0.11640606075525284,
+            "violation_score": 0.9684310555458069
+          },
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 1.0,
+            "start_sec": 0.0,
+            "end_sec": 2.0,
+            "action": "sharpening knives",
+            "action_score": 0.12077296525239944,
+            "violation_score": 0.9038524031639099
+          }
+        ]
+      },
+      "X-11": {
+        "truth": [
+          [
+            18,
+            "keys_left_on_safe"
+          ]
+        ],
+        "score": 0.15984787046909332,
+        "events": [
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 18.0,
+            "start_sec": 17.0,
+            "end_sec": 19.0,
+            "action": "making bed",
+            "action_score": 0.4787382185459137,
+            "violation_score": 0.15984787046909332
+          }
+        ]
+      },
+      "X-12": {
+        "truth": [],
+        "score": 1.0,
+        "events": [
+          {
+            "type": "keys_left_on_safe",
+            "raw_type": "keys_left_on_safe",
+            "timecode_sec": 36.0,
+            "start_sec": 34.0,
+            "end_sec": 38.0,
+            "action": "moving furniture",
+            "action_score": 0.09934354573488235,
+            "violation_score": 1.0
+          },
+          {
+            "type": "keys_left_on_safe",
+            "raw_type": "keys_left_on_safe",
+            "timecode_sec": 41.0,
+            "start_sec": 39.0,
+            "end_sec": 42.300000000000004,
+            "action": "making bed",
+            "action_score": 0.20903509855270386,
+            "violation_score": 1.0
+          }
+        ]
+      },
+      "X-13": {
+        "truth": [
+          [
+            47,
+            "cash_put_away_uncounted"
+          ]
+        ],
+        "score": 0.990171492099762,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 60.0,
+            "start_sec": 59.0,
+            "end_sec": 64.0,
+            "action": "bookbinding",
+            "action_score": 0.14818859100341797,
+            "violation_score": 0.990171492099762
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 37.0,
+            "start_sec": 36.0,
+            "end_sec": 38.0,
+            "action": "making sushi",
+            "action_score": 0.22178561985492706,
+            "violation_score": 0.894489049911499
+          }
+        ]
+      },
+      "X-14": {
+        "truth": [],
+        "score": 0.9507009983062744,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "valuables_left_on_desk",
+            "timecode_sec": 41.0,
+            "start_sec": 39.0,
+            "end_sec": 43.0,
+            "action": "fixing hair",
+            "action_score": 0.17313194274902344,
+            "violation_score": 0.9507009983062744
+          },
+          {
+            "type": "other",
+            "raw_type": "valuables_left_on_desk",
+            "timecode_sec": 36.0,
+            "start_sec": 35.0,
+            "end_sec": 37.0,
+            "action": "fixing hair",
+            "action_score": 0.2197399139404297,
+            "violation_score": 0.762544572353363
+          }
+        ]
+      },
+      "X-15": {
+        "truth": [
+          [
+            15,
+            "foreign_object_at_desk"
+          ]
+        ],
+        "score": 0.9975855350494385,
+        "events": [
+          {
+            "type": "cash_put_away_uncounted",
+            "raw_type": "cash_put_away_uncounted",
+            "timecode_sec": 14.0,
+            "start_sec": 7.0,
+            "end_sec": 15.0,
+            "action": "bookbinding",
+            "action_score": 0.20598669350147247,
+            "violation_score": 0.9975855350494385
+          },
+          {
+            "type": "cash_put_away_uncounted",
+            "raw_type": "cash_put_away_uncounted",
+            "timecode_sec": 19.866666666666667,
+            "start_sec": 18.866666666666667,
+            "end_sec": 20.866666666666667,
+            "action": "using computer",
+            "action_score": 0.17185741662979126,
+            "violation_score": 0.3812094032764435
+          }
+        ]
+      },
+      "X-16": {
+        "truth": [],
+        "score": 0.9990389347076416,
+        "events": [
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 19.0,
+            "start_sec": 18.0,
+            "end_sec": 21.0,
+            "action": "spraying",
+            "action_score": 0.14385053515434265,
+            "violation_score": 0.9990389347076416
+          },
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 9.0,
+            "action": "sharpening knives",
+            "action_score": 0.13278581202030182,
+            "violation_score": 0.996751070022583
+          }
+        ]
+      },
+      "X-17": {
+        "truth": [
+          [
+            7,
+            "collector_id_not_shown"
+          ]
+        ],
+        "score": 0.8521808981895447,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 9.0,
+            "action": "shredding paper",
+            "action_score": 0.09266965091228485,
+            "violation_score": 0.8521808981895447
+          }
+        ]
+      },
+      "X-18": {
+        "truth": [
+          [
+            20,
+            "outsider_in_cash_room"
+          ]
+        ],
+        "score": 0.9917136430740356,
+        "events": [
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 12.0,
+            "start_sec": 11.0,
+            "end_sec": 14.0,
+            "action": "using computer",
+            "action_score": 0.15631867945194244,
+            "violation_score": 0.9917136430740356
+          }
+        ]
+      },
+      "X-19": {
+        "truth": [],
+        "score": 0.9771404266357422,
+        "events": [
+          {
+            "type": "collector_id_not_shown",
+            "raw_type": "collector_id_not_shown",
+            "timecode_sec": 41.0,
+            "start_sec": 39.0,
+            "end_sec": 42.0,
+            "action": "sharpening knives",
+            "action_score": 0.27901896834373474,
+            "violation_score": 0.9771404266357422
+          },
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 22.0,
+            "start_sec": 21.0,
+            "end_sec": 24.0,
+            "action": "using computer",
+            "action_score": 0.1922629475593567,
+            "violation_score": 0.9742265343666077
+          }
+        ]
+      },
+      "X-20": {
+        "truth": [
+          [
+            5,
+            "safe_left_open"
+          ]
+        ],
+        "score": 0.5214165449142456,
+        "events": [
+          {
+            "type": "cash_put_away_uncounted",
+            "raw_type": "cash_put_away_uncounted",
+            "timecode_sec": 4.0,
+            "start_sec": 2.0,
+            "end_sec": 5.0,
+            "action": "bookbinding",
+            "action_score": 0.20867480337619781,
+            "violation_score": 0.5214165449142456
+          }
+        ]
+      },
+      "X-21": {
+        "truth": [],
+        "score": 0.9559841752052307,
+        "events": [
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 7.0,
+            "start_sec": 0.0,
+            "end_sec": 19.6,
+            "action": "bookbinding",
+            "action_score": 0.28711405396461487,
+            "violation_score": 0.9559841752052307
+          }
+        ]
+      },
+      "X-22": {
+        "truth": [
+          [
+            14,
+            "keys_left_on_safe"
+          ]
+        ],
+        "score": 0.42737677693367004,
+        "events": [
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 6.0,
+            "start_sec": 5.0,
+            "end_sec": 7.0,
+            "action": "bookbinding",
+            "action_score": 0.12992389500141144,
+            "violation_score": 0.42737677693367004
+          },
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 15.0,
+            "start_sec": 14.0,
+            "end_sec": 16.0,
+            "action": "bookbinding",
+            "action_score": 0.38835012912750244,
+            "violation_score": 0.15687258541584015
+          }
+        ]
+      },
+      "X-23": {
+        "truth": [],
+        "score": 0.9762618541717529,
+        "events": [
+          {
+            "type": "keys_left_on_safe",
+            "raw_type": "keys_left_on_safe",
+            "timecode_sec": 15.0,
+            "start_sec": 10.0,
+            "end_sec": 17.0,
+            "action": "bookbinding",
+            "action_score": 0.30315494537353516,
+            "violation_score": 0.9762618541717529
+          },
+          {
+            "type": "safe_left_open",
+            "raw_type": "safe_left_open",
+            "timecode_sec": 8.0,
+            "start_sec": 5.0,
+            "end_sec": 9.0,
+            "action": "bookbinding",
+            "action_score": 0.33892399072647095,
+            "violation_score": 0.5111207365989685
+          }
+        ]
+      },
+      "X-24": {
+        "truth": [
+          [
+            8,
+            "valuables_left_on_desk"
+          ]
+        ],
+        "score": 0.9849275350570679,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 7.0,
+            "start_sec": 6.0,
+            "end_sec": 8.0,
+            "action": "front raises",
+            "action_score": 0.13249823451042175,
+            "violation_score": 0.9849275350570679
+          }
+        ]
+      },
+      "X-25": {
+        "truth": [],
+        "score": 0.9782800078392029,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 6.0,
+            "start_sec": 5.0,
+            "end_sec": 8.0,
+            "action": "clean and jerk",
+            "action_score": 0.22755098342895508,
+            "violation_score": 0.9782800078392029
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 12.0,
+            "start_sec": 11.0,
+            "end_sec": 16.0,
+            "action": "bookbinding",
+            "action_score": 0.15011027455329895,
+            "violation_score": 0.8368353247642517
+          }
+        ]
+      },
+      "X-26": {
+        "truth": [
+          [
+            9,
+            "cash_left_on_desk"
+          ]
+        ],
+        "score": 0.5531242489814758,
+        "events": [
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 13.0,
+            "start_sec": 12.0,
+            "end_sec": 15.0,
+            "action": "building cabinet",
+            "action_score": 0.200906902551651,
+            "violation_score": 0.5531242489814758
+          }
+        ]
+      },
+      "X-27": {
+        "truth": [],
+        "score": 0.9611952900886536,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 11.0,
+            "action": "bookbinding",
+            "action_score": 0.24172793328762054,
+            "violation_score": 0.9611952900886536
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 20.0,
+            "start_sec": 14.0,
+            "end_sec": 21.0,
+            "action": "bookbinding",
+            "action_score": 0.17778347432613373,
+            "violation_score": 0.8460525870323181
+          }
+        ]
+      },
+      "X-28": {
+        "truth": [
+          [
+            7,
+            "laptop_left_open"
+          ]
+        ],
+        "score": 0.9964720010757446,
+        "events": [
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 8.0,
+            "start_sec": 6.0,
+            "end_sec": 10.0,
+            "action": "bookbinding",
+            "action_score": 0.10158504545688629,
+            "violation_score": 0.9964720010757446
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 14.0,
+            "start_sec": 13.0,
+            "end_sec": 15.0,
+            "action": "bookbinding",
+            "action_score": 0.24551813304424286,
+            "violation_score": 0.3056624233722687
+          }
+        ]
+      },
+      "X-29": {
+        "truth": [],
+        "score": 0.8513198494911194,
+        "events": [
+          {
+            "type": "laptop_left_open",
+            "raw_type": "laptop_left_open",
+            "timecode_sec": 11.0,
+            "start_sec": 10.0,
+            "end_sec": 12.0,
+            "action": "sharpening knives",
+            "action_score": 0.23140451312065125,
+            "violation_score": 0.8513198494911194
+          },
+          {
+            "type": "cash_left_on_desk",
+            "raw_type": "cash_left_on_desk",
+            "timecode_sec": 16.0,
+            "start_sec": 15.0,
+            "end_sec": 17.3,
+            "action": "building cabinet",
+            "action_score": 0.46623483300209045,
+            "violation_score": 0.17155303061008453
+          }
+        ]
+      },
+      "X-30": {
+        "truth": [
+          [
+            13,
+            "outsider_in_cash_room"
+          ]
+        ],
+        "score": 0.9981411695480347,
+        "events": [
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 7.0,
+            "start_sec": 5.0,
+            "end_sec": 8.0,
+            "action": "situp",
+            "action_score": 0.5577116012573242,
+            "violation_score": 0.9981411695480347
+          },
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 14.0,
+            "start_sec": 11.0,
+            "end_sec": 15.0,
+            "action": "getting a haircut",
+            "action_score": 0.18433859944343567,
+            "violation_score": 0.36926722526550293
+          }
+        ]
+      },
+      "X-31": {
+        "truth": [],
+        "score": 0.9964093565940857,
+        "events": [
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 9.0,
+            "start_sec": 8.0,
+            "end_sec": 10.0,
+            "action": "counting money",
+            "action_score": 0.050650980323553085,
+            "violation_score": 0.9964093565940857
+          },
+          {
+            "type": "cash_room_door_open",
+            "raw_type": "cash_room_door_open",
+            "timecode_sec": 20.0,
+            "start_sec": 18.0,
+            "end_sec": 22.0,
+            "action": "waxing eyebrows",
+            "action_score": 0.2541377544403076,
+            "violation_score": 0.9943291544914246
+          }
+        ]
+      },
+      "X-32": {
+        "truth": [
+          [
+            5,
+            "cash_room_door_open"
+          ]
+        ],
+        "score": 0.9965830445289612,
+        "events": [
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 9.0,
+            "action": "waxing eyebrows",
+            "action_score": 0.10744141787290573,
+            "violation_score": 0.9965830445289612
+          },
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 17.0,
+            "start_sec": 16.0,
+            "end_sec": 21.3,
+            "action": "using computer",
+            "action_score": 0.11848326027393341,
+            "violation_score": 0.9709815979003906
+          }
+        ]
+      },
+      "X-33": {
+        "truth": [
+          [
+            6,
+            "outsider_in_cash_room"
+          ]
+        ],
+        "score": 0.9265278577804565,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 7.0,
+            "start_sec": 5.0,
+            "end_sec": 8.0,
+            "action": "bookbinding",
+            "action_score": 0.10028260946273804,
+            "violation_score": 0.9265278577804565
+          }
+        ]
+      },
+      "X-34": {
+        "truth": [
+          [
+            13,
+            "client_left_during_count"
+          ]
+        ],
+        "score": 0.3015156686306,
+        "events": [
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 15.0,
+            "start_sec": 14.0,
+            "end_sec": 16.0,
+            "action": "massaging person's head",
+            "action_score": 0.083928681910038,
+            "violation_score": 0.3015156686306
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 7.0,
+            "start_sec": 5.0,
+            "end_sec": 8.0,
+            "action": "making bed",
+            "action_score": 0.31733226776123047,
+            "violation_score": 0.07732942700386047
+          }
+        ]
+      },
+      "X-35": {
+        "truth": [],
+        "score": 0.5927402973175049,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 52.0,
+            "start_sec": 50.0,
+            "end_sec": 56.76666666666667,
+            "action": "making bed",
+            "action_score": 0.5739091038703918,
+            "violation_score": 0.5927402973175049
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 8.0,
+            "start_sec": 7.0,
+            "end_sec": 10.0,
+            "action": "making bed",
+            "action_score": 0.3836272954940796,
+            "violation_score": 0.35096627473831177
+          }
+        ]
+      },
+      "X-37": {
+        "truth": [],
+        "score": 0.17129144072532654,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 3.0,
+            "start_sec": 2.0,
+            "end_sec": 4.0,
+            "action": "using computer",
+            "action_score": 0.24135172367095947,
+            "violation_score": 0.17129144072532654
+          }
+        ]
+      },
+      "X-38": {
+        "truth": [
+          [
+            33,
+            "cash_on_desk_next_client"
+          ]
+        ],
+        "score": 0.45001286268234253,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 55.0,
+            "start_sec": 54.0,
+            "end_sec": 57.0,
+            "action": "making bed",
+            "action_score": 0.22273758053779602,
+            "violation_score": 0.45001286268234253
+          },
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 25.0,
+            "start_sec": 24.0,
+            "end_sec": 26.0,
+            "action": "making bed",
+            "action_score": 0.4322347939014435,
+            "violation_score": 0.1465497463941574
+          }
+        ]
+      },
+      "X-39": {
+        "truth": [],
+        "score": 0.9897626042366028,
+        "events": [
+          {
+            "type": "client_left_during_count",
+            "raw_type": "client_left_during_count",
+            "timecode_sec": 39.0,
+            "start_sec": 37.0,
+            "end_sec": 40.0,
+            "action": "making bed",
+            "action_score": 0.46397116780281067,
+            "violation_score": 0.9897626042366028
+          },
+          {
+            "type": "cash_on_desk_next_client",
+            "raw_type": "cash_on_desk_next_client",
+            "timecode_sec": 50.0,
+            "start_sec": 48.0,
+            "end_sec": 51.0,
+            "action": "shredding paper",
+            "action_score": 0.3799491822719574,
+            "violation_score": 0.9834513664245605
+          }
+        ]
+      },
+      "X-40": {
+        "truth": [
+          [
+            17,
+            "foreign_object_at_desk"
+          ]
+        ],
+        "score": 0.999697208404541,
+        "events": [
+          {
+            "type": "outsider_in_cash_room",
+            "raw_type": "outsider_in_cash_room",
+            "timecode_sec": 13.0,
+            "start_sec": 12.0,
+            "end_sec": 17.0,
+            "action": "clean and jerk",
+            "action_score": 0.2548846900463104,
+            "violation_score": 0.999697208404541
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 5.0,
+            "start_sec": 2.0,
+            "end_sec": 8.0,
+            "action": "sharpening knives",
+            "action_score": 0.29011639952659607,
+            "violation_score": 0.9930747747421265
+          }
+        ]
+      },
+      "X-43": {
+        "truth": [],
+        "score": 0.9929571151733398,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 1.0,
+            "start_sec": 0.0,
+            "end_sec": 2.0,
+            "action": "making a sandwich",
+            "action_score": 0.11274339258670807,
+            "violation_score": 0.9929571151733398
+          },
+          {
+            "type": "detector_not_used",
+            "raw_type": "detector_not_used",
+            "timecode_sec": 22.366666666666667,
+            "start_sec": 17.0,
+            "end_sec": 23.366666666666667,
+            "action": "washing hands",
+            "action_score": 0.13763292133808136,
+            "violation_score": 0.9791704416275024
+          }
+        ]
+      },
+      "X-44": {
+        "truth": [
+          [
+            16,
+            "detector_not_used"
+          ]
+        ],
+        "score": 0.6857682466506958,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 19.433333333333334,
+            "start_sec": 18.433333333333334,
+            "end_sec": 20.433333333333334,
+            "action": "building cabinet",
+            "action_score": 0.10845043510198593,
+            "violation_score": 0.6857682466506958
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 3.0,
+            "start_sec": 2.0,
+            "end_sec": 4.0,
+            "action": "making a sandwich",
+            "action_score": 0.09686700999736786,
+            "violation_score": 0.4333018660545349
+          }
+        ]
+      },
+      "X-45": {
+        "truth": [],
+        "score": 0.9999908208847046,
+        "events": [
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 12.0,
+            "start_sec": 6.0,
+            "end_sec": 14.0,
+            "action": "making a sandwich",
+            "action_score": 0.13932958245277405,
+            "violation_score": 0.9999908208847046
+          },
+          {
+            "type": "other",
+            "raw_type": "foreign_object_at_desk",
+            "timecode_sec": 20.0,
+            "start_sec": 19.0,
+            "end_sec": 22.0,
+            "action": "making a sandwich",
+            "action_score": 0.1199592724442482,
+            "violation_score": 0.9996174573898315
+          }
+        ]
+      },
+      "X-46": {
+        "truth": [
+          [
+            11,
+            "foreign_object_at_desk"
+          ]
+        ],
+        "score": 0.789420485496521,
+        "events": [
+          {
+            "type": "detector_not_used",
+            "raw_type": "detector_not_used",
+            "timecode_sec": 7.0,
+            "start_sec": 4.0,
+            "end_sec": 9.0,
+            "action": "washing hands",
+            "action_score": 0.29996269941329956,
+            "violation_score": 0.789420485496521
+          },
+          {
+            "type": "detector_not_used",
+            "raw_type": "detector_not_used",
+            "timecode_sec": 14.0,
+            "start_sec": 12.0,
+            "end_sec": 15.0,
+            "action": "washing hands",
+            "action_score": 0.14949721097946167,
+            "violation_score": 0.38484784960746765
+          }
+        ]
+      }
+    },
+    "thresholds": {
+      "X-1": 0.03854348883032799,
+      "X-2": 0.06540273129940033,
+      "X-3": 0.13871516287326813,
+      "X-4": 0.032429493963718414,
+      "X-5": 0.07678399980068207,
+      "X-8": 0.13175895810127258,
+      "X-10": 0.12062369287014008,
+      "X-11": 0.06581734120845795,
+      "X-12": 0.06287118047475815,
+      "X-13": 0.10700439661741257,
+      "X-14": 0.14574843645095825,
+      "X-15": 0.11363699287176132,
+      "X-16": 0.025445353239774704,
+      "X-17": 0.02506917528808117,
+      "X-18": 0.08344040811061859,
+      "X-19": 0.12323858588933945,
+      "X-20": 0.10283704102039337,
+      "X-21": 0.039232391864061356,
+      "X-22": 0.10482782125473022,
+      "X-23": 0.1727990210056305,
+      "X-24": 0.11038636416196823,
+      "X-25": 0.13834579288959503,
+      "X-26": 0.15132059156894684,
+      "X-27": 0.09412699192762375,
+      "X-28": 0.12476236373186111,
+      "X-29": 0.08056461066007614,
+      "X-30": 0.09722428768873215,
+      "X-31": 0.04406413063406944,
+      "X-32": 0.056423306465148926,
+      "X-33": 0.19791467487812042,
+      "X-34": 0.024731088429689407,
+      "X-35": 0.0921221673488617,
+      "X-37": 0.1169731542468071,
+      "X-38": 0.1334218531847,
+      "X-39": 0.06308732181787491,
+      "X-40": 0.09578847140073776,
+      "X-43": 0.13997502624988556,
+      "X-44": 0.12279216945171356,
+      "X-45": 0.061049316078424454,
+      "X-46": 0.0215442031621933
+    },
+    "protocol": "Outer video excluded from both heads, scaler and inner-LOVO threshold selection."
+  },
+  "embedding_seconds": {
+    "X-1": 2.1733162000018638,
+    "X-2": 1.3218450999993365,
+    "X-3": 1.5291209999995772,
+    "X-4": 5.590062399991439,
+    "X-5": 5.3189010999922175,
+    "X-8": 2.8211461000028066,
+    "X-10": 1.0678761999879498,
+    "X-11": 1.6826117000018712,
+    "X-12": 3.2359817999968072,
+    "X-13": 5.3856832000019494,
+    "X-14": 9.976222700002836,
+    "X-15": 1.4759843000065302,
+    "X-16": 1.621646800005692,
+    "X-17": 1.02671819999523,
+    "X-18": 1.6449493000109214,
+    "X-19": 4.195949400003883,
+    "X-20": 0.8496492999984184,
+    "X-21": 1.4377274999860674,
+    "X-22": 1.466136600007303,
+    "X-23": 1.2691507999988971,
+    "X-24": 0.9781348000105936,
+    "X-25": 2.301363999999012,
+    "X-26": 1.306902899988927,
+    "X-27": 1.7440616999956546,
+    "X-28": 1.1191825999994762,
+    "X-29": 1.2438374000048498,
+    "X-30": 1.314112499996554,
+    "X-31": 1.6653432000020985,
+    "X-32": 1.4785387000010815,
+    "X-33": 1.014488100001472,
+    "X-34": 1.2347632000019075,
+    "X-35": 4.037003399993409,
+    "X-37": 1.0906352000019979,
+    "X-38": 4.0288996000017505,
+    "X-39": 5.565990100003546,
+    "X-40": 1.6933253000024706,
+    "X-43": 1.6202056000038283,
+    "X-44": 1.4594826999964425,
+    "X-45": 2.3694667000090703,
+    "X-46": 1.4895567000057781
+  }
+}
