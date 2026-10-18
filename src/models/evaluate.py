@@ -300,6 +300,17 @@ def summarize(cases: Sequence[Case], first: Sequence[Found | None]) -> dict:
         "types_by_video": {
             c.video_id: {"truth": sorted(c.types), "found": f.type_id if f else None} for c, f in violation
         },
+        # every video, clean ones too: the error table (src/models/errors.py) is built from these
+        "verdicts_by_video": {
+            c.video_id: {
+                "flagged": f is not None,
+                "type": f.type_id if f else None,
+                "timecode_sec": f.timecode_sec if f else None,
+                "video_score": float(c.scores.max()) if c.scores.size else 0.0,
+                "hit_types": sorted({h.type_id for h in c.hits}),
+            }
+            for c, f in zip(cases, first, strict=True)
+        },
         "timecode_choice": _timecode_choice(cases, flagged),
     }
 

@@ -15,7 +15,7 @@ import json
 import pickle
 import sys
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 
 import numpy as np
@@ -23,6 +23,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
@@ -38,6 +39,7 @@ from src.features.embeddings import (
     video_path,
     window_features,
 )
+from src.models.errors import write_report
 from src.models.evaluate import (
     Case,
     bank_windows,
@@ -46,6 +48,8 @@ from src.models.evaluate import (
     heuristic_hits,
     lovo,
     payout_sweep,
+    run_case,
+    summarize,
 )
 from src.models.violations import HEURISTIC_CONFIGS, peak_feature
 from src.models.windows import (
@@ -54,7 +58,9 @@ from src.models.windows import (
     TIMECODE_MODE,
     WINDOW_SEC,
     choose_threshold,
+    group_of,
     labels_by_video,
+    layout_folds,
     logit_shift,
     lovo_folds,
     make_windows,
@@ -166,6 +172,7 @@ def _nested_fold(
         ]
 
 
+LAYOUT_SUMMARY = ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy")
 LOW_TAIL = 5  # the violation videos with the lowest scores: the threshold lives there
 
 
@@ -204,6 +211,7 @@ def nested_check(ids: list[str], clips: list[Clip]) -> dict:
         "nested_video_recall_shifted": float(hit_shifted[violation].mean()),
         "nested_fp_rate_shifted": float(hit_shifted[~violation].mean()),
         "nested_missed": [r["video_id"] for r, v, h in zip(rows, violation, hit, strict=True) if v and not h],
+        "by_video": {r["video_id"]: {"score": r["full_score"], "threshold": r["threshold"]} for r in rows},
         "logit_shift_all": spread(slice(None)),
         "logit_shift_violation": spread(violation),
         "logit_shift_weakest_violation": spread(weakest),
@@ -236,6 +244,72 @@ def build_cases(
     return cases, banks
 
 
+def _without(summary: dict, *keys: str) -> dict:
+    return {k: v for k, v in summary.items() if k not in keys}
+
+
+def _rescored(case: Case, clip: Clip, scores: np.ndarray) -> Case:
+    return replace(case, scores=scores, peak_feature=peak_feature(scores, clip.feats))
+
+
+def layout_check(
+    ids: list[str], clips: list[Clip], cases: list[Case], banks: dict, layout_of: dict[str, str]
+) -> dict:
+    """Leave-one-layout-out: what happens on a furniture arrangement the model has never seen (#38).
+
+    Per layout, the whole procedure runs on the other layouts only: the window model, the ADR 0002 threshold (from
+    leave-one-video-out scores inside them), the heuristics' settings and kNN's bank. The held-out videos are scored
+    by one model fit on all the other layouts, the way `window_clf.pkl` scores a new video. The camera is the same in
+    every layout (FAQ 3), so this says nothing about a new camera angle (#43). `cases` carry the heuristics' hits;
+    their window scores are replaced here.
+    """
+    layouts, seen, first = {}, [], []
+    for name, train_idx, val_idx in layout_folds(ids, layout_of):
+        rest = [clips[i] for i in train_idx]
+        rest_scores = cross_validate([ids[i] for i in train_idx], rest)
+        threshold = choose_threshold([video_score(s) for s in rest_scores], [c.is_violation for c in rest])
+        full = fit_on(rest)
+        held_scores = [
+            full.predict_proba(clips[i].feats)[:, 1] if len(clips[i].feats) else np.zeros(0) for i in val_idx
+        ]
+
+        settings, _ = fit_settings(
+            [_rescored(cases[i], clips[i], s) for i, s in zip(train_idx, rest_scores, strict=True)],
+            threshold,
+            {ids[i]: banks[ids[i]] for i in train_idx} if banks else None,
+        )
+        held = [_rescored(cases[i], clips[i], s) for i, s in zip(val_idx, held_scores, strict=True)]
+        found = [run_case(c, threshold, settings) for c in held]
+        fold_first = [f[0] if f else None for f in found]
+        fold_seen = [c.view(settings.heuristics) for c in held]
+        scores = [video_score(s) for s in held_scores]
+        is_violation = [clips[i].is_violation for i in val_idx]
+        timecodes = [
+            timecode(clips[i].windows["start"], s, threshold)
+            for i, s in zip(val_idx, held_scores, strict=True)
+        ]
+        branch_a = video_metrics(
+            scores, is_violation, threshold, timecodes, [clips[i].label_seconds for i in val_idx]
+        )
+        branch_a["roc_auc"] = (
+            float(roc_auc_score(is_violation, scores)) if len(set(is_violation)) == 2 else None
+        )
+        layouts[name] = {
+            "n_videos": len(val_idx),
+            "trained_on": " + ".join(sorted({layout_of[group_of(ids[i])] for i in train_idx})),
+            "n_train_videos": len(train_idx),
+            "threshold": threshold,
+            **_without(summarize(fold_seen, fold_first), "timecode_choice"),
+            "branch_a": branch_a,  # the window classifier alone, comparable with LOVO's branch_a
+        }
+        seen += fold_seen
+        first += fold_first
+    return {
+        "layouts": layouts,
+        "pooled": _without(summarize(seen, first), "timecode_choice", "verdicts_by_video"),
+    }
+
+
 def reference_embed_seconds(video_id: str, labels: pd.DataFrame) -> float:
     """Embedding time of the reference video measured now: a cached time was measured on whatever load the GPU
     had on the day, and the number is what the time budget is checked against."""
@@ -265,7 +339,16 @@ def run(nested: bool = True) -> dict:
     cases, banks = build_cases(labels, ids, clips, scores)
     settings, notes = fit_settings(cases, threshold, banks)
     final = lovo(cases, threshold, banks)
-    metrics = {k: final[k] for k in ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy")}
+    headline = {k: final[k] for k in LAYOUT_SUMMARY}
+    layout_of = labels.drop_duplicates("video_id").set_index("video_id")["arrangement"].to_dict()
+    metrics = (
+        headline
+        | {
+            "lovo": headline,  # next to leave_one_layout_out, which is judged by the same decision on a held-out layout
+            "leave_one_layout_out": layout_check(ids, clips, cases, banks, layout_of),
+            "verdicts_by_video": final["verdicts_by_video"],  # the error table is built from these
+        }
+    )
     metrics |= {
         "branch_a": branch_a,  # the window classifier alone, as before #34
         "vote": {
@@ -328,7 +411,9 @@ def run(nested: bool = True) -> dict:
             f,
         )
     (REPORTS / "metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False))
+    write_report(metrics, labels)
     log_experiment("dinov2-small-logreg-lovo", metrics)
+    log_layout_experiment(metrics)
     if nested:
         log_nested_experiment(metrics)
     return metrics
@@ -338,6 +423,7 @@ def log_experiment(note: str, metrics: dict) -> None:
     """Append one row. A file with an older, narrower header is widened once; rows are never dropped."""
     quiet = (
         "video_scores", "video_recall", "fp_rate", "median_abs_dt", "type_accuracy", "types", "knn", "nested",
+        "lovo", "leave_one_layout_out", "verdicts_by_video",
     )  # fmt: skip
     params = {k: v for k, v in metrics.items() if k not in quiet}
     if "vote" in metrics:
@@ -381,7 +467,22 @@ def log_nested_experiment(metrics: dict) -> None:
             "fp_rate": nested["nested_fp_rate"],
             "median_abs_dt": None,
             "threshold": metrics["threshold"],
-            **nested,
+            **{k: v for k, v in nested.items() if k != "by_video"},
+        },
+    )
+
+
+def log_layout_experiment(metrics: dict) -> None:
+    """The pooled decision on held-out layouts, with each layout's recall and FP rate in params."""
+    check = metrics["leave_one_layout_out"]
+    log_experiment(
+        "dinov2-small-logreg-leave-one-layout-out",
+        {
+            **{k: check["pooled"][k] for k in LAYOUT_SUMMARY},
+            "layouts": {
+                name: {k: v[k] for k in ("trained_on", "n_videos", "video_recall", "fp_rate", "threshold")}
+                for name, v in check["layouts"].items()
+            },
         },
     )
 
@@ -397,6 +498,15 @@ def summary(out: dict) -> dict:
     return {
         **{k: out[k] for k in ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy", "threshold")},
         "saved_threshold": out["saved_threshold"],  # what window_clf.pkl holds (#63)
+        "lovo": out["lovo"],
+        "leave_one_layout_out": {
+            "pooled": {k: out["leave_one_layout_out"]["pooled"][k] for k in LAYOUT_SUMMARY},
+            **{
+                name: {k: v[k] for k in ("trained_on", "n_videos", *LAYOUT_SUMMARY)}
+                | {"roc_auc": v["branch_a"]["roc_auc"]}
+                for name, v in out["leave_one_layout_out"]["layouts"].items()
+            },
+        },
         "nested": {
             k: v
             for k, v in out.get("nested", {}).items()
