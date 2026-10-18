@@ -13,15 +13,16 @@ from src.heuristics.detect import (
     CLIENT_LEFT_DURING_COUNT,
     COUNT_WITHOUT_CONTROLLER,
     FOREIGN_OBJECT_AT_DESK,
+    FOREIGN_OBJECTS,
     ID_NOT_PRESENTED,
-    OBJECT_NAMES,
     OUTSIDER_IN_CASH_ROOM,
     VALUABLES_LEFT_ON_DESK,
+    VALUABLES_OBJECTS,
     WORKPLACE_LEFT,
     Hit,
 )
-from src.heuristics.voice import voice
-from src.rules.describe import describe_violation
+from src.heuristics.vote import VOTING_TYPES, vote
+from src.rules.describe import OBJECT_NAMES, describe_violation
 
 FPS = 4
 SEAT = (200.0, 400.0)  # where the cashier sits in the 464x848 frame
@@ -599,6 +600,34 @@ def test_type3_silent_for_the_cashier_returning_under_a_new_track_id():
     assert hits_of(OUTSIDER_IN_CASH_ROOM, df) == []
 
 
+def counted_with_controller(*, cash=(5, 15), who=BESIDE, t=(5, 15)):
+    """Cashier at the seat, a second worker beside it, cash on the desk: a count with a controller."""
+    return tracks(
+        part(1, "person", 0, 30, *SEAT, wobble=3),
+        part(2, "person", *t, *who),
+        part(10, "cash", *cash, *DESK, h=20),
+    )
+
+
+EXEMPT = Thresholds(controller_exempt=True)
+
+
+def test_type3_silent_for_a_second_worker_who_controls_the_count_when_the_exemption_is_on():
+    assert hits_of(OUTSIDER_IN_CASH_ROOM, counted_with_controller(), thresholds=EXEMPT) == []
+
+
+def test_type3_the_count_exemption_is_off_by_default_because_it_would_hide_a_real_outsider():
+    assert hits_of(OUTSIDER_IN_CASH_ROOM, counted_with_controller()) != []
+
+
+def test_type3_with_the_exemption_on_it_still_fires_for_the_part_of_the_stay_without_cash():
+    df = counted_with_controller(cash=(5, 9), t=(5, 20))
+
+    hits = hits_of(OUTSIDER_IN_CASH_ROOM, df, thresholds=EXEMPT)
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(9.0, 19.75)]
+
+
 def on_desk(label, *, t=(5, 15), at=DESK, conf=0.9):
     return tracks(
         part(1, "person", 0, 30, *SEAT, wobble=3),
@@ -652,14 +681,33 @@ def test_type6_silent_for_a_single_frame():
     assert hits_of(VALUABLES_LEFT_ON_DESK, on_desk("book", t=(5, 5.25)), thresholds=BOOK_ON) == []
 
 
-def test_type5_silent_for_a_class_that_was_on_the_desk_before_the_shift_started():
-    df = tracks(
+def cup_from_the_start(*, until=15, then=None):
+    parts = [
         part(1, "person", 0, 30, *SEAT, wobble=3),
-        part(10, "object", 0, 15, *DESK, h=40, label="cup"),  # there from the first second
-    )
+        part(10, "object", 0, until, *DESK, h=40, label="cup"),  # there from the first second
+    ]
+    if then:
+        parts.append(part(11, "object", *then, *DESK, h=40, label="cup"))
+    return tracks(*parts)
 
-    assert hits_of(FOREIGN_OBJECT_AT_DESK, df) == []
-    assert hits_of(FOREIGN_OBJECT_AT_DESK, df, thresholds=Thresholds(arrive_after_sec=0.0)) != []
+
+def test_type5_an_object_there_from_the_first_frame_is_reported_by_default():
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, cup_from_the_start()) != []
+
+
+def test_type5_the_arrival_test_skips_a_track_that_was_there_before_the_shift_started():
+    arrival = Thresholds(arrive_after_sec=2.0)
+
+    assert hits_of(FOREIGN_OBJECT_AT_DESK, cup_from_the_start(), thresholds=arrival) == []
+
+
+def test_type5_the_arrival_test_judges_each_track_not_the_whole_class():
+    arrival = Thresholds(arrive_after_sec=2.0)
+    df = cup_from_the_start(until=1, then=(10, 20))  # a stray box at the start, a real cup later
+
+    hits = hits_of(FOREIGN_OBJECT_AT_DESK, df, thresholds=arrival)
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(10.0, 19.75)]
 
 
 def test_type5_silent_for_an_object_that_stays_put_in_almost_every_frame_when_the_mask_is_on():
@@ -716,10 +764,31 @@ def test_type8_silent_when_there_was_no_cash_while_the_client_was_there():
     assert hits_of(CLIENT_LEFT_DURING_COUNT, client_leaves(cash=(13, 20))) == []
 
 
-def test_type8_silent_when_the_next_client_steps_up_that_is_type2s_business():
-    df = client_leaves(next_client=(15, 25))
+def test_type8_silent_when_the_next_client_steps_up_before_the_cash_lay_alone_long_enough():
+    df = client_leaves(next_client=(14, 25))  # 2 s alone, below min_left_sec
 
     assert hits_of(CLIENT_LEFT_DURING_COUNT, df) == []
+
+
+def test_type8_fires_for_the_time_the_cash_lay_alone_even_if_the_next_client_came_later():
+    df = client_leaves(client=(3, 12), next_client=(21, 30), cash=(2, 22.5))
+
+    hits = hits_of(CLIENT_LEFT_DURING_COUNT, df)
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(12.0, 20.75)]
+
+
+def test_type8_survives_a_passer_by_in_the_frame_right_after_the_client_left():
+    df = tracks(
+        part(1, "person", 0, 30, *SEAT, wobble=3),
+        part(2, "person", 3, 12, *COUNTER),
+        part(3, "person", 12, 12.5, *COUNTER),  # a passer-by, two frames
+        part(10, "cash", 2, 20, *DESK, h=20),
+    )
+
+    hits = hits_of(CLIENT_LEFT_DURING_COUNT, df)
+
+    assert [(h.start_sec, h.end_sec) for h in hits] == [(12.5, 19.75)]
 
 
 def test_type8_silent_when_the_cashier_is_away_after_the_client_leaves():
@@ -764,35 +833,45 @@ def test_the_book_floor_and_min_object_sec_apply_to_type6():
     )
 
 
+NEXT_CLIENT = {CASH_ON_DESK_NEXT_CLIENT}
+
+
 def test_the_vote_says_violation_for_a_series_of_n_seconds_and_is_silent_for_a_shorter_one():
     series = [Hit(CASH_ON_DESK_NEXT_CLIENT, 10.0, 19.75)]  # 40 frames at 4 fps = 10 s
 
-    assert voice(series, 10.0) is True
-    assert voice(series, 10.25) is False
-    assert voice([Hit(CASH_ON_DESK_NEXT_CLIENT, 5.0, 5.0)], 1.0) is False  # one frame
-    assert voice([], 1.0) is False
+    assert vote(series, 10.0, types=NEXT_CLIENT) is True
+    assert vote(series, 10.25, types=NEXT_CLIENT) is False
+    assert vote([Hit(CASH_ON_DESK_NEXT_CLIENT, 5.0, 5.0)], 1.0, types=NEXT_CLIENT) is False  # one frame
+    assert vote([], 1.0, types=NEXT_CLIENT) is False
 
 
 def test_the_vote_takes_the_longest_hit_not_the_sum():
     two_short = [Hit(CASH_ON_DESK_NEXT_CLIENT, 0.0, 2.75), Hit(CASH_ON_DESK_NEXT_CLIENT, 5.0, 7.75)]
 
-    assert voice(two_short, 4.0) is False
-    assert voice(two_short, 3.0) is True
+    assert vote(two_short, 4.0, types=NEXT_CLIENT) is False
+    assert vote(two_short, 3.0, types=NEXT_CLIENT) is True
 
 
-def test_a_type_that_did_not_hold_its_false_positives_down_does_not_vote():
-    long_hits = [
-        Hit(t, 0.0, 30.0) for t in (OUTSIDER_IN_CASH_ROOM, FOREIGN_OBJECT_AT_DESK, VALUABLES_LEFT_ON_DESK)
-    ]
+def test_only_a_type_inside_the_false_positive_budget_votes_by_default():
+    long_hit = {
+        t: [Hit(t, 0.0, 30.0)] for t in (*VOTING_TYPES, CASH_ON_DESK_NEXT_CLIENT, CLIENT_LEFT_DURING_COUNT)
+    }
 
-    assert voice(long_hits, 3.0) is False
-    assert voice(long_hits, 3.0, types={OUTSIDER_IN_CASH_ROOM}) is True
+    assert VOTING_TYPES <= {OUTSIDER_IN_CASH_ROOM, FOREIGN_OBJECT_AT_DESK}
+    assert all(vote(long_hit[t], 3.0) for t in VOTING_TYPES)
+    assert not vote(long_hit[CASH_ON_DESK_NEXT_CLIENT], 3.0)  # 7/19 clean videos
+    assert not vote(long_hit[CLIENT_LEFT_DURING_COUNT], 3.0)  # 4/19
+    assert vote(long_hit[CLIENT_LEFT_DURING_COUNT], 3.0, types={CLIENT_LEFT_DURING_COUNT})
 
 
 def test_the_vote_follows_detect_end_to_end():
-    assert voice(detect(client_change()), 8.0) is True  # the hit lasts 8 s
-    assert voice(detect(client_change()), 8.25) is False
-    assert voice(detect(client_change(cash=(1, 12))), 1.0) is False
+    assert vote(detect(client_change()), 8.0, types=NEXT_CLIENT) is True  # the hit lasts 8 s
+    assert vote(detect(client_change()), 8.25, types=NEXT_CLIENT) is False
+    assert vote(detect(client_change(cash=(1, 12))), 1.0, types=NEXT_CLIENT) is False
+
+
+def test_every_object_class_the_heuristics_look_for_has_a_name_for_the_description():
+    assert set(FOREIGN_OBJECTS + VALUABLES_OBJECTS) <= set(OBJECT_NAMES)
 
 
 @pytest.mark.parametrize(

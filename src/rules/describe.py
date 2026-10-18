@@ -10,6 +10,10 @@ from src.config import RULES_YAML
 
 log = logging.getLogger(__name__)
 
+# The Russian name a description gets for {object}, by the COCO class of the object the heuristics found.
+# The name of the object only: whose it is and what it is worth is not visible (src/rules/rules.yaml).
+OBJECT_NAMES = {"cup": "чашка", "cell phone": "телефон", "bottle": "бутылка", "book": "книга"}
+
 _RULES = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))
 _DOCS = _RULES["documents"]
 _TYPES = {t["id"]: t for t in _RULES["types"]}

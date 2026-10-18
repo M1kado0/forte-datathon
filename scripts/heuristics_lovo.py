@@ -26,7 +26,7 @@ from scripts.standin_tracks import build_tracks
 from src.config import DATA_PROCESSED, EXPERIMENTS, LABELS_CSV
 from src.heuristics import Hit, Thresholds, detect
 from src.heuristics.thresholds import DEFAULT
-from src.heuristics.voice import VOTING_TYPES, voice
+from src.heuristics.vote import VOTING_TYPES, vote
 
 WINDOW = 3.0
 RAW_DIR = DATA_PROCESSED / "standin"
@@ -138,7 +138,7 @@ def vote_scores(hits_by_video: dict[str, list[Hit]], n_sec: float, types=None) -
     lab = labels()
     clean = set(lab.loc[lab["verdict"] == "no_violation", "video_id"])
     kw = {} if types is None else {"types": types}
-    called = {v: voice(h, n_sec, **kw) for v, h in hits_by_video.items()}
+    called = {v: vote(h, n_sec, **kw) for v, h in hits_by_video.items()}
     return (
         sum(c for v, c in called.items() if v not in clean),
         sum(v not in clean for v in called),
