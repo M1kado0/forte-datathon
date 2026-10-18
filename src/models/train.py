@@ -13,15 +13,19 @@ import csv
 import functools
 import json
 import pickle
+import sys
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from threadpoolctl import threadpool_limits
 
 from src.config import EXPERIMENTS, MODELS, REPORTS, SEED
 from src.data.labels import load_labels
@@ -51,8 +55,10 @@ from src.models.windows import (
     WINDOW_SEC,
     choose_threshold,
     labels_by_video,
+    logit_shift,
     lovo_folds,
     make_windows,
+    shift_threshold,
     timecode,
     video_metrics,
     video_score,
@@ -126,6 +132,84 @@ def cross_validate(ids: list[str], clips: list[Clip]) -> list[np.ndarray]:
     return scores
 
 
+def _video_score(clf: BaseEstimator, clip: Clip) -> float:
+    return video_score(clf.predict_proba(clip.feats)[:, 1]) if len(clip.feats) else 0.0
+
+
+def _nested_fold(
+    ids: list[str], clips: list[Clip], outer_train: np.ndarray, outer_val: np.ndarray
+) -> list[dict]:
+    """Hold out one group, do the whole procedure on the rest, score the held-out videos with the result."""
+    with threadpool_limits(1):
+        inner = [clips[i] for i in outer_train]
+        inner_ids = [ids[i] for i in outer_train]
+        inner_scores = np.zeros(len(inner))
+        fold_models = []
+        for train_idx, val_idx in lovo_folds(inner_ids):
+            clf = fit_on([inner[i] for i in train_idx])
+            fold_models.append(clf)
+            for i in val_idx:
+                inner_scores[i] = _video_score(clf, inner[i])
+        threshold = choose_threshold(inner_scores, [c.is_violation for c in inner])
+        full = fit_on(inner)
+        return [
+            {
+                "video_id": ids[v],
+                "is_violation": clips[v].is_violation,
+                "threshold": threshold,
+                "full_score": _video_score(full, clips[v]),
+                # the scale the threshold was measured on: a typical fold model, averaged over the folds
+                "fold_score": float(np.mean([_video_score(m, clips[v]) for m in fold_models])),
+            }
+            for v in outer_val
+            if len(clips[v].feats)
+        ]
+
+
+LOW_TAIL = 5  # the violation videos with the lowest scores: the threshold lives there
+
+
+def nested_check(ids: list[str], clips: list[Clip]) -> dict:
+    """Does a threshold chosen on out-of-fold scores (ADR 0002) carry over to a model fit on all training videos?
+
+    Per held-out video: threshold from LOVO on the other videos, a model fit on all the other videos (what
+    window_clf.pkl is, one level up), verdict of that model vs that threshold. Also how far the two score scales
+    sit apart, over all videos, over violation videos and over the LOW_TAIL weakest of them.
+    """
+    folds = Parallel(n_jobs=-1)(delayed(_nested_fold)(ids, clips, a, b) for a, b in lovo_folds(ids))
+    rows = [r for fold in folds for r in fold]
+    violation = np.array([r["is_violation"] for r in rows])
+    threshold = np.array([r["threshold"] for r in rows])
+    full = np.array([r["full_score"] for r in rows])
+    fold = np.array([r["fold_score"] for r in rows])
+    hit = full >= threshold
+    shift = logit_shift(full, fold)
+    weakest = np.flatnonzero(violation)[np.argsort(fold[violation])[:LOW_TAIL]]
+
+    def spread(idx: np.ndarray | slice) -> dict:
+        return {"median": float(np.median(shift[idx])), "mean_abs": float(np.abs(shift[idx]).mean())}
+
+    # The saved threshold moves by the median shift of the weakest violation videos (never up).
+    # The shift is estimated on all folds, so this recall is in-sample for the shift (not for the threshold).
+    delta = min(spread(weakest)["median"], 0.0)
+    shifted = np.array([shift_threshold(t, delta) for t in threshold])
+    hit_shifted = full >= shifted
+
+    return {
+        "nested_video_recall": float(hit[violation].mean()),
+        # same verdict with the fold models' own scores: separates the threshold rule from the score scale
+        "nested_video_recall_fold_scores": float((fold >= threshold)[violation].mean()),
+        "nested_fp_rate": float(hit[~violation].mean()),
+        "threshold_shift_logit": delta,
+        "nested_video_recall_shifted": float(hit_shifted[violation].mean()),
+        "nested_fp_rate_shifted": float(hit_shifted[~violation].mean()),
+        "nested_missed": [r["video_id"] for r, v, h in zip(rows, violation, hit, strict=True) if v and not h],
+        "logit_shift_all": spread(slice(None)),
+        "logit_shift_violation": spread(violation),
+        "logit_shift_weakest_violation": spread(weakest),
+    }
+
+
 def build_cases(
     labels: pd.DataFrame, ids: list[str], clips: list[Clip], scores: list[np.ndarray]
 ) -> tuple[list[Case], dict]:
@@ -159,7 +243,7 @@ def reference_embed_seconds(video_id: str, labels: pd.DataFrame) -> float:
     return embed_video(path, Embedder())[2]
 
 
-def run() -> dict:
+def run(nested: bool = True) -> dict:
     labels = load_labels()
     ids, clips = build_dataset(labels)
     scores = cross_validate(ids, clips)
@@ -219,11 +303,24 @@ def run() -> dict:
         "video_scores": dict(zip(ids, video_scores, strict=True)),
     }  # fmt: skip
 
+    if nested:
+        metrics["nested"] = nested_check(ids, clips)
+    # window_clf.pkl holds a model fit on all videos: its threshold is the ADR 0002 one moved by the measured shift
+    saved_threshold = (
+        shift_threshold(threshold, metrics["nested"]["threshold_shift_logit"]) if nested else threshold
+    )
+    metrics["saved_threshold"] = saved_threshold
+    if not nested:
+        warnings.warn(
+            f"--skip-nested: window_clf.pkl gets the unshifted threshold {threshold:.4f}; "
+            "run without the flag before serving (ADR 0002)",
+            stacklevel=2,
+        )
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(
             {
                 "model": fit_on(clips),
-                "threshold": threshold,
+                "threshold": saved_threshold,  # the ADR 0002 one moved by the nested check (#63)
                 "settings": settings,
                 "embedding": FINGERPRINT,
                 "window_sec": WINDOW_SEC,
@@ -232,15 +329,21 @@ def run() -> dict:
         )
     (REPORTS / "metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False))
     log_experiment("dinov2-small-logreg-lovo", metrics)
+    if nested:
+        log_nested_experiment(metrics)
     return metrics
 
 
 def log_experiment(note: str, metrics: dict) -> None:
     """Append one row. A file with an older, narrower header is widened once; rows are never dropped."""
-    quiet = ("video_scores", "video_recall", "fp_rate", "median_abs_dt", "type_accuracy", "types", "knn")
+    quiet = (
+        "video_scores", "video_recall", "fp_rate", "median_abs_dt", "type_accuracy", "types", "knn", "nested",
+    )  # fmt: skip
     params = {k: v for k, v in metrics.items() if k not in quiet}
-    params["vote"] = {k: v for k, v in metrics.get("vote", {}).items() if k != "grid"}
-    params["types"] = (metrics.get("types") or {}).get("allowed")
+    if "vote" in metrics:
+        params["vote"] = {k: v for k, v in metrics["vote"].items() if k != "grid"}
+    if "types" in metrics:
+        params["types"] = metrics["types"]["allowed"]
     row = {
         "ts": datetime.now().isoformat(timespec="seconds"),
         "note": note,
@@ -268,6 +371,21 @@ def log_experiment(note: str, metrics: dict) -> None:
         w.writerows([*kept, row])
 
 
+def log_nested_experiment(metrics: dict) -> None:
+    """A verdict-only row: recall and FP rate of the nested check, no timecodes or types."""
+    nested = metrics["nested"]
+    log_experiment(
+        "dinov2-small-logreg-nested-threshold",
+        {
+            "video_recall": nested["nested_video_recall"],
+            "fp_rate": nested["nested_fp_rate"],
+            "median_abs_dt": None,
+            "threshold": metrics["threshold"],
+            **nested,
+        },
+    )
+
+
 def load_model() -> dict:
     """Saved classifier + threshold; plain pickle of sklearn objects, no network."""
     with open(MODEL_PATH, "rb") as f:
@@ -278,6 +396,12 @@ def summary(out: dict) -> dict:
     """What the run prints: the numbers of the ticket and the decisions, not the per-video tables."""
     return {
         **{k: out[k] for k in ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy", "threshold")},
+        "saved_threshold": out["saved_threshold"],  # what window_clf.pkl holds (#63)
+        "nested": {
+            k: v
+            for k, v in out.get("nested", {}).items()
+            if k.startswith("nested_video_recall") or k in ("nested_fp_rate", "threshold_shift_logit")
+        },
         "branch_a": out["branch_a"],
         "vote": {k: v for k, v in out["vote"].items() if k != "grid"},
         "types_allowed": out["types"]["allowed"],
@@ -287,4 +411,5 @@ def summary(out: dict) -> dict:
 
 
 if __name__ == "__main__":
-    print(json.dumps(summary(run()), indent=2, ensure_ascii=False))
+    # The nested check refits ~1500 small models (about 3 min on 16 cores); --skip-nested leaves it out.
+    print(json.dumps(summary(run(nested="--skip-nested" not in sys.argv)), indent=2, ensure_ascii=False))

@@ -29,6 +29,8 @@ dependencies = [
   "python-multipart>=0.0.32",
   "pillow>=12.3.0",
   "scipy>=1.17.1",
+  "joblib>=1.6.0",
+  "threadpoolctl>=3.7.0",
 ]
 
 [dependency-groups]
