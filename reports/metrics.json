@@ -62,6 +62,9 @@
     "nested_video_recall": 0.9523809523809523,
     "nested_video_recall_fold_scores": 0.9523809523809523,
     "nested_fp_rate": 0.9473684210526315,
+    "threshold_shift_logit": -0.568116250051744,
+    "nested_video_recall_shifted": 0.9523809523809523,
+    "nested_fp_rate_shifted": 0.9473684210526315,
     "nested_missed": [
       "X-11"
     ],
@@ -77,5 +80,6 @@
       "median": -0.568116250051744,
       "mean_abs": 0.5397948518015949
     }
-  }
+  },
+  "saved_threshold": 0.004505543025928402
 }

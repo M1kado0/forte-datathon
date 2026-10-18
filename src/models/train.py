@@ -44,6 +44,7 @@ from src.models.windows import (
     logit_shift,
     lovo_folds,
     make_windows,
+    shift_threshold,
     timecode,
     video_metrics,
     video_score,
@@ -174,11 +175,20 @@ def nested_check(ids: list[str], clips: list[Clip]) -> dict:
     def spread(idx: np.ndarray | slice) -> dict:
         return {"median": float(np.median(shift[idx])), "mean_abs": float(np.abs(shift[idx]).mean())}
 
+    # The saved threshold moves by the median shift of the weakest violation videos (never up).
+    # The shift is estimated on all folds, so this recall is in-sample for the shift (not for the threshold).
+    delta = min(spread(weakest)["median"], 0.0)
+    shifted = np.array([shift_threshold(t, delta) for t in threshold])
+    hit_shifted = full >= shifted
+
     return {
         "nested_video_recall": float(hit[violation].mean()),
         # same verdict with the fold models' own scores: separates the threshold rule from the score scale
         "nested_video_recall_fold_scores": float((fold >= threshold)[violation].mean()),
         "nested_fp_rate": float(hit[~violation].mean()),
+        "threshold_shift_logit": delta,
+        "nested_video_recall_shifted": float(hit_shifted[violation].mean()),
+        "nested_fp_rate_shifted": float(hit_shifted[~violation].mean()),
         "nested_missed": [r["video_id"] for r, v, h in zip(rows, violation, hit, strict=True) if v and not h],
         "logit_shift_all": spread(slice(None)),
         "logit_shift_violation": spread(violation),
@@ -219,18 +229,23 @@ def run(nested: bool = False) -> dict:
         "video_scores": dict(zip(ids, video_scores, strict=True)),
     }  # fmt: skip
 
+    if nested:
+        metrics["nested"] = nested_check(ids, clips)
+    # window_clf.pkl holds a model fit on all videos: its threshold is the ADR 0002 one moved by the measured shift
+    saved_threshold = (
+        shift_threshold(threshold, metrics["nested"]["threshold_shift_logit"]) if nested else threshold
+    )
+    metrics["saved_threshold"] = saved_threshold
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(
             {
                 "model": fit_on(clips),
-                "threshold": threshold,
+                "threshold": saved_threshold,
                 "embedding": FINGERPRINT,
                 "window_sec": WINDOW_SEC,
             },
             f,
         )
-    if nested:
-        metrics["nested"] = nested_check(ids, clips)
     (REPORTS / "metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False))
     log_experiment("dinov2-small-logreg-lovo", metrics)
     if nested:
