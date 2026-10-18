@@ -1,17 +1,19 @@
-"""Is the video AUC 0.33 of the window classifier real, or made by leave-one-video-out? (docs/research/fp-generalisation.md)
+"""Is the video AUC 0.33 of the window classifier real, or made by leave-one-video-out?
 
 Diagnostics on the cached embeddings, no model and no GPU:
 
     uv run python -m scripts.lovo_bias d2    balanced LOVO: every fold trains on the same number of clips per class
     uv run python -m scripts.lovo_bias d3    leave-pair-out: one violation and one clean clip held out, 21 x 19 folds
     uv run python -m scripts.lovo_bias d5    do the nearest training clips predict the held-out score?
-    uv run python -m scripts.lovo_bias dn2   kNN distance to a bank of normal windows instead of a classifier
+    uv run python -m scripts.lovo_bias dn2   kNN distance to a bank of normal windows of the same layout
+    uv run python -m scripts.lovo_bias all   the four above
 """
 
 from __future__ import annotations
 
 import sys
 from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -21,11 +23,12 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
+from src.config import SEED
 from src.data.labels import load_labels
 from src.models.train import Clip, build_dataset, fit_on
 from src.models.windows import NEGATIVE, group_of, lovo_folds, video_score
 
-SEEDS = range(10)
+SEEDS = range(SEED, SEED + 10)
 NEIGHBOURS = 5  # D5: nearest training clips
 KNN_K = (1, 5)  # DN2
 TOP_N = 5  # DN2: top-n mean video score
@@ -36,21 +39,29 @@ def _groups(video_ids: Sequence[str]) -> np.ndarray:
 
 
 def balanced_folds(
-    video_ids: Sequence[str], is_violation: Sequence[bool], seed: int
+    video_ids: Sequence[str],
+    is_violation: Sequence[bool],
+    seed: int,
+    layouts: Sequence[str] | None = None,
 ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
     """LOVO where the training side always holds the same number of clips per class.
 
     Plain LOVO takes the held-out clip out of its own class, so the training class ratio moves against the
     held-out label, which pulls pooled AUC below 0.5 (Parker et al. 2007, Austin et al. 2024). Here one random
     clip of the other class is dropped as well, so every fold trains on n_violation - 1 and n_clean - 1 clips.
+    With `layouts` (one furniture arrangement per clip) the dropped clip comes from the held-out clip's own layout,
+    so the clips of that layout, the only ones DN2 draws its bank from, are balanced the same way.
     """
     rng = np.random.default_rng(seed)
     groups = _groups(video_ids)
     bad = np.asarray(is_violation, dtype=bool)
+    same_layout = np.ones(len(groups), dtype=bool)
     for g in sorted(set(groups)):
         val = groups == g
         held_bad = bool(bad[val].any())
-        others = sorted(set(groups[bad != held_bad]) - {g})
+        if layouts is not None:
+            same_layout = np.asarray(layouts) == np.asarray(layouts)[val][0]
+        others = sorted(set(groups[(bad != held_bad) & same_layout]) - {g})
         dropped = rng.choice(others)
         train = ~val & (groups != dropped)
         yield np.flatnonzero(train), np.flatnonzero(val)
@@ -105,9 +116,23 @@ def top_mean(scores: Sequence[float], n: int) -> float:
 # --- runners: real data from the embedding cache, printed as tables ---------------------------------------
 
 
-def _load() -> tuple[list[str], list[Clip], np.ndarray]:
-    ids, clips = build_dataset(load_labels())
-    return ids, clips, np.array([c.is_violation for c in clips])
+@dataclass
+class Cohort:
+    """The labelled clips with what every diagnostic needs about them, in `ids` order."""
+
+    ids: list[str]
+    clips: list[Clip]
+    violation: np.ndarray
+    layout: np.ndarray  # furniture arrangement of each clip
+
+
+def load_cohort() -> Cohort:
+    labels = load_labels()
+    ids, clips = build_dataset(labels)
+    arrangement = labels.drop_duplicates("video_id").set_index("video_id")["arrangement"]
+    return Cohort(
+        ids, clips, np.array([c.is_violation for c in clips]), np.array([arrangement[v] for v in ids])
+    )
 
 
 def _clip_score(clf, clip: Clip) -> float:
@@ -134,79 +159,82 @@ def _auc(scores: np.ndarray, violation: np.ndarray) -> float:
     return float(roc_auc_score(violation, scores))
 
 
-def run_baseline(ids, clips, violation) -> np.ndarray:
-    scores = _oof_scores(clips, lovo_folds(ids))
-    print(f"plain LOVO         video AUC {_auc(scores, violation):.3f}   (the 0.33 under test)")
+def run_baseline(c: Cohort) -> np.ndarray:
+    scores = _oof_scores(c.clips, lovo_folds(c.ids))
+    print(f"plain LOVO         video AUC {_auc(scores, c.violation):.3f}   (the 0.33 under test)")
     return scores
 
 
-def run_d2(ids, clips, violation) -> None:
+def run_d2(c: Cohort) -> None:
     """Balanced LOVO: the same model, every fold trained on 20 violation + 18 clean clips."""
-    aucs = [_auc(_oof_scores(clips, balanced_folds(ids, violation, seed)), violation) for seed in SEEDS]
+    aucs = [_auc(_oof_scores(c.clips, balanced_folds(c.ids, c.violation, s)), c.violation) for s in SEEDS]
     print(f"D2 balanced LOVO   video AUC {np.mean(aucs):.3f} +- {np.std(aucs):.3f}   over {len(aucs)} seeds")
     print(f"                   min {min(aucs):.3f}  max {max(aucs):.3f}")
 
 
-def run_d3(ids, clips, violation) -> None:
+def run_d3(c: Cohort) -> None:
     """Leave-pair-out: 21 x 19 folds, AUC = share of pairs ordered the right way."""
-    pairs = list(pair_folds(ids, violation))
-    out = Parallel(n_jobs=-1)(delayed(_fit_fold)(clips, train, (i, j)) for train, i, j in pairs)
+    pairs = list(pair_folds(c.ids, c.violation))
+    out = Parallel(n_jobs=-1)(delayed(_fit_fold)(c.clips, train, (i, j)) for train, i, j in pairs)
     auc = float(np.mean([pair_auc([pos], [neg]) for pos, neg in out]))
     print(f"D3 leave-pair-out  video AUC {auc:.3f}   over {len(pairs)} pairs")
 
 
-def run_d5(ids, clips, violation, oof: np.ndarray) -> None:
+def _rho(a: np.ndarray, b: np.ndarray) -> float:
+    return float(spearmanr(a, b).statistic)
+
+
+def run_d5(c: Cohort, oof: np.ndarray) -> None:
     """Is the held-out score explained by who its neighbours are, rather than by the clip?"""
-    mean = np.stack(
-        [c.feats.mean(axis=0) if len(c.feats) else np.zeros(clips[0].feats.shape[1]) for c in clips]
-    )
+    dim = c.clips[0].feats.shape[1]
+    mean = np.stack([x.feats.mean(axis=0) if len(x.feats) else np.zeros(dim) for x in c.clips])
     unit = mean / np.maximum(np.linalg.norm(mean, axis=1, keepdims=True), 1e-12)
     sim = unit @ unit.T
     np.fill_diagonal(sim, -np.inf)
     nearest = np.argsort(-sim, axis=1)[:, :NEIGHBOURS]
-    neighbour_share = violation[nearest].mean(axis=1)
-    train_share = (violation.sum() - violation) / (
-        len(violation) - 1
-    )  # class ratio of the fold, global channel
-    rho = lambda a, b: spearmanr(a, b).statistic  # noqa: E731
-    print(f"D5 neighbours      share of violations among the {NEIGHBOURS} nearest clips")
-    print(f"                   Spearman with the label            {rho(neighbour_share, violation):+.3f}")
-    print(f"                   Spearman with the LOVO score       {rho(neighbour_share, oof):+.3f}")
-    print(f"                   fold class ratio vs LOVO score     {rho(train_share, oof):+.3f}")
-    print(f"                   fold class ratio vs the label      {rho(train_share, violation):+.3f}")
+    neighbour_share = c.violation[nearest].mean(axis=1)
+    fold_share = (c.violation.sum() - c.violation) / (
+        len(c.violation) - 1
+    )  # violation share of the training side
+    print(
+        f"D5 neighbours      share of violations among the {NEIGHBOURS} nearest clips (cosine, mean embedding)"
+    )
+    print(f"                   Spearman with the label            {_rho(neighbour_share, c.violation):+.3f}")
+    print(f"                   Spearman with the LOVO score       {_rho(neighbour_share, oof):+.3f}")
+    print(f"                   training share vs LOVO score       {_rho(fold_share, oof):+.3f}")
 
 
-def _dn2_score(
-    clips: list[Clip], train: np.ndarray, held_out: Sequence[int], k: int
-) -> list[tuple[float, float]]:
-    bank = normal_bank([c.feats for c in clips], [c.windows["label"].to_numpy() for c in clips], train)
+def _dn2_score(c: Cohort, train: np.ndarray, held_out: Sequence[int], k: int) -> list[tuple[float, float]]:
+    """(max, top-n mean) of the window distances of each held-out clip to the bank of its own layout."""
+    train = train[c.layout[train] == c.layout[held_out[0]]]
+    bank = normal_bank([x.feats for x in c.clips], [x.windows["label"].to_numpy() for x in c.clips], train)
     scaler = StandardScaler().fit(bank)
     bank = scaler.transform(bank)
     out = []
     for i in held_out:
-        if not len(clips[i].feats):
+        if not len(c.clips[i].feats):
             out.append((0.0, 0.0))
             continue
-        d = knn_scores(bank, scaler.transform(clips[i].feats), k)
+        d = knn_scores(bank, scaler.transform(c.clips[i].feats), k)
         out.append((video_score(d), top_mean(d, TOP_N)))
     return out
 
 
-def run_dn2(ids, clips, violation) -> None:
-    """kNN distance to a bank of normal windows. Banks hold the same number of clips in every fold."""
-    print("DN2 kNN bank       video AUC, balanced folds (bank built from the fold's training clips only)")
+def run_dn2(c: Cohort) -> None:
+    """kNN distance to a bank of normal windows of the same layout, balanced inside that layout."""
+    print("DN2 kNN bank       video AUC, bank = normal windows of training clips with the held-out layout")
     for k in KNN_K:
         results = []
         for seed in SEEDS:
-            folds = list(balanced_folds(ids, violation, seed))
-            got = Parallel(n_jobs=-1)(delayed(_dn2_score)(clips, train, val, k) for train, val in folds)
-            scores = np.zeros((len(clips), 2))
+            folds = list(balanced_folds(c.ids, c.violation, seed, layouts=c.layout))
+            got = Parallel(n_jobs=-1)(delayed(_dn2_score)(c, train, val, k) for train, val in folds)
+            scores = np.zeros((len(c.clips), 2))
             for (_, val), g in zip(folds, got, strict=True):
                 scores[val] = g
-            results.append([_auc(scores[:, 0], violation), _auc(scores[:, 1], violation)])
-        mx, tm = np.mean(results, axis=0), np.std(results, axis=0)
+            results.append([_auc(scores[:, 0], c.violation), _auc(scores[:, 1], c.violation)])
+        mean, sd = np.mean(results, axis=0), np.std(results, axis=0)
         print(
-            f"                   k={k}  max {mx[0]:.3f} +- {tm[0]:.3f}   top-{TOP_N} mean {np.mean(results, axis=0)[1]:.3f} +- {tm[1]:.3f}"
+            f"                   k={k}  max {mean[0]:.3f} +- {sd[0]:.3f}   top-{TOP_N} mean {mean[1]:.3f} +- {sd[1]:.3f}"
         )
 
 
@@ -217,19 +245,18 @@ def main(argv: list[str]) -> None:
     if len(argv) != 2 or argv[1] not in COMMANDS:
         sys.exit(f"usage: python -m scripts.lovo_bias {{{'|'.join(COMMANDS)}}}")
     cmd = argv[1]
-    ids, clips, violation = _load()
-    print(
-        f"{len(ids)} clips, {int(violation.sum())} with a violation, {sum(len(c.feats) for c in clips)} windows"
-    )
-    oof = run_baseline(ids, clips, violation)
+    c = load_cohort()
+    windows = sum(len(x.feats) for x in c.clips)
+    print(f"{len(c.ids)} clips, {int(c.violation.sum())} with a violation, {windows} windows")
+    if cmd in ("d5", "all"):  # only D5 needs the plain LOVO scores
+        oof = run_baseline(c)
+        run_d5(c, oof)
     if cmd in ("d2", "all"):
-        run_d2(ids, clips, violation)
+        run_d2(c)
     if cmd in ("d3", "all"):
-        run_d3(ids, clips, violation)
-    if cmd in ("d5", "all"):
-        run_d5(ids, clips, violation, oof)
+        run_d3(c)
     if cmd in ("dn2", "all"):
-        run_dn2(ids, clips, violation)
+        run_dn2(c)
 
 
 if __name__ == "__main__":

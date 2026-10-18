@@ -67,3 +67,17 @@ def test_top_mean_averages_the_n_highest_scores_and_tolerates_short_clips():
     assert top_mean([0.1, 0.9, 0.5, 0.7], 2) == 0.8
     assert top_mean([0.4], 5) == 0.4
     assert top_mean([], 5) == 0.0
+
+
+def test_balanced_folds_with_layouts_drop_the_opposite_class_from_the_held_out_clips_layout():
+    # layout a: X-1..X-3 violate, X-7 and X-8 are clean; layout b: X-4..X-6 violate, X-9 and X-10 are clean
+    layouts = np.array(["a", "a", "a", "b", "b", "b", "a", "a", "b", "b"])
+    for train, val in balanced_folds(IDS, VIOLATION, seed=0, layouts=layouts):
+        mine = layouts == layouts[val[0]]
+        in_train = np.zeros(len(IDS), dtype=bool)
+        in_train[train] = True
+        # held-out layout: one violation clip and one clean clip less, whichever kind was held out
+        assert (in_train & mine & VIOLATION).sum() == (mine & VIOLATION).sum() - 1
+        assert (in_train & mine & ~VIOLATION).sum() == (mine & ~VIOLATION).sum() - 1
+        # the other layout is left whole
+        assert (in_train & ~mine).sum() == (~mine).sum()
