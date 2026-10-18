@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from contracts.data import TRACKS_SCHEMA
-from src.features import detectors, tracks
+from src.features import detectors, experiments, tracks
 from src.features.bytetrack import ByteTracker
 from src.features.detectors import Box
 
@@ -55,6 +55,27 @@ def test_a_weak_box_continues_a_track_but_never_starts_one():
     (first,) = t.update(boxes((100, 100)), np.array([0.9]))
     (weak,) = t.update(boxes((102, 100)), np.array([0.3]))
     assert weak == first
+
+
+def test_velocity_after_a_gap_is_the_displacement_per_frame_since_the_last_sighting():
+    t = tracker()
+    t.update(boxes((0, 0)), np.array([0.9]))
+    t.update(boxes((10, 0)), np.array([0.9]))  # velocity estimate now 5, half of the 10 px seen
+    for _ in range(2):
+        t.update(np.zeros((0, 4)), np.zeros(0))
+    t.update(boxes((34, 0)), np.array([0.9]))  # 24 px in 3 frames = 8 px per frame
+    assert len(t.tracks) == 1
+    assert t.tracks[0].velocity[0] == pytest.approx(0.5 * 5 + 0.5 * 8)
+
+
+def test_a_weak_box_does_not_bring_back_a_lost_track_but_a_strong_one_does():
+    t = tracker()
+    (first,) = t.update(boxes((100, 100)), np.array([0.9]))
+    t.update(np.zeros((0, 4)), np.zeros(0))
+    (weak,) = t.update(boxes((100, 100)), np.array([0.3]))
+    assert weak == -1
+    (strong,) = t.update(boxes((100, 100)), np.array([0.9]))
+    assert strong == first
 
 
 def test_trackers_sharing_a_counter_never_repeat_an_id():
@@ -112,6 +133,18 @@ def test_build_tracks_gives_schema_valid_tracks_of_every_kind(clip):
     assert table["track_id"].nunique() == 3  # ids are unique across kinds
 
 
+def test_ids_follow_the_sorted_class_names_so_two_runs_agree(clip):
+    # set order of string tuples changes with the process's hash seed; ids must not
+    table = tracks.build_tracks(clip, FakeDetector())
+    assert table.groupby("kind")["track_id"].first().to_dict() == {"cash": 0, "object": 1, "person": 2}
+
+
+def test_the_tracker_parameters_are_part_of_the_cache_setting(monkeypatch):
+    before = tracks.setting_id()
+    monkeypatch.setitem(tracks.TRACKER, "min_iou", 0.5)
+    assert tracks.setting_id() != before
+
+
 def test_open_vocabulary_kinds_are_seen_on_every_other_frame_only(clip):
     table = tracks.build_tracks(clip, FakeDetector())
     seen = table[table["kind"] == "person"]["t"].nunique()
@@ -137,6 +170,16 @@ def test_get_tracks_caches_by_video_and_reads_it_back(clip, tmp_path, monkeypatc
     assert fake.calls == calls
     assert again.equals(built)
     assert (tmp_path / "cache" / tracks.setting_id() / "X-7.parquet").is_file()  # the id is the Latin X
+
+
+def test_a_logged_row_is_keyed_by_the_files_own_header_and_leaves_metric_columns_empty(tmp_path, monkeypatch):
+    log = tmp_path / "experiments.csv"
+    log.write_text("ts,note,params,video_recall\n")
+    monkeypatch.setattr(experiments, "EXPERIMENTS", log)
+    experiments.append_row("tracks-test", {"n_videos": 40})
+    lines = log.read_text().splitlines()
+    assert len(lines) == 2
+    assert lines[1].endswith(',tracks-test,"{""n_videos"": 40}",')
 
 
 def test_changing_the_queries_never_reads_an_old_cache(monkeypatch):

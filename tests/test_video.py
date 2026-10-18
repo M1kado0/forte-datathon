@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pytest
 
-from src.data.video import iter_frames
+from src.data.video import duration, iter_frames
 
 SRC_FPS = 30
 SECONDS = 2
@@ -29,6 +29,10 @@ def test_samples_requested_rate_with_timestamps(clip):
     assert len(seconds) == 8
     # each sample is the first source frame at or after the grid time, so within one frame of it
     assert seconds == pytest.approx([0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75], abs=1 / SRC_FPS)
+
+
+def test_duration_is_the_length_of_the_clip_not_the_last_sampled_frame(clip):
+    assert duration(clip) == pytest.approx(SECONDS)  # the last frame sampled at 4/s is at 1.75 s
 
 
 def test_slow_source_keeps_true_frame_times(tmp_path):

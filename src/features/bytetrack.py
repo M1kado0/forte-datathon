@@ -39,8 +39,9 @@ class _Track:
     def __init__(self, track_id: int, box: np.ndarray) -> None:
         self.id = track_id
         self.state = self._to_state(box)
+        self.seen = self.state  # where the last match put it
         self.velocity = np.zeros(4)
-        self.lost = 0  # frames since the last match
+        self.lost = 0  # frames missed since the last match
 
     @staticmethod
     def _to_state(box: np.ndarray) -> np.ndarray:
@@ -57,8 +58,9 @@ class _Track:
 
     def update(self, box: np.ndarray) -> None:
         new = self._to_state(box)
-        self.velocity = 0.5 * self.velocity + 0.5 * (new - (self.state - self.velocity))
-        self.state = new
+        per_frame = (new - self.seen) / (self.lost + 1)  # a match after a gap spans the missed frames too
+        self.velocity = 0.5 * self.velocity + 0.5 * per_frame
+        self.state = self.seen = new
         self.lost = 0
 
 
@@ -93,14 +95,16 @@ class ByteTracker:
         free = list(range(len(self.tracks)))
         unmatched_strong = list(strong)
         for pool, min_iou, is_strong in ((strong, self.min_iou, True), (weak, self.min_iou_low, False)):
-            if not len(pool) or not free:
+            # a lost track needs a confident box to come back; a weak one may only continue an active track
+            candidates = [i for i in free if is_strong or self.tracks[i].lost == 0]
+            if not len(pool) or not candidates:
                 continue
-            pairs = match(np.array([self.tracks[i].box for i in free]), boxes[pool], min_iou)
+            pairs = match(np.array([self.tracks[i].box for i in candidates]), boxes[pool], min_iou)
             for r, c in pairs:
-                track = self.tracks[free[r]]
+                track = self.tracks[candidates[r]]
                 track.update(boxes[pool[c]])
                 ids[pool[c]] = track.id
-            taken_tracks = {free[r] for r, _ in pairs}
+            taken_tracks = {candidates[r] for r, _ in pairs}
             free = [i for i in free if i not in taken_tracks]
             if is_strong:
                 taken = {int(pool[c]) for _, c in pairs}

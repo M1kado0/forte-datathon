@@ -2,13 +2,11 @@
 
     uv run python -m src.features.tracks [--force] [--no-log] [video ...]
 
-Without arguments every video in data/raw/videos is tracked and cached in data/processed/tracks/<setting>/,
-where <setting> is a short hash of the classes, queries and rates, so changing any of them never reads a stale
-cache. Only boxes of people are kept: no faces, no identities (TZ-F.1).
+Without arguments every video named in data/labels.csv is tracked and cached in data/processed/tracks/<setting>/,
+where <setting> is a short hash of the classes, queries, rates, tracker parameters and the source of the
+tracker and the detectors, so changing any of them never reads a stale cache. Only boxes of people are kept: no faces, no identities (TZ-F.1).
 """
 
-import csv
-import datetime as dt
 import hashlib
 import itertools
 import json
@@ -21,12 +19,13 @@ import numpy as np
 import pandas as pd
 
 from contracts.data import TRACKS_SCHEMA, has_area
-from src.config import EXPERIMENTS, TRACKS_DIR, VIDEOS_DIR
+from src.config import TRACKS_DIR, VIDEOS_DIR
 from src.data.labels import load_labels, normalize_name
-from src.data.video import DEFAULT_FPS, iter_frames
-from src.features import detectors
+from src.data.video import DEFAULT_FPS, duration, iter_frames
+from src.features import bytetrack, detectors, embeddings
 from src.features.bytetrack import ByteTracker
 from src.features.detectors import Box, Detector
+from src.features.experiments import append_row
 
 REF_VIDEO = "X-14"  # the longest clip (about 142 s), the one the time budget is checked on
 BATCH = 8  # frames per model call
@@ -37,6 +36,8 @@ OWL_EVERY = 2
 # kept out of the table by the tracker.
 HIGH_CONF = {"person": 0.5, "object": 0.3, "cash": 0.1, "document": 0.1}
 LOW_CONF = {"person": 0.2, "object": 0.2, "cash": 0.1, "document": 0.1}
+# ByteTracker settings; a track is dropped after lost_sec seconds without a match (OWLv2 kinds: vocab_lost_sec)
+TRACKER = {"min_iou": 0.2, "min_iou_low": 0.4, "lost_sec": 2.0, "vocab_lost_sec": 1.0}
 COLUMNS = list(TRACKS_SCHEMA.columns)
 
 
@@ -53,6 +54,9 @@ def setting_id(fps: float = DEFAULT_FPS) -> str:
         "owl_min": detectors.OWL_MIN_CONF,
         "high": HIGH_CONF,
         "low": LOW_CONF,
+        "tracker": TRACKER,
+        # the code that shapes the boxes and the ids: an edit to it must not read an old cache
+        "code": [Path(m.__file__).read_text() for m in (bytetrack, detectors)],
     }
     return hashlib.sha1(json.dumps(setting, sort_keys=True).encode()).hexdigest()[:8]
 
@@ -67,15 +71,26 @@ def build_tracks(path: str | Path, detector: Detector, fps: float = DEFAULT_FPS)
     def add(t: float, found: Sequence[Box], vocab_frame: bool) -> None:
         by_class: dict[tuple[str, str], list[Box]] = {}
         for box in found:
+            if box.x2 <= box.x1 or box.y2 <= box.y1:
+                continue  # TRACKS_SCHEMA rejects a box with no area, and it would only waste a track id
             by_class.setdefault((box.kind, box.label), []).append(box)
         # a tracker also sees the frames where its class is absent, so its lost counter keeps time; the OWLv2
         # classes skip the frames OWLv2 did not look at
-        for key in trackers.keys() | by_class.keys():
+        # in sorted order: set order changes with the process's hash seed, and the ids follow it
+        for key in sorted(trackers.keys() | by_class.keys()):
             if key in vocab_keys and not vocab_frame:
                 continue
-            lost = int(fps) if key in vocab_keys else int(2 * fps)
+            lost_sec = TRACKER["vocab_lost_sec"] if key in vocab_keys else TRACKER["lost_sec"]
             trackers.setdefault(
-                key, ByteTracker(ids, high=HIGH_CONF[key[0]], low=LOW_CONF[key[0]], max_lost=lost)
+                key,
+                ByteTracker(
+                    ids,
+                    high=HIGH_CONF[key[0]],
+                    low=LOW_CONF[key[0]],
+                    min_iou=TRACKER["min_iou"],
+                    min_iou_low=TRACKER["min_iou_low"],
+                    max_lost=int(lost_sec * fps),
+                ),
             )
             group = by_class.get(key, [])
             xyxy = np.array([[b.x1, b.y1, b.x2, b.y2] for b in group]).reshape(-1, 4)
@@ -140,39 +155,36 @@ def get_tracks(
     return table
 
 
-def log_experiment(summary: dict) -> None:
-    """Append one row keyed by the file's own header; the numbers go to params."""
-    with EXPERIMENTS.open(newline="") as f:
-        header = next(csv.reader(f))
-    row = {
-        "ts": dt.datetime.now().isoformat(timespec="seconds"),
-        "note": "tracks-dfine-bytetrack-owlv2",
-        "params": json.dumps(summary, ensure_ascii=False),
-    }
-    with EXPERIMENTS.open("a", newline="") as f:
-        csv.DictWriter(f, fieldnames=header, restval="").writerow(row)
-
-
 def run(files: Sequence[Path], force: bool) -> dict:
     detector = detectors.LocalDetector()
-    timings: dict[str, float] = {}
     ref = None
     for path in files:
         start = time.perf_counter()
         # the reference video is always rebuilt: its time is the number the budget is checked against
         table = get_tracks(path, detector, force=force or video_id(path) == REF_VIDEO)
-        timings[video_id(path)] = time.perf_counter() - start
+        seconds = time.perf_counter() - start
         if video_id(path) == REF_VIDEO:
-            ref = {"video_id": REF_VIDEO, "duration": float(table["t"].max()), "seconds": timings[REF_VIDEO]}
+            ref = reference_timing(path, seconds)
         kinds = table.groupby("kind")["track_id"].nunique().to_dict()
-        print(
-            f"  {video_id(path)}: {len(table)} rows, tracks {kinds}, {timings[video_id(path)]:.1f} s",
-            flush=True,
-        )
+        print(f"  {video_id(path)}: {len(table)} rows, tracks {kinds}, {seconds:.1f} s", flush=True)
     return {
         "setting": setting_id(),
         "n_videos": len(files),
-        "detect_seconds_ref_video": ref,  # decode + D-FINE + OWLv2 + tracking, without branch A's share
+        "ref_video": ref,
+        "metrics": "none: a feature row, the heuristics' leave-one-video-out run is #34",
+    }
+
+
+def reference_timing(path: Path, tracks_seconds: float) -> dict:
+    """Branch B's time on the reference video next to branch A's, measured now on the same machine state;
+    the two run one after the other in the service, so the budget (45 s) is their sum."""
+    embed_seconds = embeddings.embed_video(path, embeddings.Embedder())[2]
+    return {
+        "video_id": REF_VIDEO,
+        "duration": duration(path),  # clip length from the container, not the last detection
+        "tracks_seconds": tracks_seconds,  # decode + D-FINE + OWLv2 + tracking
+        "embed_seconds": embed_seconds,  # decode + DINOv2
+        "total_seconds": tracks_seconds + embed_seconds,
     }
 
 
@@ -182,5 +194,5 @@ if __name__ == "__main__":
     files = [Path(a) for a in args] or [VIDEOS_DIR / f for f in load_labels()["file"].unique()]
     summary = run(files, force="--force" in sys.argv)
     # a row needs the reference time; a run on a few files only prints
-    if "--no-log" not in sys.argv and summary["detect_seconds_ref_video"] is not None:
-        log_experiment(summary)
+    if "--no-log" not in sys.argv and summary["ref_video"] is not None:
+        append_row("tracks-dfine-bytetrack-owlv2", summary)

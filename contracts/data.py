@@ -67,7 +67,7 @@ LabelsSchema = pa.DataFrameSchema(
 # |---------------|-------|-----------------------------------------------------------------------------|
 # | track_id      | int   | unique within a video across all kinds; may change if the tracker loses someone |
 # | kind          | str   | "person", "object" (COCO: phone, bag, cup), "cash" or "document"             |
-# | label         | str   | COCO class name, "cash" / "document", or the OWLv2 query text for an "object" found by OWLv2 ("key", "open safe", "open door") |
+# | label         | str   | COCO class name, or "cash" / "document" for the open-vocabulary kinds        |
 # | t             | float | seconds from the start of the video, on the decoder grid (4 fps by default)  |
 # | x1,y1,x2,y2   | float | box corners in pixels, x2 > x1 and y2 > y1 (a box with no area is dropped by #32) |
 # | conf          | float | detector confidence in [0, 1]                                                |
