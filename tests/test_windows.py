@@ -11,6 +11,7 @@ from src.models.windows import (
     choose_threshold,
     group_of,
     labels_by_video,
+    logit_shift,
     lovo_folds,
     make_windows,
     timecode,
@@ -136,8 +137,6 @@ def test_video_score_is_worst_window():
 
 
 def test_logit_shift_is_zero_for_equal_scores_and_signed_otherwise():
-    from src.models.windows import logit_shift
-
     assert logit_shift([0.2, 0.9], [0.2, 0.9]).tolist() == [0.0, 0.0]
     shift = logit_shift([0.5, 0.0], [0.5, 0.5])  # score 0 is clipped, not -inf
     assert shift[0] == 0.0 and shift[1] < -10

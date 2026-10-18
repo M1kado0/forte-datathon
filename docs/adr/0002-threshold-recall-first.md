@@ -7,11 +7,12 @@
 - На видео без нарушений будут ложные срабатывания. Это осознанная цена за recall, её показываем в `reports/metrics.json` и в README (TZ-8.6).
 - Дубли Х-4/Х-47 и Х-5/Х-48 склеиваются до CV, иначе один и тот же ролик попадёт в train и в val.
 
-## Threshold of the model fit on all videos (#63)
+## Порог для модели, дообученной на всех видео (#63)
 
-`models/window_clf.pkl` holds a model fit on all 40 videos, while the threshold comes from out-of-fold scores of 39-video models. We keep that threshold and add no calibration (no `CalibratedClassifierCV`, no ensemble of fold models). `uv run python -m src.models.train --nested` repeats the whole procedure inside each held-out group (threshold from LOVO on the other videos, a model fit on all of them, verdict on the held-out video) and logs one `experiments.csv` row:
+`models/window_clf.pkl` хранит модель, обученную на всех 40 видео, а порог посчитан на out-of-fold скорах моделей, обученных на 39. Порог оставляем, калибровку (`CalibratedClassifierCV`, ансамбль фолдовых моделей) не добавляем. `uv run python -m src.models.train` повторяет всю процедуру внутри каждой отложенной группы: порог по LOVO на остальных видео, модель на всех остальных, вердикт по отложенному видео. Числа лежат в `reports/metrics.json`, ключ `nested`, и в строке `dinov2-small-logreg-nested-threshold` файла `experiments.csv`. Проверку можно пропустить флагом `--skip-nested` (около 3 минут на 16 ядрах).
 
-- The two score scales sit together. Against the average of the fold models, the all-videos model has a median shift of +0.16 logit (mean absolute 0.58 per video). That is a small offset next to the spread between videos, and it points up, so it does not push a violation video below the threshold. The nested recall below is the stronger evidence.
-- Nested video recall is 0.952, FP rate 0.947. The one miss is X-11, the weakest violation video. It sets the threshold, so the rule "lowest violation score" cannot catch it when it is held out. That is a property of the rule on 21 violation videos, not of the model fit.
+- **Recall 0.952, один промах: X-11.** Это самое слабое видео с нарушением, оно само задаёт порог. Recall по скорам фолдовых моделей (`nested_video_recall_fold_scores`) тоже 0.952, то есть промах объясняет правило «минимум скоров нарушений», а не масштаб скоров дообученной модели.
+- **Сдвиг масштаба зависит от того, где смотреть.** Дообученная модель против среднего по фолдовым моделям, в logit: по всем видео медиана +0.16, среднее по модулю 0.58; по видео с нарушением +0.09 и 0.33; по 5 самым слабым нарушениям медиана −0.57, среднее по модулю 0.54. Порог лежит именно в этом нижнем хвосте, и там дообученная модель даёт скоры примерно в 1.8 раза ниже по шансам. Выборка в 5 видео, оценка шумная. Порог в pickle мы из-за этого не двигаем, но для рецепта «сначала recall» направление риска именно такое.
+- **FP rate 0.947 о масштабе ничего не говорит.** Порог 0.0079 и так флагует 18 из 19 чистых видео, небольшой сдвиг порога это число не меняет.
 
-Consequence: the 1.0 recall in `reports/metrics.json` is by construction. Expect a hidden violation weaker than X-11 to be missed.
+Последствие: 1.0 recall в `reports/metrics.json` получен по построению. Скрытое нарушение слабее X-11 будет пропущено. Если решим страховаться от сдвига в хвосте, порог в pickle можно сдвинуть на −0.57 logit (0.0079 → около 0.0045). На этих 40 видео FP от этого не растут: ниже 0.0079 лежит только одно чистое видео, X-8.

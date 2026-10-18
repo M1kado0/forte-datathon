@@ -57,5 +57,25 @@
     "X-44": 0.6042567491531372,
     "X-45": 0.888129711151123,
     "X-46": 0.9165806174278259
+  },
+  "nested": {
+    "nested_video_recall": 0.9523809523809523,
+    "nested_video_recall_fold_scores": 0.9523809523809523,
+    "nested_fp_rate": 0.9473684210526315,
+    "nested_missed": [
+      "X-11"
+    ],
+    "logit_shift_all": {
+      "median": 0.16066677986906563,
+      "mean_abs": 0.5775211549189389
+    },
+    "logit_shift_violation": {
+      "median": 0.09214383747755775,
+      "mean_abs": 0.32558502168659526
+    },
+    "logit_shift_weakest_violation": {
+      "median": -0.568116250051744,
+      "mean_abs": 0.5397948518015949
+    }
   }
 }
