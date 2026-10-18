@@ -197,7 +197,7 @@ def nested_check(ids: list[str], clips: list[Clip]) -> dict:
     }
 
 
-def run(nested: bool = False) -> dict:
+def run(nested: bool = True) -> dict:
     ids, clips = build_dataset(load_labels())
     scores = cross_validate(ids, clips)
     video_scores = [video_score(s) for s in scores]

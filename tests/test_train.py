@@ -1,6 +1,7 @@
 """Saved model loads without network; experiment log widens an old header."""
 
 import csv
+import inspect
 import pickle
 
 import numpy as np
@@ -39,3 +40,8 @@ def test_log_experiment_appends_without_rewriting(tmp_path, monkeypatch):
     train.log_experiment("b", m)
     assert log.read_text().startswith(first)
     assert [r["note"] for r in csv.DictReader(log.open())] == ["a", "b"]
+
+
+def test_run_checks_the_threshold_shift_by_default():
+    """src/pipeline.py (make all) calls run() bare; a default of False would save the unshifted threshold (#63)."""
+    assert inspect.signature(train.run).parameters["nested"].default is True
