@@ -18,8 +18,8 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   cashier is away for much of the clip, or when the tracker splits the cashier into short ids (stable ids
   are #32's job).
 - A detector miss on the cashier longer than Thresholds.gap_sec reads as "left".
-- Type 3 is "a non-cashier behind the desk, closer than Thresholds.room_radius". An incassator or a client who
-  leans over the desk reads as an outsider. room_radius is a guess until it is tuned on X-18 and X-30 (#34).
+- Type 3 is "a second person within Thresholds.room_radius of the seat while the cashier is at it, as tall as the cashier". An incassator or a client who
+  leans over the desk reads as an outsider. The values rest on two positives (X-18, X-30) and are for #34 to recheck.
 - Types 5 and 6 see an object within desk_radius of the seat, so a client's cup at the counter counts. Type 6
   is a book on the desk: the safe is not detected, so "outside the safe" is the same thing.
 - Type 8 fires on cash left on the desk after the client went, with the cashier at the seat and nobody next
@@ -75,7 +75,7 @@ class _Timeline:
     cash: np.ndarray  # cash lies on the cashier's desk
     document: np.ndarray  # an identity document or paper is visible at the counter
     visits: list[tuple[int, int]]  # (first, last) frame of each person at the counter, by arrival
-    outsider: np.ndarray  # a person other than the cashier is behind the desk, not at the seat
+    outsider: np.ndarray  # a person other than the cashier stands beside the seat while the cashier is there
     objects: dict[str, np.ndarray]  # per COCO class: an object of it lies on the cashier's desk
 
     def runs(self, mask: np.ndarray, min_sec: float) -> list[tuple[int, int]]:
@@ -153,6 +153,7 @@ class _Timeline:
 
 
 def detect(tracks: pd.DataFrame, fps: float = DEFAULT_FPS, thresholds: Thresholds = DEFAULT) -> list[Hit]:
+    tracks = _confident(tracks, thresholds)
     roles = find_roles(tracks, thresholds, fps)
     if roles is None:
         return []
@@ -172,6 +173,27 @@ def detect(tracks: pd.DataFrame, fps: float = DEFAULT_FPS, thresholds: Threshold
     ]
 
 
+def _confident(tracks: pd.DataFrame, th: Thresholds) -> pd.DataFrame:
+    """Drop the boxes below their kind's (or object class's) confidence floor."""
+    floor = {
+        "person": th.person_conf,
+        "cash": th.cash_min,
+        "document": th.doc_min,
+    }
+    off = 2.0  # above any confidence: the class is switched off
+    by_class = {
+        "cell phone": th.phone_conf,
+        "cup": th.cup_conf,
+        "bottle": th.bottle_conf,
+        "book": off if th.book_conf is None else th.book_conf,
+    }
+    tracks = tracks.reset_index(drop=True)
+    need = tracks["kind"].map(floor).fillna(0.0)
+    is_object = tracks["kind"] == "object"
+    need = need.where(~is_object, tracks["label"].map(by_class).fillna(0.0))
+    return tracks[tracks["conf"] >= need].reset_index(drop=True)
+
+
 def _timeline(tracks: pd.DataFrame, roles: Roles, fps: float, th: Thresholds) -> _Timeline:
     d = with_geometry(tracks)
     d = d.assign(
@@ -188,28 +210,77 @@ def _timeline(tracks: pd.DataFrame, roles: Roles, fps: float, th: Thresholds) ->
     at_counter = others[others["from_seat"] <= th.counter_radius]
     money = d[d["kind"] == "cash"]
     papers = d[d["kind"] == "document"]
-    # The seat is the cashier's. A non-cashier behind the desk, closer than clients stand, is an outsider.
-    behind = people[~is_cashier & ~near & (people["from_seat"] <= th.room_radius)]
-    things = d[(d["kind"] == "object") & d["label"].isin(OBJECT_NAMES) & (d["from_seat"] <= th.desk_radius)]
-    things = things[(things["label"] != "cell phone") | (things["conf"] >= th.phone_conf)]
     span = at_counter.groupby("track_id")["frame"].agg(["min", "max"]).sort_values("min")
     gap = ceil(th.gap_sec * fps)
+    cash = _frames_to_mask(n, money["frame"][money["from_seat"] <= th.desk_radius])
     return _Timeline(
         fps=fps,
         at_seat=_close_gaps(_frames_to_mask(n, people["frame"][near]), gap),
         others=_close_gaps(_frames_to_mask(n, others["frame"]), gap),
         at_counter=_close_gaps(_frames_to_mask(n, at_counter["frame"]), gap),
-        cash=_close_gaps(_frames_to_mask(n, money["frame"][money["from_seat"] <= th.desk_radius]), gap),
+        cash=_dense(cash, round(th.cash_win_sec * fps), th.cash_frac)
+        if th.cash_win_sec
+        else _close_gaps(cash, gap),
         document=_close_gaps(
             _frames_to_mask(n, papers["frame"][papers["from_seat"] <= th.counter_radius]), gap
         ),
         visits=list(zip(span["min"].tolist(), span["max"].tolist(), strict=True)),
-        outsider=_close_gaps(_frames_to_mask(n, behind["frame"]), gap),
-        objects={
-            label: _close_gaps(_frames_to_mask(n, rows["frame"]), gap)
-            for label, rows in things.groupby("label")
-        },
+        outsider=_close_gaps(_frames_to_mask(n, _outsider_frames(people, is_cashier, near, roles, th)), gap),
+        objects={label: _close_gaps(mask, gap) for label, mask in _objects_on_desk(d, n, fps, th).items()},
     )
+
+
+def _outsider_frames(
+    people: pd.DataFrame, is_cashier: pd.Series, near: pd.Series, roles: Roles, th: Thresholds
+) -> pd.Series:
+    """Frames of a second person beside the seat while the cashier is there (type 3). A box that overlaps the
+    cashier's is the cashier seen twice (a tracker split or a duplicate box), and a box much smaller than the
+    cashier's is a client across the counter, not someone on the cashier's side of it."""
+    candidates = people[~is_cashier & (people["from_seat"] <= th.room_radius)]
+    mine = people[is_cashier & near].drop_duplicates("frame")
+    pair = candidates.merge(mine, on="frame", suffixes=("", "_c"))
+    inter_w = (pair[["x2", "x2_c"]].min(axis=1) - pair[["x1", "x1_c"]].max(axis=1)).clip(lower=0)
+    inter_h = (pair[["y2", "y2_c"]].min(axis=1) - pair[["y1", "y1_c"]].max(axis=1)).clip(lower=0)
+    inter = inter_w * inter_h
+    area = (pair["x2"] - pair["x1"]) * (pair["y2"] - pair["y1"])
+    area_c = (pair["x2_c"] - pair["x1_c"]) * (pair["y2_c"] - pair["y1_c"])
+    overlap = inter / (area + area_c - inter)
+    h_rel = pair["h"] / roles.scale
+    ok = (overlap < th.iou_dup) & h_rel.between(th.outsider_h_min, th.outsider_h_max)
+    return pair["frame"][ok]
+
+
+def _objects_on_desk(d: pd.DataFrame, n: int, fps: float, th: Thresholds) -> dict[str, np.ndarray]:
+    """Per COCO class, the frames where an object of it was put on the cashier's desk (types 5 and 6)."""
+    things = d[(d["kind"] == "object") & d["label"].isin(OBJECT_NAMES)]
+    if th.static_frac is not None:
+        things = things[~_is_static(things, n, th.static_dist, th.static_frac)]
+    on_desk = things[things["from_seat"] <= th.object_radius]
+    found = {}
+    for label, rows in on_desk.groupby("label"):
+        if th.arrive_after_sec and rows["frame"].min() < th.arrive_after_sec * fps:
+            continue  # it was there before the shift started: not put on the desk
+        found[label] = _frames_to_mask(n, rows["frame"])
+    return found
+
+
+def _is_static(things: pd.DataFrame, n: int, dist: float, frac: float) -> pd.Series:
+    """True for a box whose centre has a box of the same class within `dist` of its own heights in at least
+    `frac` of all n frames: something that stays where it is the whole clip."""
+    static = pd.Series(False, index=things.index)
+    for _, rows in things.groupby("label"):
+        cx, cy, h, frame = (rows[c].to_numpy() for c in ("cx", "cy", "h", "frame"))
+        close = np.hypot(cx[:, None] - cx, cy[:, None] - cy) <= dist * h[:, None]
+        seen = np.array([np.unique(frame[row]).size for row in close])
+        static[rows.index] = seen / n >= frac
+    return static
+
+
+def _dense(mask: np.ndarray, window: int, frac: float) -> np.ndarray:
+    """True where at least `frac` of the `window` frames centred on a frame are True."""
+    window = max(window, 1)
+    share = np.convolve(mask.astype(float), np.ones(window) / window, mode="same")
+    return share >= frac - 1e-9
 
 
 def _frames_to_mask(n: int, frames: pd.Series) -> np.ndarray:
