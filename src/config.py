@@ -22,6 +22,11 @@ RULES_MD = ROOT / "docs" / "RULES.md"  # human copy of the type table, synced by
 ADILET_TEXTS = DATA_EXTERNAL / "adilet"  # page text of each act cited in rules.yaml, saved 18.10.2026
 LABELS_XLSX = DATA_RAW / "open_labels.xlsx"  # organizers' sheet (T04)
 VIDEOS_DIR = DATA_RAW / "videos"
+SELF_RECORDED_DIR = DATA_RAW / "self_recorded"  # clips we shot from other places in the room (#43, FAQ 7)
+SELF_LABELS_CSV = ROOT / "data" / "labels_self.csv"  # their labels, same columns as labels.csv
+VIEWPOINT_DIR = (
+    DATA_PROCESSED / "viewpoint"
+)  # warped copies with their embeddings and tracks, rebuilt on demand
 TRACKS_DIR = DATA_PROCESSED / "tracks"  # per-video track caches (#32), one folder per detector setting
 LABELS_CSV = ROOT / "data" / "labels.csv"  # cleaned labels, contract in contracts/data.py
 TYPES_CSV = (

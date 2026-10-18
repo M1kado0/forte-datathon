@@ -1,20 +1,22 @@
-"""Viewpoint robustness (#43, TZ-F.8): the same checks on warped training videos and on our own recordings.
+"""Viewpoint robustness, ticket #43 (TZ-F.8). The same checks on warped training videos and on our own recordings.
 
     uv run python -m scripts.viewpoint_eval [--no-log]
 
-All training videos share one camera (FAQ 3), so a new angle can only be imitated or recorded. Two checks:
+All training videos share one camera (FAQ 3), so a new angle can only be imitated or recorded. The script runs
+two checks.
 
-1. Warped training videos. Every frame goes through one of the PRESETS: a rotation, a shift, a zoom and a
-   perspective tilt, each stronger than the camera spread inside the training set (shift over MIN_SHIFT_PX,
-   rotation over MIN_ROTATION_DEG, the numbers of the ticket). Every number is out of sample: the held-out
-   clip's group is left out of the classifier, the heuristics' settings and the kNN bank. The classifier is fit
-   on clean clips, and on clean clips plus the clips of the other presets (augmentation); the held-out preset is
-   never in its own training set.
-2. Own recordings (data/labels_self.csv): the model fit on all training videos, judged on clips shot from other
-   places in the room, as recorded and scaled to the training size.
+1. Warped training videos. Every frame goes through one of the PRESETS, a mix of rotation, shift, zoom and
+   perspective tilt. Each preset is stronger than the ticket's camera spread in training, a shift over
+   MIN_SHIFT_PX and a rotation over MIN_ROTATION_DEG. Every number is out of sample. The held-out clip's group
+   is left out of the classifier, the heuristics' settings and the kNN bank. The classifier is fit on clean
+   clips, and again on clean clips plus the clips of the other presets (augmentation). The held-out preset is
+   never in its own training set. An identity copy through the same re-encoding is the control.
+2. Own recordings in data/labels_self.csv. The model is fit on all training videos and judged on clips shot from
+   other places in the room, as recorded and scaled to the training size.
 
-The threshold is always the one chosen on the clean leave-one-video-out run (ADR 0002), because on a new
-camera that is the only threshold the service would have.
+Warped clips use the threshold of the clean leave-one-video-out run (ADR 0002), the only one the service
+would have on a new camera. The augmented model has its own threshold from the same rule on clean clips. Own
+recordings use the threshold the service saves, the same one moved by the nested check (#63).
 """
 
 from __future__ import annotations
@@ -32,7 +34,7 @@ import numpy as np
 import pandas as pd
 
 from contracts.data import TRACKS_SCHEMA
-from src.config import DATA_PROCESSED, ROOT, VIDEOS_DIR
+from src.config import SELF_LABELS_CSV, SELF_RECORDED_DIR, VIDEOS_DIR, VIEWPOINT_DIR
 from src.data.labels import load_labels
 from src.data.video import DEFAULT_FPS, iter_frames
 from src.features import tracks as track_cache
@@ -53,9 +55,6 @@ from src.models.windows import (
 
 MIN_SHIFT_PX = 40  # the ticket's bound for the camera spread inside the training videos
 MIN_ROTATION_DEG = 7.0
-SELF_LABELS = ROOT / "data" / "labels_self.csv"
-SELF_DIR = ROOT / "data" / "raw" / "self_recorded"
-WORK_DIR = DATA_PROCESSED / "viewpoint"  # warped copies, their embeddings and tracks; rebuilt on demand
 TRAIN_LONG_SIDE = 848  # the dataset videos are 464 x 848
 
 Transform = Callable[[np.ndarray], np.ndarray]
@@ -65,8 +64,8 @@ Transform = Callable[[np.ndarray], np.ndarray]
 class Preset:
     """A homography about the frame centre, in fractions of the frame so it fits any resolution.
 
-    rotation_deg turns the frame, shift moves it (fractions of width and height), zoom scales it, and tilt
-    is the perspective term (kx, ky): a corner is scaled by about 1 +- tilt / 2.
+    rotation_deg turns the frame, shift moves it by fractions of width and height, zoom scales it, and tilt
+    is the perspective term along x and y. A corner is scaled by about 1 +- tilt / 2.
     """
 
     rotation_deg: float
@@ -95,8 +94,8 @@ class Preset:
         return back @ turn @ to_centre
 
 
-# Three camera positions: left of the dataset's, right of it, and farther back. Each is a different mix, so a
-# classifier trained on two of them is judged on the third.
+# Three camera positions. One is left of the dataset's camera, one right of it and one farther back. Each is a
+# different mix, so a classifier trained on two of them is judged on the third.
 PRESETS: dict[str, Preset] = {
     "left": Preset(9.0, (0.12, 0.04), 1.0, (0.25, 0.10)),
     "right": Preset(-9.0, (-0.12, -0.04), 1.0, (-0.25, 0.10)),
@@ -104,7 +103,7 @@ PRESETS: dict[str, Preset] = {
 }
 
 
-# Identity through the same pipeline (4 fps MJPG copy): what the re-encoding alone does to the metrics.
+# Identity through the same 4 fps MJPG copy. It shows what the re-encoding alone does to the metrics.
 CONTROL = Preset(0.0, (0.0, 0.0), 1.0, (0.0, 0.0))
 
 
@@ -119,8 +118,8 @@ def shift_px(h: np.ndarray, width: int, height: int) -> float:
     return float(np.linalg.norm(_project(h, *centre) - centre))
 
 
-def rotation_deg(h: np.ndarray, width: int = 100, height: int = 100) -> float:
-    """Rotation of the map at the frame centre, from its numeric Jacobian (the perspective term is ignored)."""
+def rotation_deg(h: np.ndarray, width: int, height: int) -> float:
+    """Rotation of the map at the frame centre, from its numeric Jacobian there."""
     cx, cy, eps = width / 2, height / 2, 1e-3
     dx = (_project(h, cx + eps, cy) - _project(h, cx - eps, cy)) / (2 * eps)
     dy = (_project(h, cx, cy + eps) - _project(h, cx, cy - eps)) / (2 * eps)
@@ -144,7 +143,7 @@ def scale_to_long_side(frame: np.ndarray, long_side: int = TRAIN_LONG_SIDE) -> n
 
 
 def variant_key(name: str, params: object) -> str:
-    """Folder name of one variant: a changed preset gets a new folder, so no cache is read stale."""
+    """Folder name of one variant. A changed preset gets a new folder, so no cache is read stale."""
     return f"{name}-{hashlib.sha1(json.dumps(params, sort_keys=True).encode()).hexdigest()[:8]}"
 
 
@@ -195,7 +194,7 @@ def variant_clips(
     """Windows with labels and pooled embeddings of every video of one variant, as `build_dataset` makes them."""
     clips = {}
     for vid, path in files.items():
-        seconds, emb, elapsed = load_or_embed(vid, path, embedder, WORK_DIR / key / "embeddings")
+        seconds, emb, elapsed = load_or_embed(vid, path, embedder, VIEWPOINT_DIR / key / "embeddings")
         duration = float(seconds[-1]) + 1.0 / EMBED_FPS if len(seconds) else 0.0
         windows = make_windows(duration, by_video[vid])
         feats, kept = window_features(seconds, emb, windows)
@@ -204,7 +203,7 @@ def variant_clips(
 
 
 def variant_tracks(key: str, vid: str, path: Path, detector: Callable[[], LocalDetector]) -> pd.DataFrame:
-    cached = WORK_DIR / key / "tracks" / track_cache.setting_id() / f"{vid}.parquet"
+    cached = VIEWPOINT_DIR / key / "tracks" / track_cache.setting_id() / f"{vid}.parquet"
     if cached.is_file():
         return TRACKS_SCHEMA.validate(pd.read_parquet(cached))
     table = track_cache.build_tracks(path, detector())
@@ -242,9 +241,9 @@ def lovo_scores(
     extra: Sequence[tuple[str, Clip]],
     evals: dict[str, Sequence[Clip]],
 ) -> dict[str, list[np.ndarray]]:
-    """Window scores of every clip in `evals` (each aligned with `ids`), from a model fit without its group.
+    """Window scores of every clip in `evals`, each aligned with `ids`, from a model fit without its group.
 
-    The model sees `clips` and `extra` (video id, clip) of the other groups only.
+    The model sees `clips` and `extra`, pairs of video id and clip, of the other groups only.
     """
     out = {key: [np.zeros(len(c.windows)) for c in group] for key, group in evals.items()}
     groups = np.array([group_of(v) for v in ids])
@@ -261,9 +260,9 @@ def lovo_scores(
 def decide_all(
     clean_cases: Sequence[Case], test_cases: Sequence[Case], threshold: float, banks: dict
 ) -> dict:
-    """The decision on every test case, each judged with settings fitted on the clean cases of the other groups:
-    the camera is the only thing that differs between the fit and the test. Keeps the cases and the first
-    violation of each so several sets can be pooled."""
+    """The decision on every test case. Each case is judged with settings fitted on the clean cases of the other
+    groups, so the camera is the only thing that differs between the fit and the test. The result keeps the cases
+    and the first violation of each, so several sets can be pooled."""
     first, seen = [], []
     for c in test_cases:
         rest = [o for o in clean_cases if o.group != c.group]
@@ -272,7 +271,7 @@ def decide_all(
         found = run_case(c, threshold, settings)
         first.append(found[0] if found else None)
         seen.append(c.view(settings.heuristics))
-    return {"cases": seen, "first": first, "threshold": threshold}
+    return {"cases": seen, "first": first, "thresholds": [threshold] * len(seen)}
 
 
 def judge(clean_cases: Sequence[Case], test_cases: Sequence[Case], threshold: float, banks: dict) -> dict:
@@ -281,13 +280,15 @@ def judge(clean_cases: Sequence[Case], test_cases: Sequence[Case], threshold: fl
 
 
 def metrics_of(part: dict) -> dict:
-    return report(part["cases"], part["first"], part["threshold"])
+    return report(part["cases"], part["first"], part["thresholds"])
 
 
-def report(cases: Sequence[Case], first: list, threshold: float) -> dict:
-    """The decision's metrics next to the window classifier's alone."""
+def report(cases: Sequence[Case], first: list, threshold: float | Sequence[float]) -> dict:
+    """The decision's metrics next to the window classifier's alone. A threshold per case lets sets judged with
+    different thresholds be pooled."""
     out = summarize(cases, first)
-    flagged = [bool(c.scores.size and c.scores.max() >= threshold) for c in cases]
+    limits = np.broadcast_to(threshold, len(cases))
+    flagged = [bool(c.scores.size and c.scores.max() >= t) for c, t in zip(cases, limits, strict=True)]
     bad = [c.is_violation for c in cases]
     n_bad = sum(bad)
     out["branch_a_recall"] = (
@@ -305,7 +306,7 @@ def pooled(parts: list[dict]) -> dict:
     """Metrics over several sets at once; `parts` are `decide_all` results."""
     cases = [c for p in parts for c in p["cases"]]
     first = [f for p in parts for f in p["first"]]
-    return report(cases, first, parts[0]["threshold"])
+    return report(cases, first, [t for p in parts for t in p["thresholds"]])
 
 
 NUMBERS = ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy", "branch_a_recall", "branch_a_fp_rate")
@@ -332,17 +333,18 @@ def run(log: bool = True) -> dict:
     embedder, detector = functools.cache(Embedder), functools.cache(LocalDetector)
     sources = {v: VIDEOS_DIR / files[v] for v in ids}
 
+    presets = {p: _preset_facts(PRESETS[p], frame_size(sources[v])) for p in PRESETS for v in ids}
     # warped copies of every training video, one decode pass per video
     variants = {**PRESETS, "control": CONTROL}
     keys = {p: variant_key(p, {"preset": asdict(variants[p]), "fps": DEFAULT_FPS}) for p in variants}
-    paths = {p: {v: WORK_DIR / keys[p] / "videos" / f"{v}.avi" for v in ids} for p in variants}
+    paths = {p: {v: VIEWPOINT_DIR / keys[p] / "videos" / f"{v}.avi" for v in ids} for p in variants}
     for v in ids:
         size = frame_size(sources[v])
         write_variants(sources[v], {paths[p][v]: _transform(variants[p], size) for p in variants})
     warped = {p: variant_clips(keys[p], paths[p], by_video, embedder) for p in variants}
     warped_clips = {p: [warped[p][v] for v in ids] for p in variants}
 
-    # the clean run: out-of-fold scores, the ADR 0002 threshold, cases and kNN banks
+    # the clean run gives the out-of-fold scores, the ADR 0002 threshold, the cases and the kNN banks
     plain = lovo_scores(ids, clips, [], {"clean": clips, **warped_clips})
     threshold = choose_threshold([video_score(s) for s in plain["clean"]], [c.is_violation for c in clips])
     clean_cases, banks = build_cases(labels, ids, clips, plain["clean"])
@@ -364,7 +366,7 @@ def run(log: bool = True) -> dict:
     }
     control = judge(clean_cases, base["control"], threshold, banks)
 
-    # augmentation: a model per held-out preset, fit on clean clips and the clips of the other presets
+    # augmentation needs a model per held-out preset, fit on clean clips and the clips of the other presets
     plain_parts, aug_parts, aug_threshold = [], [], {}
     for p in PRESETS:
         extra = [(v, warped[q][v]) for q in PRESETS if q != p for v in ids]
@@ -376,10 +378,12 @@ def run(log: bool = True) -> dict:
         aug_cases = [rescore(c, warped[p][c.video_id], aug[p][i]) for i, c in enumerate(base[p])]
         plain_parts.append(decide_all(clean_cases, base[p], threshold, banks))
         aug_parts.append(decide_all(aug_clean, aug_cases, aug_threshold[p], banks))
-    warped_plain = {p: numbers(metrics_of(part)) for p, part in zip(PRESETS, plain_parts, strict=True)}
-    warped_aug = {p: numbers(metrics_of(part)) for p, part in zip(PRESETS, aug_parts, strict=True)}
+    by_preset = {
+        name: {p: numbers(metrics_of(part)) for p, part in zip(PRESETS, parts, strict=True)}
+        for name, parts in (("plain", plain_parts), ("augmented", aug_parts))
+    }
 
-    # the model that would ship with augmentation: fit on everything, what it costs on clean clips
+    # the model that would ship with augmentation is fit on everything. This is what it costs on clean clips.
     extra_all = [(v, warped[q][v]) for q in PRESETS for v in ids]
     aug_all = lovo_scores(ids, clips, extra_all, {"clean": clips})
     aug_all_threshold = choose_threshold(
@@ -394,14 +398,14 @@ def run(log: bool = True) -> dict:
     )  # fmt: skip
 
     result = {
-        "presets": {p: _preset_facts(PRESETS[p], frame_size(sources[ids[0]])) for p in PRESETS},
+        "presets": presets,
         "threshold": threshold,
         "clean": numbers(clean),
         "reencoded_control": numbers(control),
-        "warped_clean_trained": {"pooled": numbers(pooled(plain_parts)), "by_preset": warped_plain},
+        "warped_clean_trained": {"pooled": numbers(pooled(plain_parts)), "by_preset": by_preset["plain"]},
         "warped_augmented": {
             "pooled": numbers(pooled(aug_parts)),
-            "by_preset": warped_aug,
+            "by_preset": by_preset["augmented"],
             "thresholds": aug_threshold,
         },
         "clean_with_augmentation": numbers(clean_with_aug) | {"threshold": aug_all_threshold},
@@ -418,8 +422,14 @@ def _transform(preset: Preset, size: tuple[int, int]) -> Transform:
 
 
 def _preset_facts(preset: Preset, size: tuple[int, int]) -> dict:
+    """Shift and rotation of a preset at the real frame size, refused when not stronger than the ticket's bounds."""
     h = preset.matrix(*size)
-    return {"shift_px": round(shift_px(h, *size), 1), "rotation_deg": round(rotation_deg(h, *size), 1)}
+    shift, rotation = shift_px(h, *size), rotation_deg(h, *size)
+    if shift <= MIN_SHIFT_PX or abs(rotation) <= MIN_ROTATION_DEG:
+        raise ValueError(
+            f"preset {preset} moves the frame {shift:.0f} px and turns it {rotation:.1f} degrees"
+        )
+    return {"shift_px": round(shift, 1), "rotation_deg": round(rotation, 1)}
 
 
 def judge_own(
@@ -436,7 +446,7 @@ def judge_own(
     detector,
 ) -> dict:
     """Own recordings under the model fit on all training videos, clean and augmented, as recorded and scaled."""
-    self_labels = pd.read_csv(SELF_LABELS)
+    self_labels = pd.read_csv(SELF_LABELS_CSV)
     by_video = labels_by_video(self_labels)
     nested = nested_check(ids, clips)
     delta = nested["threshold_shift_logit"]  # the shift `train` saves into window_clf.pkl (#63)
@@ -451,9 +461,11 @@ def judge_own(
     settings: dict[str, Settings] = {
         m: fit_settings(cases, thr, banks)[0] for m, (_, thr, cases) in models.items()
     }
-    files = {v: SELF_DIR / f for v, f in zip(self_labels["video_id"], self_labels["file"], strict=True)}
+    files = {
+        v: SELF_RECORDED_DIR / f for v, f in zip(self_labels["video_id"], self_labels["file"], strict=True)
+    }
     scaled = variant_key("own-scaled", {"long_side": TRAIN_LONG_SIDE, "fps": DEFAULT_FPS})
-    scaled_files = {v: WORK_DIR / scaled / "videos" / f"{v}.avi" for v in files}
+    scaled_files = {v: VIEWPOINT_DIR / scaled / "videos" / f"{v}.avi" for v in files}
     for v, path in files.items():
         write_variants(path, {scaled_files[v]: scale_to_long_side})
     out: dict = {"threshold_shift_logit": delta, "n_videos": len(files)}
@@ -487,6 +499,10 @@ def _own_row(case: Case, found, threshold: float) -> dict:
 def log_rows(result: dict) -> None:
     """One experiments.csv row per question; the figures of the metric columns are pooled over the presets."""
     plain, aug = result["warped_clean_trained"], result["warped_augmented"]
+    thresholds = {
+        "viewpoint-warped-lovo": result["threshold"],
+        "viewpoint-warped-lovo-augmented": aug["thresholds"],
+    }
     for note, part in (("viewpoint-warped-lovo", plain), ("viewpoint-warped-lovo-augmented", aug)):
         log_experiment(
             note,
@@ -496,17 +512,21 @@ def log_rows(result: dict) -> None:
                 "presets": result["presets"],
                 "clean": result["clean"],
                 "reencoded_control": result["reencoded_control"],
-                "threshold": result["threshold"],
+                "threshold": thresholds[note],
             },
         )
     own = result["own_recordings"]
+
+    def without_videos(run: dict) -> dict:
+        return {k: v for k, v in run.items() if k != "videos"}
+
     log_experiment(
         "viewpoint-own-recordings",
         {
             **own["as_recorded_clean"],
-            "scaled_to_training_size": {k: v for k, v in own["scaled_clean"].items() if k != "videos"},
-            "augmented_as_recorded": {k: v for k, v in own["as_recorded_augmented"].items() if k != "videos"},
-            "augmented_scaled": {k: v for k, v in own["scaled_augmented"].items() if k != "videos"},
+            "scaled_to_training_size": without_videos(own["scaled_clean"]),
+            "augmented_as_recorded": without_videos(own["as_recorded_augmented"]),
+            "augmented_scaled": without_videos(own["scaled_augmented"]),
             "n_videos": own["n_videos"],
             "videos": [
                 {k: r[k] for k in ("video", "branch_a_flags", "found")}

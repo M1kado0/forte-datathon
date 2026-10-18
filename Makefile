@@ -1,4 +1,4 @@
-.PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-cloudflared jury-sim screenshots clean
+.PHONY: weights weights-check setup test lint web app dev demo all tunnel tunnel-cloudflared jury-sim viewpoint screenshots clean
 
 PORT ?= 8000
 # Serving uses real weights. For a standalone UI demo: make app FORTE_ANALYZER=stub.
@@ -52,6 +52,10 @@ tunnel:
 # Fallback quick tunnel; needs outbound 7844, which our networks reset. URL changes every run.
 tunnel-cloudflared:
 	cloudflared tunnel --no-autoupdate --url http://localhost:$(PORT)
+
+# Warped training videos and our own recordings (#43). Embeds about 25 min of video per variant, so it is not in `make all`.
+viewpoint:
+	uv run python -m scripts.viewpoint_eval
 
 # Jury simulation against a running service: make jury-sim PUBLIC_URL=https://...
 jury-sim:
