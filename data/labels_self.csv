@@ -1,0 +1,11 @@
+video_id,file,verdict,second,violation_type,arrangement
+computer_on,computer_on.mov,violation,7,laptop_left_open,
+IDnotshown,IDnotshown.mov,violation,7,id_not_presented,
+left_door_open,left_door_open.mov,violation,4,cash_room_door_open,
+light_on,light_on.mov,violation,15,other,
+noviolation,noviolation.mov,no_violation,,,
+person,person.mov,violation,12,outsider_in_cash_room,
+phone_left,phone_left.mov,violation,11,foreign_object_at_desk,
+2people_no_violation,2people_no_violation.mov,no_violation,,,
+no_violation_counting_and_leaving,no_violation_counting_and_leaving.mov,no_violation,,,
+no_violation_giving_money_one_person,no_violation_giving_money_one_person.mov,no_violation,,,
