@@ -63,3 +63,27 @@ def test_missing_file_raises(tmp_path):
 def test_non_positive_fps_raises(clip):
     with pytest.raises(ValueError):
         list(iter_frames(clip, fps=0))
+
+
+def test_rotation_tag_is_applied_explicitly(clip, monkeypatch):
+    import cv2
+
+    from src.data import video
+
+    calls = []
+    real = cv2.VideoCapture
+
+    class Spy:
+        def __init__(self, *a):
+            self._cap = real(*a)
+
+        def set(self, prop, value):
+            calls.append((prop, value))
+            return self._cap.set(prop, value)
+
+        def __getattr__(self, name):
+            return getattr(self._cap, name)
+
+    monkeypatch.setattr(video.cv2, "VideoCapture", Spy)
+    next(video.iter_frames(clip, 4.0))
+    assert (cv2.CAP_PROP_ORIENTATION_AUTO, 1) in calls

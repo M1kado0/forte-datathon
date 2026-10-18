@@ -26,6 +26,9 @@ def iter_frames(path: str | Path, fps: float = DEFAULT_FPS) -> Iterator[tuple[fl
     try:
         if not cap.isOpened():
             raise ValueError(f"cannot decode {path}")
+        # rotate by the container's rotation tag; explicit, since the default differs between OpenCV builds.
+        # Every training clip has tag 0 (cv-audit), so their frames are unchanged.
+        cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 1)
         src_fps = cap.get(cv2.CAP_PROP_FPS)
         if not src_fps > 0:  # 0 or NaN from a broken container header
             raise ValueError(f"{path} has no usable fps in its header")
