@@ -26,7 +26,7 @@ from threadpoolctl import threadpool_limits
 from src.config import SEED
 from src.data.labels import load_labels
 from src.models.train import Clip, build_dataset, fit_on
-from src.models.windows import NEGATIVE, group_of, lovo_folds, video_score
+from src.models.windows import NEGATIVE, choose_threshold, group_of, lovo_folds, video_score
 
 SEEDS = range(SEED, SEED + 10)
 NEIGHBOURS = 5  # D5: nearest training clips
@@ -88,6 +88,13 @@ def pair_auc(violation_scores: Sequence[float], clean_scores: Sequence[float]) -
     pos = np.asarray(violation_scores, dtype=float)[:, None]
     neg = np.asarray(clean_scores, dtype=float)[None, :]
     return float(((pos > neg) + 0.5 * (pos == neg)).mean())
+
+
+def fp_at_full_recall(scores: Sequence[float], is_violation: Sequence[bool]) -> int:
+    """Clean videos flagged at the ADR 0002 threshold: the lowest violation score, so every violation is caught."""
+    s = np.asarray(scores, dtype=float)
+    bad = np.asarray(is_violation, dtype=bool)
+    return int((s[~bad] >= choose_threshold(s, bad)).sum())
 
 
 def normal_bank(
@@ -159,25 +166,48 @@ def _auc(scores: np.ndarray, violation: np.ndarray) -> float:
     return float(roc_auc_score(violation, scores))
 
 
+def _fp_text(fps: Sequence[int], n_clean: int) -> str:
+    """FP count at recall 1.0 as 'x/19'; over seeds the mean with the range."""
+    if len(set(fps)) == 1:
+        return f"{fps[0]}/{n_clean}"
+    return f"{np.mean(fps):.1f}/{n_clean} (min {min(fps)}, max {max(fps)})"
+
+
 def run_baseline(c: Cohort) -> np.ndarray:
     scores = _oof_scores(c.clips, lovo_folds(c.ids))
-    print(f"plain LOVO         video AUC {_auc(scores, c.violation):.3f}   (the 0.33 under test)")
+    fp = _fp_text([fp_at_full_recall(scores, c.violation)], int((~c.violation).sum()))
+    print(f"plain LOVO         video AUC {_auc(scores, c.violation):.3f}   FP at recall 1.0 {fp}")
     return scores
 
 
 def run_d2(c: Cohort) -> None:
     """Balanced LOVO: the same model, every fold trained on 20 violation + 18 clean clips."""
-    aucs = [_auc(_oof_scores(c.clips, balanced_folds(c.ids, c.violation, s)), c.violation) for s in SEEDS]
+    runs = [_oof_scores(c.clips, balanced_folds(c.ids, c.violation, s)) for s in SEEDS]
+    aucs = [_auc(r, c.violation) for r in runs]
+    fps = [fp_at_full_recall(r, c.violation) for r in runs]
     print(f"D2 balanced LOVO   video AUC {np.mean(aucs):.3f} +- {np.std(aucs):.3f}   over {len(aucs)} seeds")
-    print(f"                   min {min(aucs):.3f}  max {max(aucs):.3f}")
+    print(
+        f"                   min {min(aucs):.3f}  max {max(aucs):.3f}   FP at recall 1.0 {_fp_text(fps, int((~c.violation).sum()))}"
+    )
 
 
 def run_d3(c: Cohort) -> None:
-    """Leave-pair-out: 21 x 19 folds, AUC = share of pairs ordered the right way."""
+    """Leave-pair-out: 21 x 19 folds, AUC = share of pairs ordered the right way.
+
+    FP at recall 1.0 needs one score per video: the mean over the pairs the video was held out in.
+    """
     pairs = list(pair_folds(c.ids, c.violation))
     out = Parallel(n_jobs=-1)(delayed(_fit_fold)(c.clips, train, (i, j)) for train, i, j in pairs)
     auc = float(np.mean([pair_auc([pos], [neg]) for pos, neg in out]))
+    total, count = np.zeros(len(c.clips)), np.zeros(len(c.clips))
+    for (_, i, j), (pos, neg) in zip(pairs, out, strict=True):
+        total[i] += pos
+        total[j] += neg
+        count[i] += 1
+        count[j] += 1
+    fp = _fp_text([fp_at_full_recall(total / count, c.violation)], int((~c.violation).sum()))
     print(f"D3 leave-pair-out  video AUC {auc:.3f}   over {len(pairs)} pairs")
+    print(f"                   FP at recall 1.0 {fp}   (score = mean over the video's pairs)")
 
 
 def _rho(a: np.ndarray, b: np.ndarray) -> float:
@@ -222,20 +252,24 @@ def _dn2_score(c: Cohort, train: np.ndarray, held_out: Sequence[int], k: int) ->
 
 def run_dn2(c: Cohort) -> None:
     """kNN distance to a bank of normal windows of the same layout, balanced inside that layout."""
-    print("DN2 kNN bank       video AUC, bank = normal windows of training clips with the held-out layout")
+    n_clean = int((~c.violation).sum())
+    print("DN2 kNN bank       video AUC and FP at recall 1.0; bank = normal windows of the held-out layout")
     for k in KNN_K:
-        results = []
+        auc, fp = [], []
         for seed in SEEDS:
             folds = list(balanced_folds(c.ids, c.violation, seed, layouts=c.layout))
             got = Parallel(n_jobs=-1)(delayed(_dn2_score)(c, train, val, k) for train, val in folds)
             scores = np.zeros((len(c.clips), 2))
             for (_, val), g in zip(folds, got, strict=True):
                 scores[val] = g
-            results.append([_auc(scores[:, 0], c.violation), _auc(scores[:, 1], c.violation)])
-        mean, sd = np.mean(results, axis=0), np.std(results, axis=0)
-        print(
-            f"                   k={k}  max {mean[0]:.3f} +- {sd[0]:.3f}   top-{TOP_N} mean {mean[1]:.3f} +- {sd[1]:.3f}"
-        )
+            auc.append([_auc(scores[:, m], c.violation) for m in (0, 1)])
+            fp.append([fp_at_full_recall(scores[:, m], c.violation) for m in (0, 1)])
+        mean, sd, fps = np.mean(auc, axis=0), np.std(auc, axis=0), np.array(fp)
+        for m, name in enumerate(("max", f"top-{TOP_N} mean")):
+            print(
+                f"                   k={k}  {name:<11} AUC {mean[m]:.3f} +- {sd[m]:.3f}   "
+                f"FP at recall 1.0 {_fp_text(fps[:, m].tolist(), n_clean)}"
+            )
 
 
 COMMANDS = ("d2", "d3", "d5", "dn2", "all")

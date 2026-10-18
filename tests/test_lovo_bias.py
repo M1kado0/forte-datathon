@@ -2,7 +2,15 @@
 
 import numpy as np
 
-from scripts.lovo_bias import balanced_folds, knn_scores, normal_bank, pair_auc, pair_folds, top_mean
+from scripts.lovo_bias import (
+    balanced_folds,
+    fp_at_full_recall,
+    knn_scores,
+    normal_bank,
+    pair_auc,
+    pair_folds,
+    top_mean,
+)
 from src.models.windows import NEGATIVE, POSITIVE, UNLABELED
 
 IDS = [f"X-{i}" for i in range(1, 11)]
@@ -81,3 +89,13 @@ def test_balanced_folds_with_layouts_drop_the_opposite_class_from_the_held_out_c
         assert (in_train & mine & ~VIOLATION).sum() == (mine & ~VIOLATION).sum() - 1
         # the other layout is left whole
         assert (in_train & ~mine).sum() == (~mine).sum()
+
+
+def test_fp_at_full_recall_counts_clean_clips_scoring_at_or_above_the_weakest_violation():
+    violation = np.array([True, True, False, False, False])
+    # threshold = lowest violation score 0.4; clean clips at 0.6 and 0.5 are flagged, 0.2 is not
+    assert fp_at_full_recall([0.9, 0.4, 0.6, 0.2, 0.5], violation) == 2
+    # a clean clip tied with the threshold is flagged too
+    assert fp_at_full_recall([0.9, 0.4, 0.4, 0.2, 0.1], violation) == 1
+    # every violation scores above every clean clip: no false positive
+    assert fp_at_full_recall([0.9, 0.8, 0.3, 0.2, 0.1], violation) == 0
