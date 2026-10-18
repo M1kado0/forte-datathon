@@ -8,6 +8,7 @@ Diagnostics on the cached embeddings, no model and no GPU:
     uv run python -m scripts.lovo_bias dn2   kNN distance to a bank of normal windows of the same layout
     uv run python -m scripts.lovo_bias lto   leave-twin-out: a clip is scored without its nearest lookalike in training
     uv run python -m scripts.lovo_bias ref   score each clip against its own start: centred features, max minus median
+    uv run python -m scripts.lovo_bias contrast   train on within-clip differences (positive minus negative window)
     uv run python -m scripts.lovo_bias all   everything above
 """
 
@@ -22,6 +23,7 @@ from joblib import Parallel, delayed
 from scipy.spatial.distance import cdist
 from scipy.special import logit
 from scipy.stats import spearmanr
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
@@ -29,7 +31,7 @@ from threadpoolctl import threadpool_limits
 from src.config import SEED
 from src.data.labels import load_labels
 from src.models.train import Clip, build_dataset, fit_on
-from src.models.windows import NEGATIVE, choose_threshold, group_of, lovo_folds, video_score
+from src.models.windows import NEGATIVE, POSITIVE, choose_threshold, group_of, lovo_folds, video_score
 
 SEEDS = range(SEED, SEED + 10)
 NEIGHBOURS = 5  # D5: nearest training clips
@@ -37,6 +39,8 @@ KNN_K = (1, 5)  # DN2
 TOP_N = 5  # DN2: top-n mean video score
 CONTROL_SEEDS = SEEDS[:5]  # LTO control draws
 REF_WINDOWS = (2, 4, 8)  # REF: windows at the start of a clip that serve as its scene reference (0.5 s apart)
+CONTRAST_C = (0.01, 0.1)  # CONTRAST: regularisation strengths; the table is flat from 0.01 up
+MAX_NEGATIVES = 30  # CONTRAST: negative windows paired with the positives of one clip
 RECALL_AT_FP = 9  # REF: false positives allowed when reporting recall (half of the clean clips)
 
 
@@ -189,6 +193,21 @@ def max_minus_median(window_scores: Sequence[float]) -> float:
         return 0.0
     z = logit(np.clip(np.asarray(window_scores, dtype=float), 1e-6, 1 - 1e-6))
     return float(z.max() - np.median(z))
+
+
+def within_clip_pairs(feats: np.ndarray, labels: np.ndarray, max_negatives: int, seed: int) -> np.ndarray:
+    """Positive minus negative window features inside one clip, one row per pair.
+
+    Both windows come from the same clip, so what the clip looks like cancels in the difference and only the
+    change between event and background stays. At most `max_negatives` negative windows are paired; a clip
+    without positive or without negative windows gives no rows.
+    """
+    pos, neg = feats[labels == POSITIVE], feats[labels == NEGATIVE]
+    if not len(pos) or not len(neg):
+        return np.zeros((0, feats.shape[1]))
+    rng = np.random.default_rng(seed)
+    neg = neg[rng.choice(len(neg), min(max_negatives, len(neg)), replace=False)]
+    return (pos[:, None, :] - neg[None, :, :]).reshape(-1, feats.shape[1])
 
 
 def normal_bank(
@@ -459,8 +478,8 @@ def _oof_windows(clips: list[Clip], folds: list[tuple[np.ndarray, np.ndarray]]) 
 def run_ref(c: Cohort) -> None:
     """Does scoring a clip against its own start help? Features centred on the first windows, max minus median.
 
-    Label-free and clip-local. About 45 variants were tried on these 40 clips around this table (25 before the
-    layout-out arm, 18 after it), so read the plateau over reference lengths and the layout-out column, not the
+    Label-free and clip-local. About 55 variants were tried on these 40 clips around this table (25 before the
+    layout-out arm, 30 after it), so read the plateau over reference lengths and the layout-out column, not the
     best single number. With 21 and 19 clips the interval is about +-0.18 wide: no row here differs from 0.5.
     """
     n_clean = int((~c.violation).sum())
@@ -493,7 +512,64 @@ def run_ref(c: Cohort) -> None:
                 )
 
 
-COMMANDS = ("d2", "d3", "d5", "dn2", "lto", "ref", "all")
+def _contrast_fold(clips: list[Clip], train: np.ndarray, held_out: Sequence[int], reg: float) -> list[float]:
+    """Fit w on within-clip differences without an intercept, score each held-out clip by its peak w.x window."""
+    with threadpool_limits(1):
+        scaler = StandardScaler().fit(np.concatenate([clips[i].feats for i in train]))
+        pairs = np.concatenate(
+            [
+                within_clip_pairs(
+                    scaler.transform(clips[i].feats),
+                    clips[i].windows["label"].to_numpy(),
+                    MAX_NEGATIVES,
+                    SEED,
+                )
+                for i in train
+            ]
+        )
+        # each difference and its mirror image, so the two classes are balanced and the line goes through 0
+        X, y = np.concatenate([pairs, -pairs]), np.r_[np.ones(len(pairs)), np.zeros(len(pairs))]
+        w = LogisticRegression(C=reg, fit_intercept=False, max_iter=2000).fit(X, y).coef_[0]
+        return [
+            video_score(1 / (1 + np.exp(-(scaler.transform(clips[i].feats) @ w))))
+            if len(clips[i].feats)
+            else 0.0
+            for i in held_out
+        ]
+
+
+def run_contrast(c: Cohort) -> None:
+    """Train on within-clip differences: does a classifier that cannot see the clip's identity rank better?
+
+    Plain LOVO lifts from 0.33 to about 0.60 and the table is flat in C. Layout-out stays at chance, so what it
+    learns is real inside a layout and does not carry across arrangements. Read it against the intervals.
+    """
+    n_clean = int((~c.violation).sum())
+    twin = _clip_twins(c)
+    arms = (
+        ("plain", list(lovo_folds(c.ids))),
+        ("twin out", list(drop_folds(c.ids, twin))),
+        ("layout out", list(layout_folds(c.layout))),
+    )
+    print("CONTRAST within-clip differences, no intercept, video score = max window probability")
+    print("                   C        arm        AUC (95% interval)  FP at recall 1.0   recall")
+    for reg in CONTRAST_C:
+        for arm, folds in arms:
+            got = Parallel(n_jobs=-1)(
+                delayed(_contrast_fold)(c.clips, train, val, reg) for train, val in folds
+            )
+            s = np.zeros(len(c.clips))
+            for (_, val), g in zip(folds, got, strict=True):
+                s[val] = g
+            low, high = bootstrap_auc_interval(s, c.violation)
+            print(
+                f"                   {reg:<8} {arm:<10} {_auc(s, c.violation):.3f} ({low:.2f}-{high:.2f})   "
+                f"{fp_at_full_recall(s, c.violation):>3}/{n_clean}              "
+                f"{recall_at_fp(s, c.violation, RECALL_AT_FP):.2f}"
+            )
+
+
+COMMANDS = ("d2", "d3", "d5", "dn2", "lto", "ref", "contrast", "all")
 
 
 def main(argv: list[str]) -> None:
@@ -516,6 +592,8 @@ def main(argv: list[str]) -> None:
         run_lto(c)
     if cmd in ("ref", "all"):
         run_ref(c)
+    if cmd in ("contrast", "all"):
+        run_contrast(c)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ from scripts.lovo_bias import (
     random_stand_in,
     recall_at_fp,
     top_mean,
+    within_clip_pairs,
 )
 from src.models.windows import NEGATIVE, POSITIVE, UNLABELED
 
@@ -184,3 +185,19 @@ def test_bootstrap_auc_interval_collapses_when_the_scores_are_decisive_and_strad
     assert bootstrap_auc_interval(np.zeros(10), bad) == (0.5, 0.5)  # all tied
     low, high = bootstrap_auc_interval(np.array([0, 3, 1, 4, 2, 1, 4, 0, 3, 2.0]), bad)
     assert low < 0.5 < high  # a weak ordering cannot be told from chance with ten clips
+
+
+def test_within_clip_pairs_subtract_every_negative_window_from_every_positive_one():
+    feats = np.array([[10.0], [11.0], [1.0], [2.0], [3.0]])
+    labels = np.array([POSITIVE, POSITIVE, NEGATIVE, NEGATIVE, UNLABELED])
+    pairs = within_clip_pairs(feats, labels, max_negatives=5, seed=0)
+    # positives 10 and 11 against negatives 1 and 2; the unlabeled window pairs with nothing
+    assert sorted(pairs.ravel().tolist()) == [8.0, 9.0, 9.0, 10.0]
+    # the cap limits how many negatives each positive meets
+    assert len(within_clip_pairs(feats, labels, max_negatives=1, seed=0)) == 2
+
+
+def test_within_clip_pairs_are_empty_for_a_clip_without_positive_or_negative_windows():
+    feats = np.ones((3, 2))
+    assert within_clip_pairs(feats, np.array([NEGATIVE] * 3), 5, 0).shape == (0, 2)
+    assert within_clip_pairs(feats, np.array([POSITIVE] * 3), 5, 0).shape == (0, 2)
