@@ -30,6 +30,7 @@ def create_app(
     api_key: str | None = None,
     max_upload_bytes: int = 64 * 1024 * 1024,
     job_timeout_sec: float = 55,
+    load_timeout_sec: float = 180,
 ) -> FastAPI:
     load_dotenv(ROOT / ".env")
     key = api_key if api_key is not None else os.getenv("API_KEY", "")
@@ -49,11 +50,12 @@ def create_app(
                 analyzer,
                 timeout_sec=job_timeout_sec,
                 loader=analyzer_loader if analyzer is None else None,
+                load_timeout_sec=load_timeout_sec,
             )
             worker = None
             try:
                 if analyzer is None:
-                    await app.state.jobs.worker.start(timeout_sec=job_timeout_sec)
+                    await app.state.jobs.worker.start(timeout_sec=load_timeout_sec)
                     app.state.model_loaded = True
                 worker = asyncio.create_task(app.state.jobs.run())
                 yield
@@ -101,8 +103,10 @@ def create_app(
             # Decoder errors or hangs must not take down the HTTP process either.
             probe = LocalProcess(is_video)
             try:
-                if not await probe.run(path, timeout_sec=5):
-                    raise HTTPException(422, "Файл не содержит читаемого видео или повреждён")
+                # Bound startup + decode together, allowing busy machines to import cv2.
+                async with asyncio.timeout(15):
+                    if not await probe.run(path, timeout_sec=15, load_timeout_sec=15):
+                        raise HTTPException(422, "Файл не содержит читаемого видео или повреждён")
             except (TimeoutError, RuntimeError, EOFError, OSError) as exc:
                 raise HTTPException(422, "Не удалось прочитать видео; проверьте файл") from exc
             finally:

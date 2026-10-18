@@ -54,10 +54,14 @@ class UploadLimitMiddleware:
 
 
 def is_video(path: Path) -> bool:
-    # Restrict the backend: a renamed image must not pass as a one-frame video.
+    # FFmpeg can open renamed images; require video stream metadata as well as a decoded frame.
     capture = cv2.VideoCapture(str(path), cv2.CAP_FFMPEG)
     try:
-        if not capture.isOpened() or capture.get(cv2.CAP_PROP_FPS) <= 0:
+        if (
+            not capture.isOpened()
+            or not capture.get(cv2.CAP_PROP_FPS) > 0
+            or not capture.get(cv2.CAP_PROP_FRAME_COUNT) > 0
+        ):
             return False
         ok, frame = capture.read()
         return bool(ok and frame is not None and frame.size)

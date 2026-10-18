@@ -95,16 +95,16 @@ class LocalProcess(Generic[Result]):
                 raise RuntimeError(error)
             self.ready = True
 
-    async def run(self, path: Path, timeout_sec: float) -> Result:
-        started = monotonic()
-        await self.start(timeout_sec)
+    async def run(self, path: Path, timeout_sec: float, *, load_timeout_sec: float = 180) -> Result:
+        # A cold model reload must not consume the following video's analysis budget.
+        await self.start(load_timeout_sec)
         connection = self.connection
 
         def exchange():
             connection.send(path)
             return connection.recv()
 
-        succeeded, result = await self._reply(exchange, max(0, timeout_sec - (monotonic() - started)))
+        succeeded, result = await self._reply(exchange, timeout_sec)
         if not succeeded:
             raise RuntimeError("Worker failed")
         return result
@@ -122,10 +122,15 @@ class LocalProcess(Generic[Result]):
 
 class JobQueue:
     def __init__(
-        self, analyzer: Analyzer | None, timeout_sec: float = 55, loader: AnalyzerLoader | None = None
+        self,
+        analyzer: Analyzer | None,
+        timeout_sec: float = 55,
+        loader: AnalyzerLoader | None = None,
+        load_timeout_sec: float = 180,
     ):
         self.worker = LocalProcess(analyzer, loader)
         self.timeout_sec = timeout_sec
+        self.load_timeout_sec = load_timeout_sec
         self.jobs: dict[str, JobResponse] = {}
         self.queue: asyncio.Queue[tuple[str, Path] | None] = asyncio.Queue()
 
@@ -142,7 +147,9 @@ class JobQueue:
                 job_id, path = item
                 started = monotonic()
                 try:
-                    violations = await self.worker.run(path, self.timeout_sec)
+                    violations = await self.worker.run(
+                        path, self.timeout_sec, load_timeout_sec=self.load_timeout_sec
+                    )
                     result = JobResponse(
                         job_id=job_id,
                         status="done",
@@ -165,5 +172,11 @@ class JobQueue:
                 logger.info(
                     "Job %s status=%s duration_sec=%.3f", job_id, result.status, monotonic() - started
                 )
+                if not self.worker.ready:
+                    # Publish the failed job first, then warm its replacement even if idle.
+                    try:
+                        await self.worker.start(self.load_timeout_sec)
+                    except Exception:
+                        logger.exception("Worker reload failed after job %s", job_id)
             finally:
                 self.queue.task_done()

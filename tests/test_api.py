@@ -23,6 +23,7 @@ from pydantic import ValidationError
 
 from api.analyzer import analyze_stub, load_analyzer
 from api.main import create_app
+from api.uploads import is_video
 from contracts.schemas import JobResponse
 from src.rules.describe import describe_violation, rule_catalog
 
@@ -70,27 +71,67 @@ def hang_once(path, marker, crash):
     return []
 
 
-def load_supplied_analyzer(analyzer):
+def load_slow_analyzer():
+    time.sleep(0.2)
+    return clean_analyzer
+
+
+@pytest.mark.parametrize("injected", [False, True], ids=["model-loader", "cold-injected-worker"])
+def test_model_loading_does_not_use_analysis_deadline(injected):
+    app = create_app(
+        api_key="jury-key",
+        analyzer=clean_analyzer if injected else None,
+        analyzer_loader=load_slow_analyzer,
+        job_timeout_sec=0.1,
+    )
+    with TestClient(app) as client:
+        assert client.get("/api/health").json()["model_loaded"] is not injected
+        assert finished(client, upload(client))["status"] == "done"
+
+
+def test_model_loading_has_its_own_timeout():
+    app = create_app(analyzer_loader=load_slow_analyzer, load_timeout_sec=0.05)
+    with pytest.raises(TimeoutError), TestClient(app):
+        pytest.fail("Application must not accept requests when model loading times out")
+
+
+def load_with_reload_gate(analyzer, marker, started, release):
+    if marker.exists():
+        started.set()
+        assert release.wait(2)
+    else:
+        marker.touch()
     return analyzer
 
 
 def test_health_tracks_worker_crash_and_reload(tmp_path):
     analyzer = partial(hang_once, marker=tmp_path / "crashed", crash=True)
-    app = create_app(api_key="jury-key", analyzer_loader=partial(load_supplied_analyzer, analyzer))
+    restarting = CONTEXT.Event()
+    release = CONTEXT.Event()
+    loader = partial(load_with_reload_gate, analyzer, tmp_path / "loaded", restarting, release)
+    app = create_app(api_key="jury-key", analyzer_loader=loader)
     with TestClient(app) as client:
         assert client.get("/api/health").json()["model_loaded"] is True
         assert finished(client, upload(client))["status"] == "failed"
-        assert client.get("/api/health").json()["model_loaded"] is False
+        try:
+            assert restarting.wait(2), "Replacement must load without another upload"
+            assert client.get("/api/health").json()["model_loaded"] is False
+        finally:
+            release.set()
+        deadline = time.monotonic() + 2
+        while not client.get("/api/health").json()["model_loaded"]:
+            assert time.monotonic() < deadline, "Replacement did not become ready"
+            time.sleep(0.005)
         assert finished(client, upload(client))["status"] == "done"
         assert client.get("/api/health").json()["model_loaded"] is True
 
 
 @pytest.mark.parametrize("crash", [False, True], ids=["timeout", "crash"])
 def test_timeout_fails_job_and_queue_continues(tmp_path, caplog, crash):
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.INFO, logger="uvicorn.error.jobs")
     marker = tmp_path / "started"
     analyzer = partial(hang_once, marker=marker, crash=crash)
-    with TestClient(create_app(api_key="jury-key", analyzer=analyzer, job_timeout_sec=1.5)) as client:
+    with TestClient(create_app(api_key="jury-key", analyzer=analyzer, job_timeout_sec=0.2)) as client:
         first = upload(client)
         second = upload(client)
         assert finished(client, first) == {
@@ -145,6 +186,20 @@ def test_non_video_upload_is_rejected(prefix, data):
         assert response.status_code == 422
         assert "видео" in response.json()["detail"].lower()
         assert finished(client, upload(client, prefix), prefix)["status"] == "done"
+
+
+def test_video_probe_rejects_image_stream_metadata(monkeypatch, tmp_path):
+    # Some FFmpeg builds decode a renamed PNG with positive FPS but no video frame count.
+    released = []
+    capture = SimpleNamespace(
+        isOpened=lambda: True,
+        get=lambda prop: 25.0 if prop == cv2.CAP_PROP_FPS else -9.223372036854776e18,
+        read=lambda: (True, np.zeros((32, 32, 3), dtype=np.uint8)),
+        release=lambda: released.append(True),
+    )
+    monkeypatch.setattr(cv2, "VideoCapture", lambda *args: capture)
+    assert is_video(tmp_path / "image.mov") is False
+    assert released == [True]
 
 
 @pytest.mark.parametrize("prefix", ["/api/v1", "/api/ui"])
