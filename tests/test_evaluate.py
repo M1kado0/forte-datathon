@@ -150,3 +150,18 @@ def test_knn_is_kept_when_it_names_the_right_type_and_carries_its_bank():
     banks = {"X-20": (np.array([[1.0, 0.0]] * 5), ["keys_left_on_safe"] * 5)}
     knn, _ = fit_knn(cases, banks)
     assert knn is not None and len(knn.types) == 5
+
+
+def test_summarize_records_each_videos_verdict_with_its_best_score_and_hit_types():
+    cases = [case("X-1", [(5, OUTSIDER)], hits=[hit(OUTSIDER)]), case("X-8", flagged=False)]
+    first = [Found(OUTSIDER, 5.5, "state", onset_sec=5.0, peak_sec=6.0), None]
+    by_video = summarize(cases, first)["verdicts_by_video"]
+    assert by_video["X-1"] == {
+        "flagged": True,
+        "type": OUTSIDER,
+        "timecode_sec": 5.5,
+        "video_score": pytest.approx(0.9),
+        "hit_types": [OUTSIDER],
+    }
+    assert by_video["X-8"]["flagged"] is False and by_video["X-8"]["type"] is None
+    assert by_video["X-8"]["video_score"] == pytest.approx(0.1)  # clean videos are listed too

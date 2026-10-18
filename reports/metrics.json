@@ -3,6 +3,959 @@
   "fp_rate": 0.9473684210526315,
   "median_abs_dt": 5.0,
   "type_accuracy": 0.09523809523809523,
+  "lovo": {
+    "video_recall": 1.0,
+    "fp_rate": 0.9473684210526315,
+    "median_abs_dt": 5.0,
+    "type_accuracy": 0.09523809523809523
+  },
+  "leave_one_layout_out": {
+    "layouts": {
+      "back": {
+        "n_videos": 14,
+        "trained_on": "facing",
+        "n_train_videos": 26,
+        "threshold": 0.017880437895655632,
+        "video_recall": 1.0,
+        "fp_rate": 1.0,
+        "n_clean_videos": 7,
+        "n_false_positives": 7,
+        "median_abs_dt": 7.5,
+        "type_accuracy": 0.14285714285714285,
+        "n_typed_right": 1,
+        "n_named": 1,
+        "n_violation_videos": 7,
+        "types_by_video": {
+          "X-1": {
+            "truth": [
+              "cash_partially_given"
+            ],
+            "found": "other"
+          },
+          "X-2": {
+            "truth": [
+              "id_not_presented"
+            ],
+            "found": "other"
+          },
+          "X-4": {
+            "truth": [
+              "cash_on_desk_next_client"
+            ],
+            "found": "other"
+          },
+          "X-17": {
+            "truth": [
+              "collector_id_not_shown"
+            ],
+            "found": "other"
+          },
+          "X-18": {
+            "truth": [
+              "outsider_in_cash_room"
+            ],
+            "found": "outsider_in_cash_room"
+          },
+          "X-34": {
+            "truth": [
+              "client_left_during_count"
+            ],
+            "found": "other"
+          },
+          "X-38": {
+            "truth": [
+              "cash_on_desk_next_client"
+            ],
+            "found": "other"
+          }
+        },
+        "verdicts_by_video": {
+          "X-1": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 10.0,
+            "video_score": 0.9898597598075867,
+            "hit_types": []
+          },
+          "X-2": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 10.5,
+            "video_score": 0.9692349433898926,
+            "hit_types": []
+          },
+          "X-3": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 13.0,
+            "video_score": 0.9991070628166199,
+            "hit_types": []
+          },
+          "X-4": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 66.0,
+            "video_score": 0.9849147796630859,
+            "hit_types": []
+          },
+          "X-5": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 13.0,
+            "video_score": 0.9847767353057861,
+            "hit_types": []
+          },
+          "X-16": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 17.0,
+            "video_score": 0.9662882089614868,
+            "hit_types": []
+          },
+          "X-17": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 8.0,
+            "video_score": 0.9792928695678711,
+            "hit_types": []
+          },
+          "X-18": {
+            "flagged": true,
+            "type": "outsider_in_cash_room",
+            "timecode_sec": 1.0,
+            "video_score": 0.06092141568660736,
+            "hit_types": [
+              "outsider_in_cash_room"
+            ]
+          },
+          "X-19": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 45.0,
+            "video_score": 0.1033337265253067,
+            "hit_types": [
+              "foreign_object_at_desk"
+            ]
+          },
+          "X-34": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 5.0,
+            "video_score": 0.2539823353290558,
+            "hit_types": []
+          },
+          "X-35": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 24.0,
+            "video_score": 0.7109478116035461,
+            "hit_types": []
+          },
+          "X-37": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 7.5,
+            "video_score": 0.22047120332717896,
+            "hit_types": []
+          },
+          "X-38": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 25.5,
+            "video_score": 0.9138444066047668,
+            "hit_types": [
+              "cash_on_desk_next_client"
+            ]
+          },
+          "X-39": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 36.0,
+            "video_score": 0.2643110156059265,
+            "hit_types": []
+          }
+        },
+        "branch_a": {
+          "video_recall": 1.0,
+          "fp_rate": 1.0,
+          "median_abs_dt": 7.5,
+          "roc_auc": 0.5714285714285714
+        }
+      },
+      "facing": {
+        "n_videos": 26,
+        "trained_on": "back",
+        "n_train_videos": 14,
+        "threshold": 0.003598482348024845,
+        "video_recall": 0.6428571428571429,
+        "fp_rate": 0.5,
+        "n_clean_videos": 12,
+        "n_false_positives": 6,
+        "median_abs_dt": 2.5,
+        "type_accuracy": 0.07142857142857142,
+        "n_typed_right": 1,
+        "n_named": 3,
+        "n_violation_videos": 14,
+        "types_by_video": {
+          "X-11": {
+            "truth": [
+              "keys_left_on_safe"
+            ],
+            "found": null
+          },
+          "X-13": {
+            "truth": [
+              "cash_put_away_uncounted"
+            ],
+            "found": "cash_on_desk_next_client"
+          },
+          "X-15": {
+            "truth": [
+              "foreign_object_at_desk"
+            ],
+            "found": "other"
+          },
+          "X-20": {
+            "truth": [
+              "safe_left_open"
+            ],
+            "found": null
+          },
+          "X-22": {
+            "truth": [
+              "keys_left_on_safe"
+            ],
+            "found": null
+          },
+          "X-24": {
+            "truth": [
+              "valuables_left_on_desk"
+            ],
+            "found": null
+          },
+          "X-26": {
+            "truth": [
+              "cash_left_on_desk"
+            ],
+            "found": "cash_on_desk_next_client"
+          },
+          "X-28": {
+            "truth": [
+              "laptop_left_open"
+            ],
+            "found": null
+          },
+          "X-30": {
+            "truth": [
+              "outsider_in_cash_room"
+            ],
+            "found": "outsider_in_cash_room"
+          },
+          "X-32": {
+            "truth": [
+              "cash_room_door_open"
+            ],
+            "found": "other"
+          },
+          "X-33": {
+            "truth": [
+              "cash_room_door_open"
+            ],
+            "found": "other"
+          },
+          "X-40": {
+            "truth": [
+              "foreign_object_at_desk"
+            ],
+            "found": "other"
+          },
+          "X-44": {
+            "truth": [
+              "detector_not_used"
+            ],
+            "found": "other"
+          },
+          "X-46": {
+            "truth": [
+              "foreign_object_at_desk"
+            ],
+            "found": "other"
+          }
+        },
+        "verdicts_by_video": {
+          "X-8": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 4.370235183159821e-05,
+            "hit_types": []
+          },
+          "X-10": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 1.0,
+            "video_score": 0.016235269606113434,
+            "hit_types": [
+              "client_left_during_count",
+              "count_without_controller"
+            ]
+          },
+          "X-11": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 0.0021742864046245813,
+            "hit_types": []
+          },
+          "X-12": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 36.0,
+            "video_score": 0.017275847494602203,
+            "hit_types": []
+          },
+          "X-13": {
+            "flagged": true,
+            "type": "cash_on_desk_next_client",
+            "timecode_sec": 26.5,
+            "video_score": 0.0028710493352264166,
+            "hit_types": [
+              "cash_on_desk_next_client",
+              "client_left_during_count",
+              "count_without_controller",
+              "foreign_object_at_desk",
+              "outsider_in_cash_room"
+            ]
+          },
+          "X-14": {
+            "flagged": true,
+            "type": "cash_on_desk_next_client",
+            "timecode_sec": 36.75,
+            "video_score": 0.2778531312942505,
+            "hit_types": [
+              "cash_on_desk_next_client",
+              "client_left_during_count",
+              "count_without_controller",
+              "foreign_object_at_desk"
+            ]
+          },
+          "X-15": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 12.0,
+            "video_score": 0.004558153450489044,
+            "hit_types": []
+          },
+          "X-20": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 7.39033057470806e-05,
+            "hit_types": []
+          },
+          "X-21": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 0.00013641420810017735,
+            "hit_types": []
+          },
+          "X-22": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 0.0007606202270835638,
+            "hit_types": []
+          },
+          "X-23": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 0.0006989940302446485,
+            "hit_types": []
+          },
+          "X-24": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 4.4300035369815305e-05,
+            "hit_types": []
+          },
+          "X-25": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 0.0012641059001907706,
+            "hit_types": []
+          },
+          "X-26": {
+            "flagged": true,
+            "type": "cash_on_desk_next_client",
+            "timecode_sec": 9.75,
+            "video_score": 5.4011805332265794e-05,
+            "hit_types": [
+              "cash_on_desk_next_client"
+            ]
+          },
+          "X-27": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 4.282294867152814e-06,
+            "hit_types": []
+          },
+          "X-28": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 0.00012672362208832055,
+            "hit_types": []
+          },
+          "X-29": {
+            "flagged": false,
+            "type": null,
+            "timecode_sec": null,
+            "video_score": 6.829431367805228e-05,
+            "hit_types": []
+          },
+          "X-30": {
+            "flagged": true,
+            "type": "outsider_in_cash_room",
+            "timecode_sec": 12.5,
+            "video_score": 0.07976485788822174,
+            "hit_types": [
+              "outsider_in_cash_room"
+            ]
+          },
+          "X-31": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 19.5,
+            "video_score": 0.24625159800052643,
+            "hit_types": []
+          },
+          "X-32": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 16.0,
+            "video_score": 0.8386217951774597,
+            "hit_types": []
+          },
+          "X-33": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 8.5,
+            "video_score": 0.9163891673088074,
+            "hit_types": []
+          },
+          "X-40": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 18.5,
+            "video_score": 0.9615165591239929,
+            "hit_types": []
+          },
+          "X-43": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 8.0,
+            "video_score": 0.38030651211738586,
+            "hit_types": [
+              "client_left_during_count",
+              "count_without_controller"
+            ]
+          },
+          "X-44": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 12.5,
+            "video_score": 0.8604519367218018,
+            "hit_types": []
+          },
+          "X-45": {
+            "flagged": true,
+            "type": "cash_on_desk_next_client",
+            "timecode_sec": 17.75,
+            "video_score": 0.44919273257255554,
+            "hit_types": [
+              "cash_on_desk_next_client"
+            ]
+          },
+          "X-46": {
+            "flagged": true,
+            "type": "other",
+            "timecode_sec": 9.5,
+            "video_score": 0.9532569646835327,
+            "hit_types": [
+              "client_left_during_count",
+              "count_without_controller",
+              "foreign_object_at_desk"
+            ]
+          }
+        },
+        "branch_a": {
+          "video_recall": 0.5,
+          "fp_rate": 0.5,
+          "median_abs_dt": 2.5,
+          "roc_auc": 0.6011904761904762
+        }
+      }
+    },
+    "pooled": {
+      "video_recall": 0.7619047619047619,
+      "fp_rate": 0.6842105263157895,
+      "n_clean_videos": 19,
+      "n_false_positives": 13,
+      "median_abs_dt": 2.75,
+      "type_accuracy": 0.09523809523809523,
+      "n_typed_right": 2,
+      "n_named": 4,
+      "n_violation_videos": 21,
+      "types_by_video": {
+        "X-1": {
+          "truth": [
+            "cash_partially_given"
+          ],
+          "found": "other"
+        },
+        "X-2": {
+          "truth": [
+            "id_not_presented"
+          ],
+          "found": "other"
+        },
+        "X-4": {
+          "truth": [
+            "cash_on_desk_next_client"
+          ],
+          "found": "other"
+        },
+        "X-17": {
+          "truth": [
+            "collector_id_not_shown"
+          ],
+          "found": "other"
+        },
+        "X-18": {
+          "truth": [
+            "outsider_in_cash_room"
+          ],
+          "found": "outsider_in_cash_room"
+        },
+        "X-34": {
+          "truth": [
+            "client_left_during_count"
+          ],
+          "found": "other"
+        },
+        "X-38": {
+          "truth": [
+            "cash_on_desk_next_client"
+          ],
+          "found": "other"
+        },
+        "X-11": {
+          "truth": [
+            "keys_left_on_safe"
+          ],
+          "found": null
+        },
+        "X-13": {
+          "truth": [
+            "cash_put_away_uncounted"
+          ],
+          "found": "cash_on_desk_next_client"
+        },
+        "X-15": {
+          "truth": [
+            "foreign_object_at_desk"
+          ],
+          "found": "other"
+        },
+        "X-20": {
+          "truth": [
+            "safe_left_open"
+          ],
+          "found": null
+        },
+        "X-22": {
+          "truth": [
+            "keys_left_on_safe"
+          ],
+          "found": null
+        },
+        "X-24": {
+          "truth": [
+            "valuables_left_on_desk"
+          ],
+          "found": null
+        },
+        "X-26": {
+          "truth": [
+            "cash_left_on_desk"
+          ],
+          "found": "cash_on_desk_next_client"
+        },
+        "X-28": {
+          "truth": [
+            "laptop_left_open"
+          ],
+          "found": null
+        },
+        "X-30": {
+          "truth": [
+            "outsider_in_cash_room"
+          ],
+          "found": "outsider_in_cash_room"
+        },
+        "X-32": {
+          "truth": [
+            "cash_room_door_open"
+          ],
+          "found": "other"
+        },
+        "X-33": {
+          "truth": [
+            "cash_room_door_open"
+          ],
+          "found": "other"
+        },
+        "X-40": {
+          "truth": [
+            "foreign_object_at_desk"
+          ],
+          "found": "other"
+        },
+        "X-44": {
+          "truth": [
+            "detector_not_used"
+          ],
+          "found": "other"
+        },
+        "X-46": {
+          "truth": [
+            "foreign_object_at_desk"
+          ],
+          "found": "other"
+        }
+      }
+    }
+  },
+  "verdicts_by_video": {
+    "X-1": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 11.0,
+      "video_score": 0.9739677309989929,
+      "hit_types": []
+    },
+    "X-2": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 15.0,
+      "video_score": 0.8947014212608337,
+      "hit_types": []
+    },
+    "X-3": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 14.0,
+      "video_score": 0.9996563196182251,
+      "hit_types": []
+    },
+    "X-4": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 65.5,
+      "video_score": 0.9772079586982727,
+      "hit_types": []
+    },
+    "X-5": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 66.0,
+      "video_score": 0.8230520486831665,
+      "hit_types": []
+    },
+    "X-8": {
+      "flagged": false,
+      "type": null,
+      "timecode_sec": null,
+      "video_score": 0.0008652118849568069,
+      "hit_types": []
+    },
+    "X-10": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 5.5,
+      "video_score": 0.9403441548347473,
+      "hit_types": [
+        "client_left_during_count",
+        "count_without_controller"
+      ]
+    },
+    "X-11": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 14.5,
+      "video_score": 0.007924697361886501,
+      "hit_types": []
+    },
+    "X-12": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 35.5,
+      "video_score": 1.0,
+      "hit_types": []
+    },
+    "X-13": {
+      "flagged": true,
+      "type": "outsider_in_cash_room",
+      "timecode_sec": 0.0,
+      "video_score": 0.8541291952133179,
+      "hit_types": [
+        "cash_on_desk_next_client",
+        "client_left_during_count",
+        "count_without_controller",
+        "foreign_object_at_desk",
+        "outsider_in_cash_room"
+      ]
+    },
+    "X-14": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 40.5,
+      "video_score": 0.3892199993133545,
+      "hit_types": [
+        "cash_on_desk_next_client",
+        "client_left_during_count",
+        "count_without_controller",
+        "foreign_object_at_desk"
+      ]
+    },
+    "X-15": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 10.0,
+      "video_score": 0.9964621663093567,
+      "hit_types": []
+    },
+    "X-16": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 12.5,
+      "video_score": 0.9999200105667114,
+      "hit_types": []
+    },
+    "X-17": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 8.5,
+      "video_score": 0.027646027505397797,
+      "hit_types": []
+    },
+    "X-18": {
+      "flagged": true,
+      "type": "outsider_in_cash_room",
+      "timecode_sec": 1.0,
+      "video_score": 0.03188253566622734,
+      "hit_types": [
+        "outsider_in_cash_room"
+      ]
+    },
+    "X-19": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 15.5,
+      "video_score": 0.5840007066726685,
+      "hit_types": [
+        "foreign_object_at_desk"
+      ]
+    },
+    "X-20": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 1.5,
+      "video_score": 0.36352914571762085,
+      "hit_types": []
+    },
+    "X-21": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 6.0,
+      "video_score": 0.9995707869529724,
+      "hit_types": []
+    },
+    "X-22": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 17.0,
+      "video_score": 0.02182256057858467,
+      "hit_types": []
+    },
+    "X-23": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 14.0,
+      "video_score": 0.9816884398460388,
+      "hit_types": []
+    },
+    "X-24": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 1.5,
+      "video_score": 0.358679860830307,
+      "hit_types": []
+    },
+    "X-25": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 8.0,
+      "video_score": 0.9980796575546265,
+      "hit_types": []
+    },
+    "X-26": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 14.5,
+      "video_score": 0.8551601767539978,
+      "hit_types": [
+        "cash_on_desk_next_client"
+      ]
+    },
+    "X-27": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 22.0,
+      "video_score": 0.9826197624206543,
+      "hit_types": []
+    },
+    "X-28": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 13.0,
+      "video_score": 0.0662623941898346,
+      "hit_types": []
+    },
+    "X-29": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 12.0,
+      "video_score": 0.8105725646018982,
+      "hit_types": []
+    },
+    "X-30": {
+      "flagged": true,
+      "type": "outsider_in_cash_room",
+      "timecode_sec": 12.5,
+      "video_score": 0.6975784301757812,
+      "hit_types": [
+        "outsider_in_cash_room"
+      ]
+    },
+    "X-31": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 20.0,
+      "video_score": 0.9999595880508423,
+      "hit_types": []
+    },
+    "X-32": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 14.5,
+      "video_score": 0.943026065826416,
+      "hit_types": []
+    },
+    "X-33": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 6.5,
+      "video_score": 0.977336049079895,
+      "hit_types": []
+    },
+    "X-34": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 8.0,
+      "video_score": 0.4906550645828247,
+      "hit_types": []
+    },
+    "X-35": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 24.0,
+      "video_score": 0.7984406352043152,
+      "hit_types": []
+    },
+    "X-37": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 8.0,
+      "video_score": 0.031271230429410934,
+      "hit_types": []
+    },
+    "X-38": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 25.5,
+      "video_score": 0.15398375689983368,
+      "hit_types": [
+        "cash_on_desk_next_client"
+      ]
+    },
+    "X-39": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 4.0,
+      "video_score": 0.898565948009491,
+      "hit_types": []
+    },
+    "X-40": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 9.5,
+      "video_score": 0.9996885061264038,
+      "hit_types": []
+    },
+    "X-43": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 22.5,
+      "video_score": 0.8062116503715515,
+      "hit_types": [
+        "client_left_during_count",
+        "count_without_controller"
+      ]
+    },
+    "X-44": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 13.5,
+      "video_score": 0.6042567491531372,
+      "hit_types": []
+    },
+    "X-45": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 13.5,
+      "video_score": 0.888129711151123,
+      "hit_types": [
+        "cash_on_desk_next_client"
+      ]
+    },
+    "X-46": {
+      "flagged": true,
+      "type": "other",
+      "timecode_sec": 17.0,
+      "video_score": 0.9165806174278259,
+      "hit_types": [
+        "client_left_during_count",
+        "count_without_controller",
+        "foreign_object_at_desk"
+      ]
+    }
+  },
   "branch_a": {
     "video_recall": 1.0,
     "fp_rate": 0.9473684210526315,
@@ -336,7 +1289,7 @@
   "embed_seconds_ref_video": {
     "video_id": "X-14",
     "duration": 142.51647944457446,
-    "seconds": 18.378973462997237
+    "seconds": 18.257187475006504
   },
   "video_scores": {
     "X-1": 0.9739677309989929,
@@ -390,6 +1343,168 @@
     "nested_missed": [
       "X-11"
     ],
+    "by_video": {
+      "X-1": {
+        "score": 0.9739677309989929,
+        "threshold": 0.015576569363474846
+      },
+      "X-10": {
+        "score": 0.9411805868148804,
+        "threshold": 0.008887704461812973
+      },
+      "X-11": {
+        "score": 0.007829160429537296,
+        "threshold": 0.03385224565863609
+      },
+      "X-12": {
+        "score": 1.0,
+        "threshold": 0.012886511161923409
+      },
+      "X-13": {
+        "score": 0.8521849513053894,
+        "threshold": 0.0013956584734842181
+      },
+      "X-14": {
+        "score": 0.38343924283981323,
+        "threshold": 0.014183216728270054
+      },
+      "X-15": {
+        "score": 0.9965022802352905,
+        "threshold": 0.009400397539138794
+      },
+      "X-16": {
+        "score": 0.9999186992645264,
+        "threshold": 0.007251516450196505
+      },
+      "X-17": {
+        "score": 0.027531668543815613,
+        "threshold": 0.0061323149129748344
+      },
+      "X-18": {
+        "score": 0.03207733854651451,
+        "threshold": 0.005784377455711365
+      },
+      "X-19": {
+        "score": 0.5830348134040833,
+        "threshold": 0.006548629608005285
+      },
+      "X-2": {
+        "score": 0.8949386477470398,
+        "threshold": 0.007550324313342571
+      },
+      "X-20": {
+        "score": 0.3642953038215637,
+        "threshold": 0.0037943765055388212
+      },
+      "X-21": {
+        "score": 0.9995664954185486,
+        "threshold": 0.02179555781185627
+      },
+      "X-22": {
+        "score": 0.02181919664144516,
+        "threshold": 0.01001974567770958
+      },
+      "X-23": {
+        "score": 0.9816053509712219,
+        "threshold": 0.017035556957125664
+      },
+      "X-24": {
+        "score": 0.35890060663223267,
+        "threshold": 0.005260860081762075
+      },
+      "X-25": {
+        "score": 0.9980373978614807,
+        "threshold": 0.009389919228851795
+      },
+      "X-26": {
+        "score": 0.8544286489486694,
+        "threshold": 0.00738879106938839
+      },
+      "X-27": {
+        "score": 0.982668399810791,
+        "threshold": 0.0054154172539711
+      },
+      "X-28": {
+        "score": 0.06680215895175934,
+        "threshold": 0.0002408722066320479
+      },
+      "X-29": {
+        "score": 0.8109513521194458,
+        "threshold": 0.009533888660371304
+      },
+      "X-3": {
+        "score": 0.999657154083252,
+        "threshold": 0.016155783087015152
+      },
+      "X-30": {
+        "score": 0.701285183429718,
+        "threshold": 0.010726789943873882
+      },
+      "X-31": {
+        "score": 0.9999595880508423,
+        "threshold": 0.014024842530488968
+      },
+      "X-32": {
+        "score": 0.9430158734321594,
+        "threshold": 0.006883223075419664
+      },
+      "X-33": {
+        "score": 0.9773872494697571,
+        "threshold": 0.006732873618602753
+      },
+      "X-34": {
+        "score": 0.4943350553512573,
+        "threshold": 0.006123881321400404
+      },
+      "X-35": {
+        "score": 0.7972800731658936,
+        "threshold": 0.009116862900555134
+      },
+      "X-37": {
+        "score": 0.030598748475313187,
+        "threshold": 0.007916828617453575
+      },
+      "X-38": {
+        "score": 0.15406861901283264,
+        "threshold": 0.011799956671893597
+      },
+      "X-39": {
+        "score": 0.8977378606796265,
+        "threshold": 0.006725225131958723
+      },
+      "X-4": {
+        "score": 0.9768893122673035,
+        "threshold": 0.015636255964636803
+      },
+      "X-40": {
+        "score": 0.9996935129165649,
+        "threshold": 0.008518057875335217
+      },
+      "X-43": {
+        "score": 0.8062116503715515,
+        "threshold": 0.012659233063459396
+      },
+      "X-44": {
+        "score": 0.6045069098472595,
+        "threshold": 0.0015232503646984696
+      },
+      "X-45": {
+        "score": 0.8907025456428528,
+        "threshold": 0.007792309857904911
+      },
+      "X-46": {
+        "score": 0.9158331751823425,
+        "threshold": 0.006368704605847597
+      },
+      "X-5": {
+        "score": 0.823354959487915,
+        "threshold": 0.007725644391030073
+      },
+      "X-8": {
+        "score": 0.0008523830911144614,
+        "threshold": 0.009317377582192421
+      }
+    },
     "logit_shift_all": {
       "median": 0.16066677986906563,
       "mean_abs": 0.5775211549189389

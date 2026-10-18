@@ -63,6 +63,20 @@ def lovo_folds(video_ids: Sequence[str]) -> Iterator[tuple[np.ndarray, np.ndarra
         yield np.flatnonzero(~val), np.flatnonzero(val)
 
 
+def layout_folds(
+    video_ids: Sequence[str], arrangement: dict[str, str]
+) -> Iterator[tuple[str, np.ndarray, np.ndarray]]:
+    """Leave-one-layout-out: yield (layout, train_idx, val_idx) with one whole arrangement held out.
+
+    `arrangement` maps canonical video ids to their layout (the `arrangement` column of data/labels.csv); a merged duplicate takes its
+    clip's layout, so it travels with it.
+    """
+    layouts = np.array([arrangement[group_of(v)] for v in video_ids])
+    for name in sorted(set(layouts)):
+        val = layouts == name
+        yield str(name), np.flatnonzero(~val), np.flatnonzero(val)
+
+
 def video_score(window_scores: Sequence[float]) -> float:
     """A video is as suspicious as its worst window; a clip with no windows (< 2 s) scores 0.0, not an error."""
     return float(np.max(window_scores)) if len(window_scores) else 0.0

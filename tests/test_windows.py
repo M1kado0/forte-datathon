@@ -11,6 +11,7 @@ from src.models.windows import (
     choose_threshold,
     group_of,
     labels_by_video,
+    layout_folds,
     logit_shift,
     lovo_folds,
     make_windows,
@@ -76,6 +77,18 @@ def test_lovo_never_shares_a_group_and_merges_duplicates():
         assert len(train) + len(val) == len(ids)
     val_sets = [set(val) for _, val in folds]
     assert {1, 2, 3} in val_sets and {4, 5} in val_sets
+
+
+def test_layout_folds_hold_out_one_whole_layout_and_never_share_a_clip():
+    ids = ["X-1", "X-2", "X-4", "X-47", "X-8"]
+    layout = {"X-1": "back", "X-2": "facing", "X-4": "back", "X-8": "facing"}  # X-47 is X-4 merged
+    folds = list(layout_folds(ids, layout))
+    assert [name for name, _, _ in folds] == ["back", "facing"]
+    for name, train, val in folds:
+        assert not set(train) & set(val) and len(train) + len(val) == len(ids)
+        assert {layout[group_of(ids[i])] for i in val} == {name}
+        assert name not in {layout[group_of(ids[i])] for i in train}
+    assert set(folds[0][2]) == {0, 2, 3}  # the duplicate travels with its clip
 
 
 def test_threshold_recall_first_then_fewest_fp():
