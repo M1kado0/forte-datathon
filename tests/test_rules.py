@@ -217,3 +217,12 @@ def test_every_type_renders_name_and_cites_each_document_and_punkt(t):
 def test_unknown_id_is_logged(caplog):
     describe_violation("no_such_type", {})
     assert "no_such_type" in caplog.text
+
+
+def test_only_the_types_of_adr_0005_are_in_the_catalog():
+    types = yaml.safe_load(RULES_YAML.read_text(encoding="utf-8"))["types"]
+
+    assert {"workplace_left", "count_without_controller", "delivery_by_one_worker"}.isdisjoint(
+        t["id"] for t in types
+    )
+    assert [t["id"] for t in types if not t.get("videos") and not t.get("fallback")] == []

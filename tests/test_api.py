@@ -343,10 +343,10 @@ def test_ui_rule_catalog_has_russian_names_and_exact_sources_without_key():
         assert response.status_code == 200
         catalog = {item["id"]: item for item in response.json()}
         assert (
-            catalog["count_without_controller"]["name"] == "Пересчёт наличных без контролирующего работника"
+            catalog["id_not_presented"]["name"] == "Выдача наличных без документа, удостоверяющего личность"
         )
-        rule = catalog["count_without_controller"]["rules"][0]
-        assert rule["punkt"] == "п. 42"
+        rule = catalog["id_not_presented"]["rules"][0]
+        assert rule["punkt"] == "п. 31 подп. 1)"
         assert rule["url"] == "https://adilet.zan.kz/rus/docs/V1900019680"
         assert "№ 231" in rule["approved_by"]
         assert rule["title"].startswith("Правила осуществления кассовых операций")
