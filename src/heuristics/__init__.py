@@ -4,5 +4,6 @@ from contracts.data import TRACKS_SCHEMA
 from src.heuristics.detect import Hit, detect
 from src.heuristics.roles import Roles, find_roles
 from src.heuristics.thresholds import Thresholds
+from src.heuristics.vote import vote
 
-__all__ = ["TRACKS_SCHEMA", "Hit", "Roles", "Thresholds", "detect", "find_roles"]
+__all__ = ["TRACKS_SCHEMA", "Hit", "Roles", "Thresholds", "detect", "find_roles", "vote"]
