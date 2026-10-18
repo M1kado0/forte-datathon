@@ -26,6 +26,7 @@
 | sentencepiece | 0.2.2 | Apache-2.0 | токенайзер SigLIP |
 | protobuf | 7.36.2 | BSD-3-Clause | нужен токенайзеру SigLIP |
 | numpy | 2.5.4 | BSD-3-Clause | |
+| scipy | 1.18.1 | BSD-3-Clause | `linear_sum_assignment` в ByteTrack (`src/features/bytetrack.py`) |
 | pillow | 12.3.0 | MIT-CMU (HPND, разрешающая, близка к MIT) | транзитивно через transformers, напрямую не объявлена |
 | nvidia-* (15 колёс CUDA: cublas, cudnn, nccl и др.) | 13.2.x | NVIDIA Software License / CUDA EULA (проприетарная, redistribution разрешён вместе с приложением) | транзитивно через torch cu132; на macOS не ставятся |
 
