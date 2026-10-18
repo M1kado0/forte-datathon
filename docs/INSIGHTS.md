@@ -1,9 +1,20 @@
-# Insights (P4, numbers from P2's runs) — one row per hypothesis tested, including rejected ones
+# Insights
 
-Gate: ① size ② stability (both time halves + holdout) ③ not artifact/leakage ④ bootstrap CI + BH-FDR ⑤ banker nods
+Собрано командой `uv run python -m src.data.insights` (входит в `make all`) из `experiments.csv`. Руками не правим.
+Одна строка на гипотезу. Вердикт считается по строкам `experiments.csv`: «подтверждена» или «отвергнута», если строка с
+числами есть, «не проверена», если её нет. Появится строка с нужным `note` или ключом в `params`, и вердикт сменится
+при следующей сборке. Варианты сравниваются с базой `dinov2-small-logreg-lovo` в порядке ADR 0002: recall, потом доля ложных, потом
+медиана ошибки таймкода. Графики: серый и один акцент, заголовок называет вывод.
 
-| # | Claim | Number (95% CI) | Segment size | Figure | Gate (x/5) | Verdict | So what | Action · ₸ |
-|---|---|---|---|---|---|---|---|---|
-| H1 | {{…}} | | | `reports/figures/h1.png` | | ✅/❌ | | |
+| # | Гипотеза | Числа | График | Вердикт | Вывод |
+|---|---|---|---|---|---|
+| H1 | DINOv2-small лучше SigLIP-base | — | — | не проверена | Нужна строка в experiments.csv: note начинается с `siglip` |
+| H2 | Эмбеддинг всего кадра лучше эмбеддингов кропов | — | — | не проверена | Нужна строка в experiments.csv: note или ключ params со словом `crop` |
+| H3 | Окно 2 с лучше других длин окна | — | — | не проверена | Нужна строка в experiments.csv: в params ключ `window_sec` с другой длиной окна |
+| H4 | Вычитание медианного эмбеддинга видео улучшает результат | — | — | не проверена | Нужна строка в experiments.csv: в params `subtract_median: true` |
+| H5 | Таймкод по пику окон ближе к метке, чем по началу серии | медиана ошибки таймкода: пик 5,0 с, начало 9,5 с | [peak_vs_onset.png](../reports/figures/peak_vs_onset.png) | подтверждена | Лучше пик |
+| H6 | Голос эвристик за вердикт улучшает результат (ADR 0003) | — | — | не проверена | Нужна строка в experiments.csv: в params `heuristic_vote: true` или `vote` в note |
+| H7 | Порог с recall 100% оставляет ложными не больше 50% чистых видео (ADR 0002) | recall 100%, ложных 95% чистых видео | [threshold_fp.png](../reports/figures/threshold_fp.png) | отвергнута | Цена recall 100% выше ориентира; ложные срабатывания показываем честно (ADR 0002) |
+| H8 | OWLv2 находит деньги не менее чем на 70% кадров с нарушениями (проверка #19) | деньги на 55% кадров нарушений, на 74% чистых | [cash_check.png](../reports/figures/cash_check.png) | отвергнута | Деньги в кадре не опора; запасной вариант — изменения в зоне стола |
 
-Hypotheses tested so far: **{{N}}** (say this number if asked about multiple testing).
+Проверено гипотез: **3** из 8 (столько называем, если спросят про множественные проверки).

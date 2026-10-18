@@ -11,6 +11,7 @@ WEIGHTS = MODELS / "weights"  # filled once by `make weights`; loaded offline af
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 WEB_DIST = ROOT / "web" / "dist"
+INSIGHTS_MD = ROOT / "docs" / "INSIGHTS.md"  # hypothesis table, built by src/data/insights.py (make all)
 EXPERIMENTS = ROOT / "experiments.csv"  # append-only run log; tests redirect it to a tmp file
 RULES_YAML = ROOT / "src" / "rules" / "rules.yaml"  # violation type -> norm (T05)
 TYPES_MD = (
