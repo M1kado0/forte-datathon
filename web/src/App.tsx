@@ -7,7 +7,6 @@ import { ScrollDepth } from "@/components/ScrollDepth";
 
 export default function App() {
   const [uploadOpen, setUploadOpen] = useState(() => window.location.hash === "#analysis");
-  const [motionPaused, setMotionPaused] = useState(false);
   const navigation = useRef(0);
   function navigateTo(id: string) {
     const run = ++navigation.current;
@@ -95,7 +94,7 @@ export default function App() {
     <ScrollDepth />
     <a className="skip-link" href="#analysis" onClick={event => { event.preventDefault(); navigateTo("analysis"); }}>Перейти к проверке</a>
     <Header uploadOpen={uploadOpen} onNavigate={navigateTo} />
-    <main id="main"><HeroCarousel uploadOpen={uploadOpen} onUploadChange={setUploadOpen} paused={motionPaused} onPauseChange={setMotionPaused} /><About paused={motionPaused} /></main>
+    <main id="main"><HeroCarousel uploadOpen={uploadOpen} onUploadChange={setUploadOpen} /><About /></main>
     <footer className="site-footer">
       <div className="footer-bottom section-shell">
         <span>Forte Datathon ’26</span>

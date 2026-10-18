@@ -34,7 +34,7 @@ try {
   await chooser.setFiles({name:'keyboard.mov', mimeType:'video/quicktime', buffer:Buffer.from('synthetic')});
   assert.equal(await submit.isEnabled(), true);
   assert.equal(await page.locator('.partners-caption, .cinema-controls').count(), 0);
-  assert.equal(await page.getByRole('button', { name: 'Приостановить анимацию' }).count(), 1);
+  assert.equal(await page.locator('.motion-toggle').count(), 0);
   await page.locator('.partners').scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>document.querySelector('.marquee-track').dataset.paused==='false');
   assert.equal(await page.locator('.marquee-track').evaluate(e=>getComputedStyle(e).animationPlayState), 'running');

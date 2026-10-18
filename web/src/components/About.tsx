@@ -6,8 +6,8 @@ const team = [
   { name: "Алдияр М.", role: "Данные и правила", detail: "Разметка, нормативные источники и документация", github: "https://github.com/trulyaldi", handle: "trulyaldi" },
 ];
 
-export function About({ paused }: { paused: boolean }) {
-  return <section id="about" className="about-section" data-paused={paused} aria-labelledby="about-title" tabIndex={-1}>
+export function About() {
+  return <section id="about" className="about-section" aria-labelledby="about-title" tabIndex={-1}>
     <span className="about-particles" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i className="about-particle" key={index} />)}</span>
     <div className="section-shell">
     <div className="about-intro">

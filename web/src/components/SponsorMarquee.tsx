@@ -8,12 +8,12 @@ const sponsors = [
   { src: "/nu_impact_foundation-04.png", name: "NU Impact", className: "partner-nuImpact" },
 ];
 
-export function SponsorMarquee({ paused, onPauseChange }: { paused: boolean; onPauseChange: (paused: boolean) => void }) {
+export function SponsorMarquee() {
   const container = useRef<HTMLDivElement>(null);
   const { canAnimate } = useMotionVisibility(container);
   return <div className="partners" aria-label="Партнёры проекта" ref={container}>
     <div className="marquee-window">
-      <div className="marquee-track" data-paused={paused || !canAnimate}>
+      <div className="marquee-track" data-paused={!canAnimate}>
         {[0, 1].map(group => <div className="marquee-group" key={group} aria-hidden={group === 1 ? true : undefined}>
           {[0, 1, 2].flatMap(repeat => sponsors.map(sponsor => <div className="partner-slot" data-repeat={repeat > 0} key={`${repeat}-${sponsor.name}`}>
             <img src={sponsor.src} alt={group === 0 && repeat === 0 ? sponsor.name : ""} className={sponsor.className} />
@@ -21,11 +21,5 @@ export function SponsorMarquee({ paused, onPauseChange }: { paused: boolean; onP
         </div>)}
       </div>
     </div>
-    <button className="motion-toggle" type="button" onClick={() => onPauseChange(!paused)}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-        {paused ? <path d="m8 5 11 7-11 7Z" /> : <path d="M8 5v14M16 5v14" />}
-      </svg>
-      {paused ? "Продолжить анимацию" : "Приостановить анимацию"}
-    </button>
   </div>;
 }

@@ -58,11 +58,9 @@ function DepthRibbon({ running, reduced, selected }: { running: boolean; reduced
   </div>;
 }
 
-export function HeroCarousel({ uploadOpen, onUploadChange, paused, onPauseChange }: {
+export function HeroCarousel({ uploadOpen, onUploadChange }: {
   uploadOpen: boolean;
   onUploadChange: (open: boolean) => void;
-  paused: boolean;
-  onPauseChange: (paused: boolean) => void;
 }) {
   const [selected, setSelected] = useState(0);
   const [hovered, setHovered] = useState(false);
@@ -155,10 +153,10 @@ export function HeroCarousel({ uploadOpen, onUploadChange, paused, onPauseChange
   useEffect(() => {
     videos.current.forEach((player, index) => {
       if (!player) return;
-      if (index === selected && !expanded && canAnimate && !paused) void player.play().catch(() => { /* Keep the poster when browser autoplay is unavailable. */ });
+      if (index === selected && !expanded && canAnimate) void player.play().catch(() => { /* Keep the poster when browser autoplay is unavailable. */ });
       else player.pause();
     });
-  }, [selected, expanded, canAnimate, paused]);
+  }, [selected, expanded, canAnimate]);
 
   useEffect(() => {
     const cancel = () => {
@@ -202,7 +200,7 @@ export function HeroCarousel({ uploadOpen, onUploadChange, paused, onPauseChange
         onPointerDown={swipeStart} onPointerUp={swipeEnd}
         onPointerCancel={event => { if (pointer.current?.id === event.pointerId) pointer.current = null; }}
         onLostPointerCapture={event => { if (pointer.current?.id === event.pointerId) pointer.current = null; }}>
-        <DepthRibbon running={canAnimate && !paused && !expanded && !hovered && !focused} reduced={reduced} selected={selected} />
+        <DepthRibbon running={canAnimate && !expanded && !hovered && !focused} reduced={reduced} selected={selected} />
         <div className="morph-surface" ref={surface}>
           <div className="feature-films" aria-hidden={expanded} {...{ inert: expanded || moving ? "" : undefined }}>
             {scenes.map((item, index) => <div key={item.id} className="cinema-panel" data-position={index === selected ? "active" : "inactive"} aria-hidden={index !== selected} {...{ inert: index !== selected ? "" : undefined }}>
@@ -226,7 +224,7 @@ export function HeroCarousel({ uploadOpen, onUploadChange, paused, onPauseChange
         <div className="footage-caption section-shell"><span>Постановочные кадры Pexels, не банковское CCTV.</span><a href={scene.url} target="_blank" rel="noopener noreferrer">{scene.author} / Pexels</a></div>
         <p className="hero-reassurance section-shell" data-reveal>Локальная обработка. Решение — за человеком.</p>
       </div>
-      <SponsorMarquee paused={paused} onPauseChange={onPauseChange} />
+      <SponsorMarquee />
     </div>
   </section>;
 }

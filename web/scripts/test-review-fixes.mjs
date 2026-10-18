@@ -81,19 +81,5 @@ try {
     await page.locator(".upload-target").waitFor();
     assert.equal(await page.locator('[aria-roledescription="карусель"]').count(), 1);
   });
-  await check("persistent pause stops ribbon, video, marquee and particles", async page => {
-    await page.goto(base);
-    await page.locator(".eye-loader").waitFor({ state: "detached", timeout: 4000 });
-    await page.getByRole("button", { name: "Приостановить анимацию" }).click();
-    await page.mouse.move(0, 0);
-    await page.locator("#analysis").focus();
-    const transforms = await page.locator(".ribbon-frame").evaluateAll(elements => elements.map(el => el.style.transform));
-    assert.equal(await page.locator(".marquee-track").evaluate(el => getComputedStyle(el).animationPlayState), "paused");
-    assert.equal(await page.locator('.cinema-panel[data-position="active"] video').evaluate(el => el.paused), true);
-    assert.equal(await page.locator(".about-particle").first().evaluate(el => getComputedStyle(el).animationPlayState), "paused");
-    await page.clock.install(); await page.clock.runFor(200);
-    assert.deepEqual(await page.locator(".ribbon-frame").evaluateAll(elements => elements.map(el => el.style.transform)), transforms);
-    await page.getByRole("button", { name: "Продолжить анимацию" }).click();
-  }, { reducedMotion: "no-preference" });
 } finally { await browser.close(); }
 process.exitCode = failures ? 1 : 0;

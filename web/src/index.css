@@ -298,9 +298,6 @@
 .partner-datathon { width: 170px; height: auto; }
 .partner-NU { width: auto; height: 66px; }
 .marquee-track[data-paused="true"] { animation-play-state: paused; }
-.motion-toggle { display: flex; align-items: center; gap: 8px; min-height: 44px; margin-left: auto; color: var(--text-muted); font-size: 12px; }
-.motion-toggle:hover { color: var(--text); }
-.about-section[data-paused="true"] .about-particle { animation-play-state: paused; }
 @keyframes partner-drift { to { transform: translateX(-50%); } }
 .footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; padding-block: 30px; font-size: 13px; color: var(--text-muted); }
 .footer-bottom > span { font-size: 16px; font-weight: 600; color: var(--text); }
@@ -394,7 +391,6 @@
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .eye-loader, .scroll-depth { display: none; }
-  .motion-toggle { display: none; }
   .eyelid, .eye-iris, .marquee-track, .skeleton { animation: none; }
   .cinema-panel, .depth-ribbon, .feature-films, .carousel-meta { transition: none; }
   .cinema-panel { transform: none; clip-path: none; }
