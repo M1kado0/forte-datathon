@@ -37,7 +37,7 @@ def _pct(x: float | None) -> str:
 
 def _auc(layout: Mapping) -> str:
     auc = layout.get("branch_a", {}).get("roc_auc")
-    return "" if auc is None else f", ROC AUC оценки окон {auc:.2f}"
+    return "" if auc is None else f", ROC AUC лучшей оценки окна видео {auc:.2f}"
 
 
 def _explain(
@@ -76,15 +76,10 @@ def error_rows(
     checks: dict[tuple[str, str], list[str]] = {}
     for check, verdicts in ((LOVO, lovo), (LOLO, lolo)):
         for vid, v in verdicts.items():
-            kind = (
-                "FN"
-                if vid in truth and not v["flagged"]
-                else "FP"
-                if vid not in truth and v["flagged"]
-                else None
-            )
-            if kind:
-                checks.setdefault((vid, kind), []).append(check)
+            if vid in truth and not v["flagged"]:
+                checks.setdefault((vid, "FN"), []).append(check)
+            elif vid not in truth and v["flagged"]:
+                checks.setdefault((vid, "FP"), []).append(check)
     for vid in nested_missed:
         checks.setdefault((vid, "FN"), []).append(NESTED)
     rows = []
@@ -93,6 +88,8 @@ def error_rows(
         v = (lolo if first == LOLO else lovo).get(vid)
         threshold = thresholds.get(arrangement[vid] if first == LOLO else first)
         found = v["type"] if v and first != NESTED else None  # what the first failing check answered
+        if kind == "FP" and found == "other":
+            found = None  # a clean video has no type to match: "other" says nothing
         rows.append(
             {
                 "video_id": vid,
@@ -128,6 +125,14 @@ def limitations_text(metrics: Mapping) -> str:
         f"FP rate {_pct(v['fp_rate'])} на {v['n_clean_videos']} чистых{_auc(v)}"
         for k, v in layouts.items()
     )
+    nested = metrics.get("nested", {})
+    baseline = (
+        f"Для сравнения, та же модель на невиданных видео с порогом, выбранным без них (nested-проверка): "
+        f"recall {_pct(nested['nested_video_recall'])}, FP rate {_pct(nested['nested_fp_rate'])}; "
+        "цифры leave-one-video-out выше, потому что порог подобран на тех же видео."
+        if "nested_video_recall" in nested and "nested_fp_rate" in nested
+        else ""
+    )
     return f"""## Ограничения
 
 - **В обучении один ракурс камеры.** Все {metrics["n_videos"]} обучающих видео сняты одной камерой сверху (FAQ 3), \
@@ -137,7 +142,7 @@ def limitations_text(metrics: Mapping) -> str:
 - **Много ложных срабатываний.** Порог выбран так, чтобы не пропустить ни одного нарушения (ADR 0002). Цена: \
 FP rate {_pct(metrics["fp_rate"])} на чистых видео при recall {_pct(metrics["video_recall"])}.
 - **Невиданная расстановка.** Модель обучена на одной расстановке и проверена на другой \
-(leave-one-layout-out, `reports/metrics.json`):
+(leave-one-layout-out, `reports/metrics.json`). {baseline}
 {held_out}
 - **Тип нарушения.** Верный тип назван у {_pct(metrics["type_accuracy"])} видео с нарушением; \
 у остальных тип неверный или не назван (список: `reports/metrics.json`, `types.by_video`).

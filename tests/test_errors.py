@@ -43,7 +43,7 @@ def test_rows_list_false_negatives_before_false_positives_with_the_checks_that_f
     assert by_id["X-2"]["checks"] == ["LOVO", "leave-one-layout-out"]
     assert by_id["X-3"]["checks"] == ["LOVO", "leave-one-layout-out"]
     assert by_id["X-2"]["arrangement"] == "back" and by_id["X-2"]["label_type"] == "cash_partially_given"
-    assert by_id["X-3"]["label_type"] is None and by_id["X-3"]["found_type"] == "other"
+    assert by_id["X-3"]["label_type"] is None and by_id["X-3"]["found_type"] is None
 
 
 def test_a_nested_miss_is_a_row_even_when_the_other_checks_pass():

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, type Job, type RuleType } from "@/api";
 import { Button, ErrorBox, Skeleton } from "@/components/ui";
 import { VideoUpload, validateVideo } from "@/components/VideoUpload";
+import { ResultParticles } from "@/components/ResultParticles";
+import { ResultArticle } from "@/components/ResultArticle";
 
 export function CheckView() {
   const [file, setFile] = useState<File | null>(null);
@@ -25,7 +27,7 @@ export function CheckView() {
   useEffect(() => { void loadRules(); }, []);
   useEffect(() => {
     let disposed = false;
-    // Health is advisory; a failed request must not block results or imply demo mode.
+    // Health is advisory: an unavailable endpoint must not hide results.
     void api.health().then(
       health => { if (!disposed) setModelLoaded(health.model_loaded); },
       () => { if (!disposed) setModelLoaded(null); },
@@ -79,39 +81,31 @@ export function CheckView() {
           <p className="file-guidance">{!file ? "Выберите видео, чтобы начать проверку." : busy ? "Дождитесь результата проверки." : "Видео выбрано. Можно начать проверку."}</p>
         </form>
       </div>
-      <section aria-live="polite" aria-busy={busy} className="results-section space-y-5">
-        {modelLoaded === false && <p className="demo-notice"><span>Демонстрационный режим</span>Результат и сплошной кадр не связаны с содержимым видео.</p>}
-        {busy && <><p role="status">{uploading ? "Загружаем видео…" : "Обрабатываем видео…"}</p><Skeleton className="h-20 w-full rounded-btn" /></>}
+      <section aria-live="polite" aria-busy={busy} className="results-section">
+        {modelLoaded === false && <p className="demo-notice"><strong>Демонстрационный режим</strong>Результат и кадры не связаны с содержимым видео.</p>}
+        {busy && <div className="result-pending">
+          <p role="status">{uploading ? "Загружаем видео…" : "Обрабатываем видео…"}</p>
+          <div className="result-skeleton"><div><Skeleton className="h-8 w-4/5" /><Skeleton className="mt-5 h-4 w-full" /><Skeleton className="mt-3 h-4 w-2/3" /></div><Skeleton className="h-40 w-full" /></div>
+        </div>}
         {error && <ErrorBox message={error} onRetry={() => { void analyze(); }} />}
         {job?.status === "done" && <>
-          <h2 className="text-2xl font-bold text-foreground">{job.verdict === "violation" ? "Обнаружены признаки возможных нарушений" : "Нарушение не обнаружено"}</h2>
-          <p>Результат — подсказка для проверки человеком, а не заключение.</p>
+          <header className="result-summary" data-verdict={job.verdict}>
+            <ResultParticles />
+            <div className="result-status">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                {job.verdict === "violation" ? <path d="M12 7v6m0 3v1" /> : <path d="m7 12 3 3 7-7" />}
+              </svg>
+              <span>Проверка завершена</span>
+              {file && <span className="result-filename" title={file.name}>{file.name}</span>}
+            </div>
+            <h2>{job.verdict === "violation" ? "Обнаружены признаки возможных нарушений" : "Нарушение не обнаружено"}</h2>
+            <p className="result-disclaimer">Результат — подсказка для проверки человеком, а не заключение.</p>
+          </header>
           {job.violations.length > 0 && rulesLoading && <p role="status">Загружаем нормативные источники…</p>}
           {job.violations.length > 0 && rulesError && <ErrorBox message={rulesError} onRetry={() => { void loadRules(); }} />}
-          {job.violations.map((violation, index) => {
-            const metadata = rules.find(rule => rule.id === violation.type || rule.name === violation.type);
-            const suffix = metadata?.citation_suffix ? ` ${metadata.citation_suffix}` : "";
-            const description = suffix && violation.description.endsWith(suffix)
-              ? violation.description.slice(0, -suffix.length) : violation.description;
-            return <article key={index} className="result-article space-y-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h3 className="min-w-0 break-words text-xl font-bold text-foreground">{metadata?.name ?? violation.type}</h3>
-                <p className="shrink-0 font-semibold">Таймкод: {violation.timecode_sec} с</p>
-              </div>
-              <p className="max-w-prose break-words leading-relaxed">{description}</p>
-              {metadata ? <ul className="space-y-3 text-sm">
-                {metadata.rules.map((rule, ruleIndex) => <li key={ruleIndex}>
-                  <a href={rule.url} target="_blank" rel="noopener noreferrer" className="break-words font-semibold text-primary underline underline-offset-4">{rule.citation}{rule.punkt ? "" : " (акт в целом; конкретный пункт не указан)"}</a>
-                </li>)}
-              </ul> : <p className="text-sm text-muted-foreground">Нормативный источник не получен. Проверьте ссылку в описании.</p>}
-              <div className="grid gap-4 sm:grid-cols-2">
-                {violation.evidence_frames.map((frame, frameIndex) => <figure key={frameIndex} className="min-w-0">
-                  <img src={`data:image/jpeg;base64,${frame.image_base64}`} alt={`Кадр-доказательство, ${frame.timestamp_sec} с`} className="max-h-96 w-full rounded-btn bg-muted object-contain" />
-                  <figcaption className="mt-2 text-sm text-muted-foreground">{frame.timestamp_sec} с</figcaption>
-                </figure>)}
-              </div>
-            </article>;
-          })}
+          {job.violations.map((violation, index) => <ResultArticle key={`${job.job_id}-${index}`} violation={violation}
+            metadata={rules.find(rule => rule.id === violation.type || rule.name === violation.type)} />)}
         </>}
       </section>
     </section>

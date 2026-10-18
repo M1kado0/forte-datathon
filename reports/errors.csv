@@ -4,21 +4,21 @@ X-20,facing,FN,safe_left_open,,leave-one-layout-out,Все окна ниже п�
 X-22,facing,FN,keys_left_on_safe,,leave-one-layout-out,Все окна ниже порога: лучшее 0.0008 при пороге 0.0036
 X-24,facing,FN,valuables_left_on_desk,,leave-one-layout-out,Все окна ниже порога: лучшее 0.0000 при пороге 0.0036
 X-28,facing,FN,laptop_left_open,,leave-one-layout-out,Все окна ниже порога: лучшее 0.0001 при пороге 0.0036
-X-3,back,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.9997 выше порога 0.0079 на 14 с
-X-5,back,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.8231 выше порога 0.0079 на 66 с
-X-10,facing,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.9403 выше порога 0.0079 на 6 с
-X-12,facing,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 1.0000 выше порога 0.0079 на 36 с
-X-14,facing,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.3892 выше порога 0.0079 на 40 с
-X-16,back,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.9999 выше порога 0.0079 на 12 с
-X-19,back,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.5840 выше порога 0.0079 на 16 с
-X-21,facing,FP,,other,LOVO,Окно с оценкой 0.9996 выше порога 0.0079 на 6 с
-X-23,facing,FP,,other,LOVO,Окно с оценкой 0.9817 выше порога 0.0079 на 14 с
-X-25,facing,FP,,other,LOVO,Окно с оценкой 0.9981 выше порога 0.0079 на 8 с
-X-27,facing,FP,,other,LOVO,Окно с оценкой 0.9826 выше порога 0.0079 на 22 с
-X-29,facing,FP,,other,LOVO,Окно с оценкой 0.8106 выше порога 0.0079 на 12 с
-X-31,facing,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 1.0000 выше порога 0.0079 на 20 с
-X-35,back,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.7984 выше порога 0.0079 на 24 с
-X-37,back,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.0313 выше порога 0.0079 на 8 с
-X-39,back,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.8986 выше порога 0.0079 на 4 с
-X-43,facing,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.8062 выше порога 0.0079 на 22 с
-X-45,facing,FP,,other,LOVO; leave-one-layout-out,Окно с оценкой 0.8881 выше порога 0.0079 на 14 с
+X-3,back,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.9997 выше порога 0.0079 на 14 с
+X-5,back,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.8231 выше порога 0.0079 на 66 с
+X-10,facing,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.9403 выше порога 0.0079 на 6 с
+X-12,facing,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 1.0000 выше порога 0.0079 на 36 с
+X-14,facing,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.3892 выше порога 0.0079 на 40 с
+X-16,back,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.9999 выше порога 0.0079 на 12 с
+X-19,back,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.5840 выше порога 0.0079 на 16 с
+X-21,facing,FP,,,LOVO,Окно с оценкой 0.9996 выше порога 0.0079 на 6 с
+X-23,facing,FP,,,LOVO,Окно с оценкой 0.9817 выше порога 0.0079 на 14 с
+X-25,facing,FP,,,LOVO,Окно с оценкой 0.9981 выше порога 0.0079 на 8 с
+X-27,facing,FP,,,LOVO,Окно с оценкой 0.9826 выше порога 0.0079 на 22 с
+X-29,facing,FP,,,LOVO,Окно с оценкой 0.8106 выше порога 0.0079 на 12 с
+X-31,facing,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 1.0000 выше порога 0.0079 на 20 с
+X-35,back,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.7984 выше порога 0.0079 на 24 с
+X-37,back,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.0313 выше порога 0.0079 на 8 с
+X-39,back,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.8986 выше порога 0.0079 на 4 с
+X-43,facing,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.8062 выше порога 0.0079 на 22 с
+X-45,facing,FP,,,LOVO; leave-one-layout-out,Окно с оценкой 0.8881 выше порога 0.0079 на 14 с

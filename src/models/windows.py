@@ -68,7 +68,7 @@ def layout_folds(
 ) -> Iterator[tuple[str, np.ndarray, np.ndarray]]:
     """Leave-one-layout-out: yield (layout, train_idx, val_idx) with one whole arrangement held out.
 
-    `arrangement` maps canonical video ids to their layout (data/arrangements.csv); a merged duplicate takes its
+    `arrangement` maps canonical video ids to their layout (the `arrangement` column of data/labels.csv); a merged duplicate takes its
     clip's layout, so it travels with it.
     """
     layouts = np.array([arrangement[group_of(v)] for v in video_ids])

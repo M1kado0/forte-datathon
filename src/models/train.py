@@ -172,7 +172,7 @@ def _nested_fold(
         ]
 
 
-LAYOUT_SUMMARY = ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy")
+HEADLINE_KEYS = ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy")
 LOW_TAIL = 5  # the violation videos with the lowest scores: the threshold lives there
 
 
@@ -339,7 +339,7 @@ def run(nested: bool = True) -> dict:
     cases, banks = build_cases(labels, ids, clips, scores)
     settings, notes = fit_settings(cases, threshold, banks)
     final = lovo(cases, threshold, banks)
-    headline = {k: final[k] for k in LAYOUT_SUMMARY}
+    headline = {k: final[k] for k in HEADLINE_KEYS}
     layout_of = labels.drop_duplicates("video_id").set_index("video_id")["arrangement"].to_dict()
     metrics = (
         headline
@@ -467,7 +467,7 @@ def log_nested_experiment(metrics: dict) -> None:
             "fp_rate": nested["nested_fp_rate"],
             "median_abs_dt": None,
             "threshold": metrics["threshold"],
-            **{k: v for k, v in nested.items() if k != "by_video"},
+            **_without(nested, "by_video"),
         },
     )
 
@@ -478,7 +478,7 @@ def log_layout_experiment(metrics: dict) -> None:
     log_experiment(
         "dinov2-small-logreg-leave-one-layout-out",
         {
-            **{k: check["pooled"][k] for k in LAYOUT_SUMMARY},
+            **{k: check["pooled"][k] for k in HEADLINE_KEYS},
             "layouts": {
                 name: {k: v[k] for k in ("trained_on", "n_videos", "video_recall", "fp_rate", "threshold")}
                 for name, v in check["layouts"].items()
@@ -496,13 +496,13 @@ def load_model() -> dict:
 def summary(out: dict) -> dict:
     """What the run prints: the numbers of the ticket and the decisions, not the per-video tables."""
     return {
-        **{k: out[k] for k in ("video_recall", "fp_rate", "median_abs_dt", "type_accuracy", "threshold")},
+        **{k: out[k] for k in (*HEADLINE_KEYS, "threshold")},
         "saved_threshold": out["saved_threshold"],  # what window_clf.pkl holds (#63)
         "lovo": out["lovo"],
         "leave_one_layout_out": {
-            "pooled": {k: out["leave_one_layout_out"]["pooled"][k] for k in LAYOUT_SUMMARY},
+            "pooled": {k: out["leave_one_layout_out"]["pooled"][k] for k in HEADLINE_KEYS},
             **{
-                name: {k: v[k] for k in ("trained_on", "n_videos", *LAYOUT_SUMMARY)}
+                name: {k: v[k] for k in ("trained_on", "n_videos", *HEADLINE_KEYS)}
                 | {"roc_auc": v["branch_a"]["roc_auc"]}
                 for name, v in out["leave_one_layout_out"]["layouts"].items()
             },
