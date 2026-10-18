@@ -4,6 +4,7 @@ import numpy as np
 
 from scripts.lovo_bias import (
     balanced_folds,
+    best_f1_threshold,
     bootstrap_auc_interval,
     centre_on_start,
     drop_folds,
@@ -13,10 +14,12 @@ from scripts.lovo_bias import (
     max_minus_median,
     nearest_twin,
     normal_bank,
+    operating_point,
     pair_auc,
     pair_folds,
     random_stand_in,
     recall_at_fp,
+    split_half_f1,
     top_mean,
     within_clip_pairs,
 )
@@ -201,3 +204,30 @@ def test_within_clip_pairs_are_empty_for_a_clip_without_positive_or_negative_win
     feats = np.ones((3, 2))
     assert within_clip_pairs(feats, np.array([NEGATIVE] * 3), 5, 0).shape == (0, 2)
     assert within_clip_pairs(feats, np.array([POSITIVE] * 3), 5, 0).shape == (0, 2)
+
+
+def test_operating_point_is_precision_recall_and_f1_of_flagging_at_or_above_the_threshold():
+    scores = [0.9, 0.8, 0.3, 0.2]
+    violation = [True, False, True, False]
+    # flagged: 0.9 (violation) and 0.8 (clean) -> precision 1/2, recall 1/2
+    assert operating_point(scores, violation, 0.5) == (0.5, 0.5, 0.5)
+    # flag everything: precision is the violation share, recall 1, F1 = 2p / (1 + p) = 2/3
+    precision, recall, f1 = operating_point(scores, violation, 0.0)
+    assert (precision, recall) == (0.5, 1.0)
+    assert np.isclose(f1, 2 / 3)
+    # nothing flagged: no division by zero
+    assert operating_point(scores, violation, 1.0) == (0.0, 0.0, 0.0)
+
+
+def test_best_f1_threshold_picks_the_score_that_separates_the_classes_when_one_exists():
+    assert best_f1_threshold([0.9, 0.8, 0.3, 0.2], [True, True, False, False]) == 0.8
+    # nothing separates them: flagging everything is the best F1 there is
+    assert best_f1_threshold([0.1, 0.9, 0.5, 0.4], [True, False, False, True]) == 0.1
+
+
+def test_split_half_f1_is_perfect_only_when_a_threshold_from_one_half_separates_the_other():
+    violation = np.array([True] * 4 + [False] * 4)
+    scores = np.where(violation, 0.9, 0.1)
+    assert split_half_f1(scores, violation) == 1.0
+    # scores that rank the classes backwards: the best threshold flags everything, F1 = 2/3
+    assert np.isclose(split_half_f1(scores, ~violation), 2 / 3)

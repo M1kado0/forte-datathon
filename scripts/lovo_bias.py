@@ -9,7 +9,8 @@ Diagnostics on the cached embeddings, no model and no GPU:
     uv run python -m scripts.lovo_bias lto   leave-twin-out: a clip is scored without its nearest lookalike in training
     uv run python -m scripts.lovo_bias ref   score each clip against its own start: centred features, max minus median
     uv run python -m scripts.lovo_bias contrast   train on within-clip differences (positive minus negative window)
-    uv run python -m scripts.lovo_bias all   everything above
+    uv run python -m scripts.lovo_bias report   AUC, precision, recall and F1 over the 40 clips plus data/raw/labels_self.csv
+    uv run python -m scripts.lovo_bias all   everything above except report
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, replace
 
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from scipy.spatial.distance import cdist
 from scipy.special import logit
@@ -28,10 +30,19 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
-from src.config import SEED
+from src.config import DATA_RAW, SEED
 from src.data.labels import load_labels
+from src.features.embeddings import EMBED_FPS, load_or_embed, window_features
 from src.models.train import Clip, build_dataset, fit_on
-from src.models.windows import NEGATIVE, POSITIVE, choose_threshold, group_of, lovo_folds, video_score
+from src.models.windows import (
+    NEGATIVE,
+    POSITIVE,
+    choose_threshold,
+    group_of,
+    lovo_folds,
+    make_windows,
+    video_score,
+)
 
 SEEDS = range(SEED, SEED + 10)
 NEIGHBOURS = 5  # D5: nearest training clips
@@ -41,6 +52,8 @@ CONTROL_SEEDS = SEEDS[:5]  # LTO control draws
 REF_WINDOWS = (2, 4, 8)  # REF: windows at the start of a clip that serve as its scene reference (0.5 s apart)
 CONTRAST_C = (0.01, 0.1)  # CONTRAST: regularisation strengths; the table is flat from 0.01 up
 MAX_NEGATIVES = 30  # CONTRAST: negative windows paired with the positives of one clip
+SELF_LABELS = DATA_RAW / "labels_self.csv"  # clips the team recorded: other cameras and sizes than the 40
+SELF_VIDEOS = DATA_RAW / "self_videos"
 RECALL_AT_FP = 9  # REF: false positives allowed when reporting recall (half of the clean clips)
 
 
@@ -210,6 +223,36 @@ def within_clip_pairs(feats: np.ndarray, labels: np.ndarray, max_negatives: int,
     return (pos[:, None, :] - neg[None, :, :]).reshape(-1, feats.shape[1])
 
 
+def operating_point(
+    scores: Sequence[float], is_violation: Sequence[bool], threshold: float
+) -> tuple[float, float, float]:
+    """(precision, recall, F1) of flagging every video that scores at or above `threshold`."""
+    s = np.asarray(scores, dtype=float)
+    bad = np.asarray(is_violation, dtype=bool)
+    flagged = s >= threshold
+    hits = int((flagged & bad).sum())
+    precision = hits / flagged.sum() if flagged.any() else 0.0
+    recall = hits / bad.sum()
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return float(precision), float(recall), float(f1)
+
+
+def best_f1_threshold(scores: Sequence[float], is_violation: Sequence[bool]) -> float:
+    """The video score whose threshold gives the highest F1; on a tie the higher one, which flags fewer videos."""
+    s = np.asarray(scores, dtype=float)
+    return max(np.unique(s), key=lambda t: (operating_point(s, is_violation, t)[2], t))
+
+
+def split_half_f1(scores: Sequence[float], is_violation: Sequence[bool]) -> float:
+    """F1 when the threshold is picked on every other video and scored on the rest, both ways round."""
+    s = np.asarray(scores, dtype=float)
+    bad = np.asarray(is_violation, dtype=bool)
+    half = np.arange(len(s)) % 2 == 0
+    return float(
+        np.mean([operating_point(s[~h], bad[~h], best_f1_threshold(s[h], bad[h]))[2] for h in (half, ~half)])
+    )
+
+
 def normal_bank(
     feats: Sequence[np.ndarray], labels: Sequence[np.ndarray], train_idx: np.ndarray
 ) -> np.ndarray:
@@ -246,13 +289,31 @@ class Cohort:
     layout: np.ndarray  # furniture arrangement of each clip
 
 
-def load_cohort() -> Cohort:
+def _self_clips() -> tuple[list[str], list[Clip]]:
+    """The clips of labels_self.csv, embedded and windowed like the 40 training clips."""
+    ids, clips = [], []
+    for row in pd.read_csv(SELF_LABELS).itertuples():
+        seconds, emb, elapsed = load_or_embed(row.video_id, SELF_VIDEOS / row.file)
+        label_seconds = [] if row.verdict == "no_violation" else [int(row.second)]
+        duration = float(seconds[-1]) + 1.0 / EMBED_FPS if len(seconds) else 0.0
+        windows = make_windows(duration, label_seconds)
+        feats, kept = window_features(seconds, emb, windows)
+        ids.append(row.video_id)
+        clips.append(
+            Clip(windows[kept].reset_index(drop=True), feats[kept], elapsed, duration, label_seconds)
+        )
+    return ids, clips
+
+
+def load_cohort(with_self: bool = False) -> Cohort:
     labels = load_labels()
     ids, clips = build_dataset(labels)
     arrangement = labels.drop_duplicates("video_id").set_index("video_id")["arrangement"]
-    return Cohort(
-        ids, clips, np.array([c.is_violation for c in clips]), np.array([arrangement[v] for v in ids])
-    )
+    layout = [arrangement[v] for v in ids]
+    if with_self:
+        self_ids, self_clips = _self_clips()
+        ids, clips, layout = ids + self_ids, clips + self_clips, layout + ["self"] * len(self_ids)
+    return Cohort(ids, clips, np.array([c.is_violation for c in clips]), np.array(layout))
 
 
 def _clip_score(clf, clip: Clip) -> float:
@@ -538,6 +599,14 @@ def _contrast_fold(clips: list[Clip], train: np.ndarray, held_out: Sequence[int]
         ]
 
 
+def _contrast_oof(clips: list[Clip], folds: list[tuple[np.ndarray, np.ndarray]], reg: float) -> np.ndarray:
+    got = Parallel(n_jobs=-1)(delayed(_contrast_fold)(clips, train, val, reg) for train, val in folds)
+    scores = np.zeros(len(clips))
+    for (_, val), g in zip(folds, got, strict=True):
+        scores[val] = g
+    return scores
+
+
 def run_contrast(c: Cohort) -> None:
     """Train on within-clip differences: does a classifier that cannot see the clip's identity rank better?
 
@@ -555,12 +624,7 @@ def run_contrast(c: Cohort) -> None:
     print("                   C        arm        AUC (95% interval)  FP at recall 1.0   recall")
     for reg in CONTRAST_C:
         for arm, folds in arms:
-            got = Parallel(n_jobs=-1)(
-                delayed(_contrast_fold)(c.clips, train, val, reg) for train, val in folds
-            )
-            s = np.zeros(len(c.clips))
-            for (_, val), g in zip(folds, got, strict=True):
-                s[val] = g
+            s = _contrast_oof(c.clips, folds, reg)
             low, high = bootstrap_auc_interval(s, c.violation)
             print(
                 f"                   {reg:<8} {arm:<10} {_auc(s, c.violation):.3f} ({low:.2f}-{high:.2f})   "
@@ -569,14 +633,49 @@ def run_contrast(c: Cohort) -> None:
             )
 
 
-COMMANDS = ("d2", "d3", "d5", "dn2", "lto", "ref", "contrast", "all")
+def run_report(c: Cohort) -> None:
+    """AUC, precision, recall and F1 side by side, so recall bought by flagging everything cannot pass as progress.
+
+    The flag-everything row is the bar: precision equals the share of violation videos and F1 is 2p / (1 + p).
+    Best F1 on the same clips is optimistic; the extra line picks the threshold on one half and scores the other.
+    """
+    n_bad = int(c.violation.sum())
+    print(f"REPORT {len(c.ids)} clips, {n_bad} with a violation, leave-one-video-out")
+    print(
+        "                   score       operating point            AUC (95% interval)  precision  recall    F1   clean flagged"
+    )
+    folds = list(lovo_folds(c.ids))
+    oof = {
+        "classifier": _oof_scores(c.clips, folds),
+        "contrast": _contrast_oof(c.clips, folds, CONTRAST_C[1]),
+    }
+    for name, s in oof.items():
+        low, high = bootstrap_auc_interval(s, c.violation)
+        points = (
+            ("flag everything", float(s.min())),
+            ("recall 1.0 (ADR 0002)", choose_threshold(s, c.violation)),
+            ("best F1, same clips", best_f1_threshold(s, c.violation)),
+        )
+        for label, threshold in points:
+            precision, recall, f1 = operating_point(s, c.violation, threshold)
+            clean = int(((s >= threshold) & ~c.violation).sum())
+            print(
+                f"                   {name:<11} {label:<26} {_auc(s, c.violation):.3f} ({low:.2f}-{high:.2f})   "
+                f"{precision:>9.2f}  {recall:>6.2f}  {f1:.2f}   {clean}/{len(c.ids) - n_bad}"
+            )
+        print(
+            f"                   {name:<11} F1 with the threshold picked on the other half {split_half_f1(s, c.violation):.3f}"
+        )
+
+
+COMMANDS = ("d2", "d3", "d5", "dn2", "lto", "ref", "contrast", "report", "all")
 
 
 def main(argv: list[str]) -> None:
     if len(argv) != 2 or argv[1] not in COMMANDS:
         sys.exit(f"usage: python -m scripts.lovo_bias {{{'|'.join(COMMANDS)}}}")
     cmd = argv[1]
-    c = load_cohort()
+    c = load_cohort(with_self=cmd == "report")
     windows = sum(len(x.feats) for x in c.clips)
     print(f"{len(c.ids)} clips, {int(c.violation.sum())} with a violation, {windows} windows")
     if cmd in ("d5", "all"):  # only D5 needs the plain LOVO scores
@@ -594,6 +693,8 @@ def main(argv: list[str]) -> None:
         run_ref(c)
     if cmd in ("contrast", "all"):
         run_contrast(c)
+    if cmd == "report":
+        run_report(c)
 
 
 if __name__ == "__main__":
