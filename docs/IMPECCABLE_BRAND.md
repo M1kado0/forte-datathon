@@ -38,3 +38,16 @@ emoji or icon tile above every heading · lorem ipsum · rainbow charts (charts 
 dark mode toggles · decoration that blocks or hides the upload · more than one gradient per screen.
 
 **Every screen needs:** loading skeleton, empty state, error state with retry, long-text handling, 390px mobile layout.
+
+## PR #96 typography exception (18 October 2026)
+
+Per the author's confirmation that the reviewer approved these fonts, PR #96 keeps
+Google Sans for display titles and evidence-viewer controls, and Handjet 500 for
+the result verdict and violation headings as well as team names. Observations and
+normative-source body text remain Open Sans. This scoped exception takes precedence
+over item 1 above for these surfaces.
+
+The author has designated the current design as final: preserve its layout,
+palette, imagery and typography while correcting functional and accessibility
+defects. The required first-screen logo, honest demo-mode indication and opaque
+upload surface remain part of acceptance.

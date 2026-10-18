@@ -1,15 +1,38 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { CheckView } from "@/components/CheckView";
 import { SponsorMarquee } from "@/components/SponsorMarquee";
 import { useMotionVisibility } from "@/components/useMotionVisibility";
 
 // Context footage only. These clips have not been run through the analyzer.
 const scenes = [
-  { id: "counting", title: "Работа с наличными", description: "Движение денег, присутствие работников и контекст операции — отправная точка для проверки.", author: "Tima Miroshnichenko", url: "https://www.pexels.com/video/man-counting-money-6266425/" },
-  { id: "team", title: "Внимание к контексту", description: "Кто находится у рабочего места? Один фрагмент помогает увидеть участников и последовательность действий.", author: "Tima Miroshnichenko", url: "https://www.pexels.com/video/people-counting-money-6266250/" },
-  { id: "payment", title: "Момент передачи", description: "Работа кассира и клиента в кадре. Иллюстрация денежной операции, а не установленного нарушения.", author: "Kindel Media", url: "https://www.pexels.com/video/a-person-paying-at-a-cashier-8351658/" },
+  { id: "counting", title: "Работа с наличными", author: "Tima Miroshnichenko", url: "https://www.pexels.com/video/man-counting-money-6266425/" },
+  { id: "team", title: "Внимание к контексту", author: "Tima Miroshnichenko", url: "https://www.pexels.com/video/people-counting-money-6266250/" },
+  { id: "payment", title: "Момент передачи", author: "Kindel Media", url: "https://www.pexels.com/video/a-person-paying-at-a-cashier-8351658/" },
 ];
-const railScenes = Array.from({ length: 14 }, (_, index) => scenes[index % scenes.length]);
+// Eight cash-operation and review subjects, repeated only to fill the depth ribbon.
+// Decorative stock images only; never analysis evidence or dataset material.
+const railScenes = ["team", "payment", "surveillance", "counting", "documents", "calculator", "handover",
+  "ledger", "counting", "team", "handover", "ledger", "payment", "documents"];
+const slogan = "Мы видим — вы решаете.";
+const sloganWords = slogan.split(" ").map((word, index, words) => ({
+  word,
+  offset: words.slice(0, index).join("").length,
+}));
+
+function AnimatedSlogan() {
+  const title = useRef<HTMLHeadingElement>(null);
+  const { canAnimate } = useMotionVisibility(title);
+  return <div className="hero-title-wrap">
+    <h1 id="hero-title" className="display-title hero-title" ref={title} aria-label={slogan} data-animating={canAnimate}>
+      <span aria-hidden="true">{sloganWords.map(({ word, offset }, wordIndex) => <span key={wordIndex}>
+        {wordIndex > 0 && " "}
+        <span className="slogan-word" data-accent={word === "вы" || word === "решаете."}>
+          {Array.from(word).map((letter, letterIndex) => <span className={/\p{L}/u.test(letter) ? "slogan-letter" : undefined} key={letterIndex} style={{ "--letter-index": offset + letterIndex } as CSSProperties}>{letter}</span>)}
+        </span>
+      </span>)}</span>
+    </h1>
+  </div>;
+}
 
 /** Concave ribbon: small at the vanishing point, large at the edges.
  * Only compositor transforms change per frame; layout is measured on resize. */
@@ -52,8 +75,8 @@ function DepthRibbon({ running, reduced, selected }: { running: boolean; reduced
     return () => { cancelAnimationFrame(frame); resize.disconnect(); };
   }, [running, reduced, selected]);
   return <div className="depth-ribbon" ref={rail} aria-hidden="true">
-    {railScenes.map((scene, index) => <span className="ribbon-frame" key={index} data-selected={index % scenes.length === selected}>
-      <img src={`/demo/${scene.id}.jpg`} alt="" width="1280" height="720" draggable={false} />
+    {railScenes.map((id, index) => <span className="ribbon-frame" key={index} data-selected={id === scenes[selected].id}>
+      <img src={`/demo/${id}.jpg`} alt="" width="640" height="900" draggable={false} decoding="async" />
     </span>)}
   </div>;
 }
@@ -63,7 +86,6 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: {
   onUploadChange: (open: boolean) => void;
 }) {
   const [selected, setSelected] = useState(0);
-  const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [failed, setFailed] = useState(false);
   const [expanded, setExpanded] = useState(uploadOpen);
@@ -81,7 +103,6 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: {
   const lock = useRef(false);
   const focusAfter = useRef(false);
   const { reduced, canAnimate } = useMotionVisibility(viewport);
-  const scene = scenes[selected];
 
   function go(index: number) {
     if (lock.current || slideBusy || uploadOpen) return;
@@ -186,7 +207,7 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: {
 
   return <section id="home" className="hero-section" aria-labelledby="hero-title" tabIndex={-1}>
     <div className="hero-intro section-shell">
-      <h1 id="hero-title" className="display-title hero-title">Замечать <em>важное.</em></h1>
+      <AnimatedSlogan />
       <p>Видеоаналитика кассовых операций.<br />От наблюдения — к обоснованной проверке.</p>
     </div>
     <div id="analysis" className="cinema" ref={viewport} data-expanded={expanded} data-moving={moving} tabIndex={expanded ? -1 : 0} role="region" aria-roledescription="карусель" aria-label="Иллюстрации кассовых операций"
@@ -195,19 +216,18 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: {
         if (event.key === "ArrowRight" || event.key === "ArrowLeft") { event.preventDefault(); go(selected + (event.key === "ArrowRight" ? 1 : -1)); }
       }}>
       <div className="cinema-stage" ref={stage}
-        onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
         onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
         onPointerDown={swipeStart} onPointerUp={swipeEnd}
         onPointerCancel={event => { if (pointer.current?.id === event.pointerId) pointer.current = null; }}
         onLostPointerCapture={event => { if (pointer.current?.id === event.pointerId) pointer.current = null; }}>
-        <DepthRibbon running={canAnimate && !expanded && !hovered && !focused} reduced={reduced} selected={selected} />
+        <DepthRibbon running={canAnimate && !expanded && !focused} reduced={reduced} selected={selected} />
         <div className="morph-surface" ref={surface}>
           <div className="feature-films" aria-hidden={expanded} {...{ inert: expanded || moving ? "" : undefined }}>
             {scenes.map((item, index) => <div key={item.id} className="cinema-panel" data-position={index === selected ? "active" : "inactive"} aria-hidden={index !== selected} {...{ inert: index !== selected ? "" : undefined }}>
               <img src={`/demo/${item.id}.jpg`} alt="" width="1280" height="720" draggable={false} />
               <video ref={element => { videos.current[index] = element; }} src={`/demo/${item.id}.webm`} poster={`/demo/${item.id}.jpg`} muted loop playsInline preload="none"
                 aria-label={item.title} onError={() => { if (index === selected) setFailed(true); }} />
-              <div className="cinema-label"><span>Иллюстрация</span><span>{String(index + 1).padStart(2, "0")} / {String(scenes.length).padStart(2, "0")}</span></div>
+              <div className="cinema-label"><a href={item.url} target="_blank" rel="noopener noreferrer" title={`${item.author} / Pexels — постановочная иллюстрация`}>Иллюстрация</a><span>{failed && index === selected ? "Фото" : `${String(index + 1).padStart(2, "0")} / ${String(scenes.length).padStart(2, "0")}`}</span></div>
               <button ref={element => { ctas.current[index] = element; }} className="primary-link slide-cta" type="button" onClick={() => changeView(true)} disabled={moving || slideBusy} aria-expanded={expanded} aria-controls="upload-panel">Проверить своё видео <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6" /></svg></button>
             </div>)}
           </div>
@@ -216,13 +236,6 @@ export function HeroCarousel({ uploadOpen, onUploadChange }: {
             <CheckView />
           </div>
         </div>
-      </div>
-      <div className="carousel-meta" aria-hidden={expanded} {...{ inert: expanded ? "" : undefined }}>
-        <div className="cinema-details section-shell">
-          <div className="scene-copy" aria-live="polite" aria-atomic="true"><h2 data-reveal>{scene.title}</h2><p data-reveal data-reveal-delay="80">{failed ? "Видео недоступно. Показан кадр иллюстрации; можно перейти к следующему ролику." : scene.description}</p></div>
-        </div>
-        <div className="footage-caption section-shell"><span>Постановочные кадры Pexels, не банковское CCTV.</span><a href={scene.url} target="_blank" rel="noopener noreferrer">{scene.author} / Pexels</a></div>
-        <p className="hero-reassurance section-shell" data-reveal>Локальная обработка. Решение — за человеком.</p>
       </div>
       <SponsorMarquee />
     </div>
