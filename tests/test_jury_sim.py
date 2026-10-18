@@ -6,7 +6,7 @@ import asyncio
 import httpx
 import pytest
 
-from scripts.jury_sim import main, percentile, pick_clips, schema_problem
+from scripts.jury_sim import Outcome, main, percentile, pick_clips, schema_problem, stress_failures
 
 
 @pytest.mark.parametrize(
@@ -89,3 +89,24 @@ def test_pick_clips_cycles_through_available_files(tmp_path):
     assert [clip.name for clip in pick_clips(tmp_path, 3)] == ["a.mov", "b.mov", "a.mov"]
     with pytest.raises(SystemExit):
         pick_clips(tmp_path / "missing", 1)
+
+
+def test_stress_judges_solo_clip_time_not_queue_wait():
+    batch = [Outcome(f"s{i}.mov", 22.0 * (i + 1), True) for i in range(8)]  # one worker: the last waits 176 s
+    solo = Outcome("s0.mov", 20.2, True)
+    assert stress_failures(solo, wall_sec=177.3, outcomes=batch) == []
+
+
+def test_stress_fails_on_slow_solo_clip_or_slow_batch():
+    batch = [Outcome("s0.mov", 10.0, True)]
+    problems = stress_failures(Outcome("s0.mov", 50.0, True), wall_sec=310.0, outcomes=batch)
+    assert problems == ["один клип занял 50.0 s >= 45 s", "стресс 310.0 s >= 300 s"]
+
+
+def test_stress_reports_each_failure_once():
+    timed_out = Outcome("s0.mov", 60.0, False, "timeout after 60 s")
+    assert stress_failures(timed_out, wall_sec=100.0, outcomes=[]) == ["s0.mov: timeout after 60 s"]
+    broken = Outcome("s1.mov", 10.0, False, "schema: x")
+    assert stress_failures(Outcome("s0.mov", 20.0, True), wall_sec=100.0, outcomes=[broken]) == [
+        "s1.mov: schema: x"
+    ]
