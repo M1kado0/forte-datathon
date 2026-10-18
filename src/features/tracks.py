@@ -18,8 +18,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from contracts.data import TRACKS_SCHEMA, has_area
+from contracts.data import TRACKS_SCHEMA
 from src.config import TRACKS_DIR, VIDEOS_DIR
+from src.data import video
 from src.data.labels import load_labels, normalize_name
 from src.data.video import DEFAULT_FPS, duration, iter_frames
 from src.features import bytetrack, detectors, embeddings
@@ -38,6 +39,8 @@ HIGH_CONF = {"person": 0.5, "object": 0.3, "cash": 0.1, "document": 0.1}
 LOW_CONF = {"person": 0.2, "object": 0.2, "cash": 0.1, "document": 0.1}
 # ByteTracker settings; a track is dropped after lost_sec seconds without a match (OWLv2 kinds: vocab_lost_sec)
 TRACKER = {"min_iou": 0.2, "min_iou_low": 0.4, "lost_sec": 2.0, "vocab_lost_sec": 1.0}
+# The source that shapes the boxes and the ids: an edit to any of it must not read an old cache.
+CODE_FILES = (bytetrack.__file__, detectors.__file__, video.__file__, __file__)
 COLUMNS = list(TRACKS_SCHEMA.columns)
 
 
@@ -55,8 +58,7 @@ def setting_id(fps: float = DEFAULT_FPS) -> str:
         "high": HIGH_CONF,
         "low": LOW_CONF,
         "tracker": TRACKER,
-        # the code that shapes the boxes and the ids: an edit to it must not read an old cache
-        "code": [Path(m.__file__).read_text() for m in (bytetrack, detectors)],
+        "code": [Path(f).read_text() for f in CODE_FILES],
     }
     return hashlib.sha1(json.dumps(setting, sort_keys=True).encode()).hexdigest()[:8]
 
@@ -123,7 +125,7 @@ def build_tracks(path: str | Path, detector: Detector, fps: float = DEFAULT_FPS)
             flush()
     flush()
     table = pd.DataFrame(rows, columns=COLUMNS)
-    table = table[has_area(table)].sort_values(["t", "track_id"]).reset_index(drop=True)
+    table = table.sort_values(["t", "track_id"]).reset_index(drop=True)
     return TRACKS_SCHEMA.validate(table)
 
 
@@ -155,15 +157,15 @@ def get_tracks(
     return table
 
 
-def run(files: Sequence[Path], force: bool) -> dict:
+def run(files: Sequence[Path], force: bool, time_reference: bool) -> dict:
     detector = detectors.LocalDetector()
     ref = None
     for path in files:
         start = time.perf_counter()
         # the reference video is always rebuilt: its time is the number the budget is checked against
-        table = get_tracks(path, detector, force=force or video_id(path) == REF_VIDEO)
+        table = get_tracks(path, detector, force=force or (time_reference and video_id(path) == REF_VIDEO))
         seconds = time.perf_counter() - start
-        if video_id(path) == REF_VIDEO:
+        if time_reference and video_id(path) == REF_VIDEO:
             ref = reference_timing(path, seconds)
         kinds = table.groupby("kind")["track_id"].nunique().to_dict()
         print(f"  {video_id(path)}: {len(table)} rows, tracks {kinds}, {seconds:.1f} s", flush=True)
@@ -192,7 +194,8 @@ if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     # the files named in labels.csv: X-47 and X-48 are copies of X-4 and X-5 and are left out
     files = [Path(a) for a in args] or [VIDEOS_DIR / f for f in load_labels()["file"].unique()]
-    summary = run(files, force="--force" in sys.argv)
+    log = "--no-log" not in sys.argv
+    summary = run(files, force="--force" in sys.argv, time_reference=log)
     # a row needs the reference time; a run on a few files only prints
-    if "--no-log" not in sys.argv and summary["ref_video"] is not None:
+    if log and summary["ref_video"] is not None:
         append_row("tracks-dfine-bytetrack-owlv2", summary)

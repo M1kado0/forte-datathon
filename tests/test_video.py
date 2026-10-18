@@ -35,6 +35,11 @@ def test_duration_is_the_length_of_the_clip_not_the_last_sampled_frame(clip):
     assert duration(clip) == pytest.approx(SECONDS)  # the last frame sampled at 4/s is at 1.75 s
 
 
+def test_duration_of_a_missing_file_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        duration(tmp_path / "nope.mov")
+
+
 def test_slow_source_keeps_true_frame_times(tmp_path):
     slow = write_clip(tmp_path / "slow.mov", 2)
     assert [s for s, _ in iter_frames(slow, fps=4)] == [0.0, 0.5, 1.0, 1.5]

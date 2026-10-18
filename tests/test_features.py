@@ -1,6 +1,8 @@
 """Track building (#32): the tracker keeps ids, build_tracks writes a schema-valid cache. No model is run."""
 
+import csv
 import itertools
+import json
 
 import cv2
 import numpy as np
@@ -172,14 +174,31 @@ def test_get_tracks_caches_by_video_and_reads_it_back(clip, tmp_path, monkeypatc
     assert (tmp_path / "cache" / tracks.setting_id() / "X-7.parquet").is_file()  # the id is the Latin X
 
 
+def test_editing_the_code_that_shapes_the_tracks_never_reads_an_old_cache(tmp_path, monkeypatch):
+    source = tmp_path / "tracker.py"
+    source.write_text("v = 1\n")
+    monkeypatch.setattr(tracks, "CODE_FILES", (str(source),))
+    before = tracks.setting_id()
+    source.write_text("v = 2\n")
+    assert tracks.setting_id() != before
+
+
+def test_the_cache_setting_watches_the_decoder_and_the_assembly_as_well_as_the_models():
+    watched = {p.rsplit("/", 1)[-1] for p in tracks.CODE_FILES}
+    assert {"video.py", "tracks.py", "bytetrack.py", "detectors.py"} <= watched
+
+
 def test_a_logged_row_is_keyed_by_the_files_own_header_and_leaves_metric_columns_empty(tmp_path, monkeypatch):
     log = tmp_path / "experiments.csv"
     log.write_text("ts,note,params,video_recall\n")
     monkeypatch.setattr(experiments, "EXPERIMENTS", log)
     experiments.append_row("tracks-test", {"n_videos": 40})
-    lines = log.read_text().splitlines()
-    assert len(lines) == 2
-    assert lines[1].endswith(',tracks-test,"{""n_videos"": 40}",')
+    (row,) = csv.DictReader(log.open())
+    assert (row["note"], json.loads(row["params"]), row["video_recall"]) == (
+        "tracks-test",
+        {"n_videos": 40},
+        "",
+    )
 
 
 def test_changing_the_queries_never_reads_an_old_cache(monkeypatch):
