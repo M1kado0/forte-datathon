@@ -20,6 +20,7 @@ async function setup(width) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const fixture = { rules: [rule], verdict: 'violation', violations: [] };
+  await page.route('**/api/health', route => route.fulfill({ json: { status: 'ok', version: 'test', model_loaded: true } }));
   await page.route('**/api/ui/rules', route => route.fulfill({ json: fixture.rules }));
   await page.route('**/api/ui/analyze', route => route.fulfill({ json: { job_id: 'fixture' } }));
   await page.route('**/api/ui/jobs/*', route => route.fulfill({ json: {
@@ -143,6 +144,11 @@ try {
     assert.equal(await page.locator('.evidence-empty').isVisible(), true);
     fixture.violations[0].evidence_frames = [{ timestamp_sec: 0, image_base64: 'invalid' }];
     await submit(); await page.locator('.evidence-image-error').waitFor();
+    fixture.violations[0].evidence_frames.push(frames[1]);
+    await submit(); await page.locator('.evidence-thumbnail-error').waitFor();
+    assert.equal(await page.locator('.evidence-thumbnails img').count(), 1);
+    await page.locator('.evidence-thumbnails button').nth(1).click();
+    await page.locator('.evidence-open img').waitFor();
     fixture.verdict = 'no_violation'; fixture.violations = [];
     await submit(); assert.equal(await page.locator('.result-article').count(), 0);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);

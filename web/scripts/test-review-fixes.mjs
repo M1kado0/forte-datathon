@@ -34,12 +34,13 @@ async function result(page) {
   await page.locator(".results-section h2").waitFor();
 }
 try {
-  for (const loaded of [true, false, "unavailable"]) await check(`health ${loaded}: result without demo notice`, async page => {
+  for (const loaded of [true, false, "unavailable"]) await check(`health ${loaded}: result remains available; demo notice only for stub`, async page => {
     await page.route("**/api/health", route => route.fulfill(loaded === "unavailable"
       ? { status: 503, json: {} } : { json: { status: "ok", version: "test", model_loaded: loaded } }));
     await page.goto(`${base}/#analysis`);
     await result(page);
-    assert.equal(await page.locator(".demo-notice").count(), 0);
+    if (loaded === false) await page.locator(".demo-notice").waitFor();
+    assert.equal(await page.locator(".demo-notice").count(), loaded === false ? 1 : 0);
   });
   for (const mode of ["failed", "pending"]) await check(`rules ${mode}: evidence survives and citation can recover`, async page => {
     let release;

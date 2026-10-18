@@ -14,6 +14,7 @@ export function CheckView() {
   const [rulesLoading, setRulesLoading] = useState(true);
   const [rulesError, setRulesError] = useState("");
   const [error, setError] = useState("");
+  const [modelLoaded, setModelLoaded] = useState<boolean | null>(null);
   const active = useRef(0);
   useEffect(() => () => { active.current += 1; }, []);
   async function loadRules() {
@@ -24,6 +25,15 @@ export function CheckView() {
     finally { setRulesLoading(false); }
   }
   useEffect(() => { void loadRules(); }, []);
+  useEffect(() => {
+    let disposed = false;
+    // Health is advisory: an unavailable endpoint must not hide results.
+    void api.health().then(
+      health => { if (!disposed) setModelLoaded(health.model_loaded); },
+      () => { if (!disposed) setModelLoaded(null); },
+    );
+    return () => { disposed = true; };
+  }, [job?.status]);
 
   async function analyze() {
     if (!file || busy) return;
@@ -72,6 +82,7 @@ export function CheckView() {
         </form>
       </div>
       <section aria-live="polite" aria-busy={busy} className="results-section">
+        {modelLoaded === false && <p className="demo-notice"><strong>Демонстрационный режим</strong>Результат и кадры не связаны с содержимым видео.</p>}
         {busy && <div className="result-pending">
           <p role="status">{uploading ? "Загружаем видео…" : "Обрабатываем видео…"}</p>
           <div className="result-skeleton"><div><Skeleton className="h-8 w-4/5" /><Skeleton className="mt-5 h-4 w-full" /><Skeleton className="mt-3 h-4 w-2/3" /></div><Skeleton className="h-40 w-full" /></div>

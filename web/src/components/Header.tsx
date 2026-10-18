@@ -16,6 +16,7 @@ export function Header({ uploadOpen, onNavigate }: { uploadOpen: boolean; onNavi
   }, []);
   return <header className="site-header">
     <div className="header-inner section-shell">
+      <a className="brand-link" href="#home" onClick={event => { event.preventDefault(); onNavigate("home"); }} aria-label="Forte Bank — главная"><img src="/forte-logo.svg" alt="ForteBank" width="104" height="31" /></a>
       <nav aria-label="Основная навигация">{sections.map(section => <a key={section.id} className={section.id === "analysis" ? "nav-cta" : undefined} href={`#${section.id}`} onClick={event => { event.preventDefault(); onNavigate(section.id); }} aria-current={(active === "about" ? "about" : uploadOpen ? "analysis" : "home") === section.id ? "location" : undefined}>{section.label}</a>)}</nav>
     </div>
   </header>;

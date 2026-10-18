@@ -13,10 +13,10 @@ function nearestFrame(violation: Violation) {
     Math.abs(frame.timestamp_sec - violation.timecode_sec) < Math.abs(frames[closest].timestamp_sec - violation.timecode_sec) ? index : closest, 0);
 }
 
-function EvidenceImage({ frame }: { frame: EvidenceFrame }) {
+function EvidenceImage({ frame, thumbnail = false }: { frame: EvidenceFrame; thumbnail?: boolean }) {
   const [failed, setFailed] = useState(false);
-  return failed ? <div className="evidence-image-error" role="img" aria-label="Кадр недоступен">Не удалось показать кадр. Выберите другой кадр или повторите проверку.</div>
-    : <img src={`data:image/jpeg;base64,${frame.image_base64}`} alt={`Кадр-доказательство, ${frame.timestamp_sec} с`} onError={() => setFailed(true)} />;
+  return failed ? <div className={thumbnail ? "evidence-thumbnail-error" : "evidence-image-error"} role="img" aria-label="Кадр недоступен">{thumbnail ? "Нет кадра" : "Не удалось показать кадр. Выберите другой кадр или повторите проверку."}</div>
+    : <img src={`data:image/jpeg;base64,${frame.image_base64}`} alt={thumbnail ? "" : `Кадр-доказательство, ${frame.timestamp_sec} с`} onError={() => setFailed(true)} />;
 }
 
 function FrameViewer({ frames, selected, onSelect, onClose }: {
@@ -114,7 +114,7 @@ export function ResultArticle({ violation, metadata }: { violation: Violation; m
           </figure>
           {frames.length > 1 && <div className="evidence-thumbnails" role="group" aria-label="Выбрать кадр-доказательство">
             {frames.map((item, index) => <button type="button" key={index} aria-pressed={index === selected} aria-label={`Показать кадр ${index + 1}, ${formatTimecode(item.timestamp_sec)}`} onClick={() => setSelected(index)}>
-              <img src={`data:image/jpeg;base64,${item.image_base64}`} alt="" />
+              <EvidenceImage frame={item} thumbnail />
               <span>{formatTimecode(item.timestamp_sec)}</span>
             </button>)}
           </div>}

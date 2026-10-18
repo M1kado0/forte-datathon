@@ -26,7 +26,8 @@ try {
     await page.goto(base);
     await page.locator('.eye-loader').waitFor({ state: 'detached' });
     await page.evaluate(() => document.fonts.ready);
-    assert.equal(await page.locator('.site-header img, .brand-link').count(), 0);
+    assert.equal(await page.locator('.site-header .brand-link img').getAttribute('src'), '/forte-logo.svg');
+    assert.equal(await page.locator('.brand-link').isVisible(), true);
     assert.equal(await page.locator('.partner-forte').first().getAttribute('src'), '/forte-logo.svg');
     assert.equal(await page.locator('.cinema').getAttribute('tabindex'), '0');
     assert.equal(await page.locator('.depth-ribbon button').count(), 0);
@@ -138,6 +139,8 @@ try {
     await page.locator('.site-header .nav-cta').click();
     await page.waitForFunction(() => document.querySelector('.cinema').dataset.moving === 'false');
     assert.equal(await page.locator('.upload-target').isVisible(), true);
+    assert.equal(await page.locator('.morph-surface').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
+    assert.equal(await page.locator('.morph-surface').evaluate(el => getComputedStyle(el).backdropFilter), 'none');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     const sponsorNames = await page.locator('.partners img[alt]:not([alt=""])').evaluateAll(images => images.map(image => image.alt));
     await page.emulateMedia({ reducedMotion: 'reduce' });
