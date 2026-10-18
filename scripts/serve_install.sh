@@ -2,6 +2,7 @@
 # Stage 2 of #30: API under systemd, Tailscale Funnel on :8000, no sleep, no automatic updates.
 # Run as your normal user on the serving machine (it calls sudo itself):  bash scripts/serve_install.sh
 # Check afterwards, and again after a reboot:                             bash scripts/serve_install.sh check
+# Rebuild the UI after a git pull that touched web/:                      bash scripts/serve_install.sh web
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,7 +29,23 @@ check() {
   return $bad
 }
 
+# Rebuild web/dist when any web source is newer than it (a git pull does not rebuild it).
+# The API reads dist from disk on each request, so no restart is needed afterwards.
+build_web() {
+  local web="$ROOT/web" dist="$ROOT/web/dist/index.html"
+  if [ ! -d "$web/node_modules" ] || [ "$web/package-lock.json" -nt "$web/node_modules" ]; then
+    (cd "$web" && npm ci)
+  fi
+  if [ ! -f "$dist" ] || [ -n "$(find "$web/src" "$web/public" "$web/index.html" "$web/package-lock.json" \
+      "$web"/vite.config.* "$web"/tsconfig*.json -newer "$dist" -print -quit 2>/dev/null)" ]; then
+    (cd "$web" && npm run build)
+  else
+    echo "web/dist is up to date"
+  fi
+}
+
 if [ "${1:-}" = check ]; then check; exit $?; fi
+if [ "${1:-}" = web ]; then build_web; exit $?; fi
 
 TAILSCALE="$(command -v tailscale)" || { echo "tailscale is not installed"; exit 1; }
 [ -x "$ROOT/.venv/bin/uvicorn" ] || { echo "run 'make setup' first"; exit 1; }
@@ -48,10 +65,7 @@ if [ ! -f "$ROOT/.env" ]; then
   chmod 600 "$ROOT/.env"
   echo "created $ROOT/.env with a new API_KEY; read it there (not printed, so a screen recording does not leak it)"
 fi
-if [ ! -f "$ROOT/web/dist/index.html" ]; then
-  [ -d "$ROOT/web/node_modules" ] || (cd "$ROOT/web" && npm ci)
-  (cd "$ROOT/web" && npm run build)
-fi
+build_web
 
 # 2. systemd units. Funnel config itself survives reboots inside tailscaled; the unit re-applies it as a safeguard.
 sudo tee /etc/systemd/system/forte-api.service >/dev/null <<UNIT
