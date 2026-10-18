@@ -37,8 +37,8 @@ OWL_EVERY = 2
 # kept out of the table by the tracker.
 HIGH_CONF = {"person": 0.5, "object": 0.3, "cash": 0.1, "document": 0.1}
 LOW_CONF = {"person": 0.2, "object": 0.2, "cash": 0.1, "document": 0.1}
-# ByteTracker settings; a track is dropped after lost_sec seconds without a match (OWLv2 kinds: vocab_lost_sec)
-TRACKER = {"min_iou": 0.2, "min_iou_low": 0.4, "lost_sec": 2.0, "vocab_lost_sec": 1.0}
+# ByteTracker settings; a track is dropped after lost_sec seconds without a match, for every kind
+TRACKER = {"min_iou": 0.2, "min_iou_low": 0.4, "lost_sec": 2.0}
 # The source that shapes the boxes and the ids: an edit to any of it must not read an old cache.
 CODE_FILES = (bytetrack.__file__, detectors.__file__, video.__file__, __file__)
 COLUMNS = list(TRACKS_SCHEMA.columns)
@@ -63,6 +63,11 @@ def setting_id(fps: float = DEFAULT_FPS) -> str:
     return hashlib.sha1(json.dumps(setting, sort_keys=True).encode()).hexdigest()[:8]
 
 
+def lost_frames(vocab: bool, fps: float) -> int:
+    """TRACKER["lost_sec"] in the frames a tracker is fed: the OWLv2 kinds only see every OWL_EVERY-th frame."""
+    return int(TRACKER["lost_sec"] * fps / (OWL_EVERY if vocab else 1))
+
+
 def build_tracks(path: str | Path, detector: Detector, fps: float = DEFAULT_FPS) -> pd.DataFrame:
     """Decode the video, detect in batches, track every kind and return the validated long table."""
     ids = itertools.count()
@@ -82,7 +87,6 @@ def build_tracks(path: str | Path, detector: Detector, fps: float = DEFAULT_FPS)
         for key in sorted(trackers.keys() | by_class.keys()):
             if key in vocab_keys and not vocab_frame:
                 continue
-            lost_sec = TRACKER["vocab_lost_sec"] if key in vocab_keys else TRACKER["lost_sec"]
             trackers.setdefault(
                 key,
                 ByteTracker(
@@ -91,7 +95,7 @@ def build_tracks(path: str | Path, detector: Detector, fps: float = DEFAULT_FPS)
                     low=LOW_CONF[key[0]],
                     min_iou=TRACKER["min_iou"],
                     min_iou_low=TRACKER["min_iou_low"],
-                    max_lost=int(lost_sec * fps),
+                    max_lost=lost_frames(key in vocab_keys, fps),
                 ),
             )
             group = by_class.get(key, [])
@@ -146,7 +150,9 @@ def load_tracks(path: str | Path, fps: float = DEFAULT_FPS) -> pd.DataFrame | No
 def get_tracks(
     path: str | Path, detector: Detector, fps: float = DEFAULT_FPS, force: bool = False
 ) -> pd.DataFrame:
-    """Cached tracks of the video; built, validated and cached on a miss."""
+    """Cached tracks of the video; built, validated and cached on a miss. For the dataset videos only: the
+    cache is keyed by file name, and an uploaded video must be deleted after its job (AGENTS.md), so the
+    service builds its tracks with `build_tracks` and leaves nothing behind."""
     cached = None if force else load_tracks(path, fps)
     if cached is not None:
         return cached

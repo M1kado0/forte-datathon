@@ -174,6 +174,12 @@ def test_get_tracks_caches_by_video_and_reads_it_back(clip, tmp_path, monkeypatc
     assert (tmp_path / "cache" / tracks.setting_id() / "X-7.parquet").is_file()  # the id is the Latin X
 
 
+def test_a_lost_window_is_counted_in_the_frames_the_tracker_actually_sees():
+    # 2 s at 4 decoded frames per second; OWLv2 only looks at every second frame, so half as many for its kinds
+    assert tracks.lost_frames(vocab=False, fps=4.0) == 8
+    assert tracks.lost_frames(vocab=True, fps=4.0) == 4
+
+
 def test_editing_the_code_that_shapes_the_tracks_never_reads_an_old_cache(tmp_path, monkeypatch):
     source = tmp_path / "tracker.py"
     source.write_text("v = 1\n")
