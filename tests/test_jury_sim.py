@@ -6,7 +6,7 @@ import asyncio
 import httpx
 import pytest
 
-from scripts.jury_sim import main, percentile, pick_clips, schema_problem
+from scripts.jury_sim import Outcome, main, percentile, pick_clips, schema_problem, stress_failures
 
 
 @pytest.mark.parametrize(
@@ -89,3 +89,16 @@ def test_pick_clips_cycles_through_available_files(tmp_path):
     assert [clip.name for clip in pick_clips(tmp_path, 3)] == ["a.mov", "b.mov", "a.mov"]
     with pytest.raises(SystemExit):
         pick_clips(tmp_path / "missing", 1)
+
+
+def test_stress_judges_solo_clip_time_not_queue_wait():
+    batch = [Outcome(f"s{i}.mov", 22.0 * (i + 1), True) for i in range(8)]  # one worker: the last waits 176 s
+    assert stress_failures(solo_sec=20.2, wall_sec=177.3, outcomes=batch) == []
+
+
+def test_stress_fails_on_slow_solo_clip_slow_batch_or_error():
+    batch = [Outcome("s0.mov", 10.0, False, "timeout after 360 s")]
+    problems = stress_failures(solo_sec=50.0, wall_sec=310.0, outcomes=batch)
+    assert len(problems) == 3
+    assert any("50.0" in text and "45" in text for text in problems)
+    assert any("310.0" in text and "300" in text for text in problems)

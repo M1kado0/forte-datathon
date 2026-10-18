@@ -2,7 +2,7 @@
 
 Phase 1 mimics the jury: N parallel uploads of real clips, p95 of time-to-result, schema check of every
 answer against contracts/. Phase 2 is the stress test: M parallel ~145 s videos built locally with ffmpeg
-(needs the `ffmpeg` binary) from our clips, all of them must finish inside the budget. Exit code is 1 when
+(needs the `ffmpeg` binary) from our clips: one clip alone must take < 45 s, the whole batch < 300 s. Exit code is 1 when
 any criterion fails.
 """
 
@@ -142,6 +142,16 @@ def failed(outcomes: list[Outcome]) -> list[str]:
     return [f"{item.clip}: {item.problem}" for item in outcomes if not item.ok]
 
 
+def stress_failures(solo_sec: float, wall_sec: float, outcomes: list[Outcome]) -> list[str]:
+    """The 45 s limit is for one clip processed alone: with one worker, clips in a batch wait in the queue."""
+    problems = []
+    if solo_sec >= CLIP_LIMIT_SEC:
+        problems.append(f"один клип занял {solo_sec:.1f} s >= {CLIP_LIMIT_SEC:.0f} s")
+    if wall_sec >= STRESS_LIMIT_SEC:
+        problems.append(f"стресс {wall_sec:.1f} s >= {STRESS_LIMIT_SEC:.0f} s")
+    return problems + failed(outcomes)
+
+
 def report(title: str, outcomes: list[Outcome]) -> None:
     for item in outcomes:
         print(f"  {'ok  ' if item.ok else 'FAIL'} {item.seconds:7.1f} s  {item.clip}  {item.problem}")
@@ -194,20 +204,16 @@ async def main(args: argparse.Namespace) -> int:
                         longs.append(target)
                 except subprocess.CalledProcessError as error:
                     raise SystemExit(f"ffmpeg не собрал длинный клип (код {error.returncode})") from None
+                solo, _ = await run_batch(client, longs[:1], STRESS_LIMIT_SEC)
                 stress, wall = await run_batch(client, longs, STRESS_LIMIT_SEC + 60)
+            report("Один клип без очереди", solo)
             report("Стресс", stress)
-            slowest = max(item.seconds for item in stress)
             print(
-                f"время стресса = {wall:.1f} s (порог {STRESS_LIMIT_SEC:.0f}), "
-                f"самый долгий клип = {slowest:.1f} s (порог {CLIP_LIMIT_SEC:.0f})"
+                f"один клип {args.stress_seconds} с = {solo[0].seconds:.1f} s (порог {CLIP_LIMIT_SEC:.0f}), "
+                f"стресс {len(stress)} клипов = {wall:.1f} s (порог {STRESS_LIMIT_SEC:.0f}), "
+                f"самый долгий в очереди = {max(item.seconds for item in stress):.1f} s"
             )
-            if wall >= STRESS_LIMIT_SEC:
-                failures.append(f"стресс {wall:.1f} s >= {STRESS_LIMIT_SEC:.0f} s")
-            if slowest >= CLIP_LIMIT_SEC:
-                failures.append(
-                    f"клип {args.stress_seconds} с занял {slowest:.1f} s >= {CLIP_LIMIT_SEC:.0f} s"
-                )
-            failures += failed(stress)
+            failures += failed(solo) + stress_failures(solo[0].seconds, wall, stress)
 
     print("ПРОШЛО" if not failures else "НЕ ПРОШЛО:\n  " + "\n  ".join(failures))
     return 1 if failures else 0
