@@ -133,3 +133,11 @@ def test_windows_of_one_video_stay_on_one_side_of_every_fold():
 def test_video_score_is_worst_window():
     assert video_score([0.1, 0.9, 0.4]) == 0.9
     assert video_score([]) == 0.0
+
+
+def test_logit_shift_is_zero_for_equal_scores_and_signed_otherwise():
+    from src.models.windows import logit_shift
+
+    assert logit_shift([0.2, 0.9], [0.2, 0.9]).tolist() == [0.0, 0.0]
+    shift = logit_shift([0.5, 0.0], [0.5, 0.5])  # score 0 is clipped, not -inf
+    assert shift[0] == 0.0 and shift[1] < -10

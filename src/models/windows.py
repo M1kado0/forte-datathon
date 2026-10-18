@@ -81,6 +81,16 @@ def choose_threshold(scores: Sequence[float], is_violation: Sequence[bool]) -> f
     return float(s[v].min())
 
 
+def logit_shift(a: Sequence[float], b: Sequence[float], eps: float = 1e-6) -> np.ndarray:
+    """Per-video difference of two score sets on the logit scale: how far model `a` sits from model `b`."""
+
+    def logit(x: Sequence[float]) -> np.ndarray:
+        p = np.clip(np.asarray(x, dtype=float), eps, 1 - eps)
+        return np.log(p / (1 - p))
+
+    return logit(a) - logit(b)
+
+
 def timecode(
     starts: Sequence[float], scores: Sequence[float], threshold: float, mode: str = TIMECODE_MODE
 ) -> float | None:

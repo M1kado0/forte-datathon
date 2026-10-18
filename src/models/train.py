@@ -11,15 +11,18 @@ import csv
 import functools
 import json
 import pickle
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from threadpoolctl import threadpool_limits
 
 from src.config import EXPERIMENTS, MODELS, REPORTS, SEED
 from src.data.labels import load_labels
@@ -38,6 +41,7 @@ from src.models.windows import (
     WINDOW_SEC,
     choose_threshold,
     labels_by_video,
+    logit_shift,
     lovo_folds,
     make_windows,
     timecode,
@@ -111,6 +115,60 @@ def cross_validate(ids: list[str], clips: list[Clip]) -> list[np.ndarray]:
             if len(clips[i].feats):
                 scores[i] = clf.predict_proba(clips[i].feats)[:, 1]
     return scores
+
+
+def _nested_fold(
+    ids: list[str], clips: list[Clip], outer_train: np.ndarray, outer_val: np.ndarray
+) -> list[dict]:
+    """Hold out one group, do the whole procedure on the rest, score the held-out videos with the result."""
+    with threadpool_limits(1):
+        inner = [clips[i] for i in outer_train]
+        inner_ids = [ids[i] for i in outer_train]
+        inner_scores = np.zeros(len(inner))
+        fold_models = []
+        for train_idx, val_idx in lovo_folds(inner_ids):
+            clf = fit_on([inner[i] for i in train_idx])
+            fold_models.append(clf)
+            for i in val_idx:
+                inner_scores[i] = (
+                    video_score(clf.predict_proba(inner[i].feats)[:, 1]) if len(inner[i].feats) else 0.0
+                )
+        threshold = choose_threshold(inner_scores, [c.is_violation for c in inner])
+        full = fit_on(inner)
+        return [
+            {
+                "video_id": ids[v],
+                "is_violation": clips[v].is_violation,
+                "threshold": threshold,
+                "full_score": video_score(full.predict_proba(clips[v].feats)[:, 1]),
+                # the scale the threshold was measured on: a typical fold model, averaged over the folds
+                "fold_score": float(
+                    np.mean([video_score(m.predict_proba(clips[v].feats)[:, 1]) for m in fold_models])
+                ),
+            }
+            for v in outer_val
+            if len(clips[v].feats)
+        ]
+
+
+def nested_check(ids: list[str], clips: list[Clip], n_jobs: int = -1) -> dict:
+    """Does a threshold chosen on out-of-fold scores (ADR 0002) carry over to a model fit on all training videos?
+
+    Per held-out video: threshold from LOVO on the other videos, a model fit on all the other videos (what
+    window_clf.pkl is, one level up), verdict of that model vs that threshold. Also how far the two score scales sit apart.
+    """
+    folds = Parallel(n_jobs=n_jobs)(delayed(_nested_fold)(ids, clips, a, b) for a, b in lovo_folds(ids))
+    rows = [r for fold in folds for r in fold]
+    bad = np.array([r["is_violation"] for r in rows])
+    hit = np.array([r["full_score"] >= r["threshold"] for r in rows])
+    shift = logit_shift([r["full_score"] for r in rows], [r["fold_score"] for r in rows])
+    return {
+        "nested_video_recall": float(hit[bad].mean()),
+        "nested_fp_rate": float(hit[~bad].mean()),
+        "nested_missed": [r["video_id"] for r, b, h in zip(rows, bad, hit, strict=True) if b and not h],
+        "logit_shift_median": float(np.median(shift)),
+        "logit_shift_mean_abs": float(np.abs(shift).mean()),
+    }
 
 
 def run() -> dict:
@@ -202,4 +260,15 @@ def load_model() -> dict:
 
 if __name__ == "__main__":
     out = run()
+    if "--nested" in sys.argv:
+        ids, clips = build_dataset(load_labels())
+        out["nested"] = nested_check(ids, clips)
+        nested = out["nested"]
+        row = {k: v for k, v in out.items() if k not in ("nested", "video_scores")} | nested
+        row |= {
+            "video_recall": nested["nested_video_recall"],
+            "fp_rate": nested["nested_fp_rate"],
+            "median_abs_dt": None,
+        }
+        log_experiment("dinov2-small-logreg-nested-threshold", row)
     print(json.dumps({k: v for k, v in out.items() if k != "video_scores"}, indent=2, ensure_ascii=False))
