@@ -127,6 +127,30 @@ def pair_folds(
             yield np.flatnonzero(~np.isin(groups, out)), int(i), int(j)
 
 
+def layout_folds(layouts: Sequence[str]) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+    """Leave-layout-out: hold out every clip of one furniture arrangement, train on the others.
+
+    The nearest thing to the hidden videos (another camera angle) the cohort allows, and no twin of a held-out
+    clip can sit in training because twins share a layout.
+    """
+    layouts = np.asarray(layouts)
+    for layout in sorted(set(layouts)):
+        yield np.flatnonzero(layouts != layout), np.flatnonzero(layouts == layout)
+
+
+def bootstrap_auc_interval(
+    scores: Sequence[float], is_violation: Sequence[bool], draws: int = 1000, seed: int = SEED
+) -> tuple[float, float]:
+    """95% interval of the video AUC from resampling violation and clean clips separately."""
+    rng = np.random.default_rng(seed)
+    s = np.asarray(scores, dtype=float)
+    bad = np.asarray(is_violation, dtype=bool)
+    pos, neg = s[bad], s[~bad]
+    aucs = [pair_auc(rng.choice(pos, len(pos)), rng.choice(neg, len(neg))) for _ in range(draws)]
+    low, high = np.percentile(aucs, [2.5, 97.5])
+    return float(low), float(high)
+
+
 def pair_auc(violation_scores: Sequence[float], clean_scores: Sequence[float]) -> float:
     """Share of (violation, clean) score pairs ordered the right way; a tie counts half."""
     pos = np.asarray(violation_scores, dtype=float)[:, None]
@@ -435,12 +459,17 @@ def _oof_windows(clips: list[Clip], folds: list[tuple[np.ndarray, np.ndarray]]) 
 def run_ref(c: Cohort) -> None:
     """Does scoring a clip against its own start help? Features centred on the first windows, max minus median.
 
-    Label-free and clip-local. Around 25 variants were tried on these 40 clips before this table, so read the
-    plateau over reference lengths and the twin-out column, not the best single number.
+    Label-free and clip-local. About 45 variants were tried on these 40 clips around this table (25 before the
+    layout-out arm, 18 after it), so read the plateau over reference lengths and the layout-out column, not the
+    best single number. With 21 and 19 clips the interval is about +-0.18 wide: no row here differs from 0.5.
     """
     n_clean = int((~c.violation).sum())
     twin = _clip_twins(c)
-    arms = (("plain", list(lovo_folds(c.ids))), ("twin out", list(drop_folds(c.ids, twin))))
+    arms = (
+        ("plain", list(lovo_folds(c.ids))),
+        ("twin out", list(drop_folds(c.ids, twin))),
+        ("layout out", list(layout_folds(c.layout))),
+    )
     variants = [("raw features", c.clips)] + [
         (f"first {n} centred", [replace(x, feats=centre_on_start(x.feats, n)) for x in c.clips])
         for n in REF_WINDOWS
@@ -448,14 +477,17 @@ def run_ref(c: Cohort) -> None:
     print(
         f"REF reference-centred scoring; recall is measured with {RECALL_AT_FP} of {n_clean} clean clips flagged"
     )
-    print("                   features          score         arm        AUC     FP at recall 1.0   recall")
+    print(
+        "                   features          score         arm        AUC (95% interval)  FP at recall 1.0   recall"
+    )
     for name, clips in variants:
         for arm, folds in arms:
             windows = _oof_windows(clips, folds)
             for score, fn in (("max", video_score), ("max-median", max_minus_median)):
                 s = np.array([fn(w) for w in windows])
+                low, high = bootstrap_auc_interval(s, c.violation)
                 print(
-                    f"                   {name:<17} {score:<13} {arm:<10} {_auc(s, c.violation):.3f}   "
+                    f"                   {name:<17} {score:<13} {arm:<10} {_auc(s, c.violation):.3f} ({low:.2f}-{high:.2f})   "
                     f"{fp_at_full_recall(s, c.violation):>3}/{n_clean}              "
                     f"{recall_at_fp(s, c.violation, RECALL_AT_FP):.2f}"
                 )

@@ -4,10 +4,12 @@ import numpy as np
 
 from scripts.lovo_bias import (
     balanced_folds,
+    bootstrap_auc_interval,
     centre_on_start,
     drop_folds,
     fp_at_full_recall,
     knn_scores,
+    layout_folds,
     max_minus_median,
     nearest_twin,
     normal_bank,
@@ -162,3 +164,23 @@ def test_recall_at_fp_counts_violations_that_beat_the_clean_clip_just_past_the_a
     assert recall_at_fp(scores, violation, 0) == 1 / 3  # must beat 0.8: only 0.9
     assert recall_at_fp(scores, violation, 1) == 2 / 3  # must beat 0.6: 0.9 and 0.7
     assert recall_at_fp(scores, violation, 4) == 1.0  # every clean clip may be flagged
+
+
+def test_layout_folds_hold_out_one_whole_layout_and_train_on_the_rest():
+    layouts = ["a", "a", "b", "b", "b", "a"]
+    folds = list(layout_folds(layouts))
+    assert [val.tolist() for _, val in folds] == [[0, 1, 5], [2, 3, 4]]
+    for train, val in folds:
+        assert not set(train) & set(val)
+        assert len(train) + len(val) == len(layouts)
+
+
+def test_bootstrap_auc_interval_collapses_when_the_scores_are_decisive_and_straddles_chance_when_not():
+    bad = np.array([True] * 5 + [False] * 5)
+    assert bootstrap_auc_interval(np.arange(10.0)[::-1], bad) == (
+        1.0,
+        1.0,
+    )  # violations all score above clean clips
+    assert bootstrap_auc_interval(np.zeros(10), bad) == (0.5, 0.5)  # all tied
+    low, high = bootstrap_auc_interval(np.array([0, 3, 1, 4, 2, 1, 4, 0, 3, 2.0]), bad)
+    assert low < 0.5 < high  # a weak ordering cannot be told from chance with ten clips
