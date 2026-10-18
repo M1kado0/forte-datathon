@@ -68,7 +68,8 @@ try {
     await page.getByRole("heading", { name: "Пересчёт наличных без контролирующего работника", exact: true }).waitFor();
     await page.getByRole("link", { name: /п\. 42/ }).waitFor();
     assert.equal(await page.locator("article p").filter({ hasText: metadata.citation_suffix }).count(), 0);
-    assert.equal(await page.locator("img[alt^='Кадр-доказательство']").count(), 3);
+    assert.equal(await page.locator("img[alt^='Кадр-доказательство']").count(), 1);
+    assert.equal(await page.locator(".evidence-thumbnails button").count(), 3);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
     await capture(page, `${name}-three-frames`);
     await page.route("**/api/ui/rules", route => route.fulfill({ status: 503, json: { detail: "test failure" } }));
@@ -80,7 +81,8 @@ try {
     await page.getByRole("button", { name: "Проверить видео", exact: true }).click();
     await page.getByRole("alert").filter({ hasText: "Не удалось загрузить нормативные источники" }).waitFor();
     assert.equal(await page.locator(".result-article").count(), 1, "Catalog failure must not hide violations");
-    assert.equal(await page.locator("img[alt^='Кадр-доказательство']").count(), 3);
+    assert.equal(await page.locator("img[alt^='Кадр-доказательство']").count(), 1);
+    assert.equal(await page.locator(".evidence-thumbnails button").count(), 3);
     await capture(page, `${name}-rules-unavailable`);
     await page.unroute("**/api/ui/rules");
     await page.getByRole("button", { name: "Повторить", exact: true }).click();

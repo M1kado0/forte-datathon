@@ -30,7 +30,25 @@ any depicted person and are not claimed to be violations or model detections.
 Selection limits: staged stock footage, US dollars, not Kazakhstan bank CCTV.
 No appropriately licensed exact violation footage was verified. Use these as
 context only, never as training data, evaluation data or detection evidence.
-The interface labels this distinction and links to the original creators.
+The central video is labelled as an illustration and links to its original creator.
+
+UI-Demo2 decorative ribbon photographs (retrieved 2026-10-18):
+ledger.jpg — Pexels ID 6694543, Banknotes and Calculator on Table
+https://www.pexels.com/photo/banknotes-and-calculator-on-table-6694543/
+calculator.jpg — Pexels ID 7111589, Calculator and Money on the Yellow Notepad
+https://www.pexels.com/photo/calculator-and-money-on-the-yellow-notepad-7111589/
+handover.jpg — Pexels ID 4968640, Handing of Dollar Bills
+https://www.pexels.com/photo/handing-of-dollar-bills-4968640/
+documents.jpg — Sora Shimazaki, Pexels ID 5668763, Crop colleagues in formal wear checking documents
+https://www.pexels.com/photo/crop-colleagues-in-formal-wear-checking-documents-5668763/
+surveillance.jpg — Eray Karatas, Pexels ID 29148355, Ceiling-Mounted Security Camera in Indoor Setting
+https://www.pexels.com/photo/ceiling-mounted-security-camera-in-indoor-setting-29148355/
+Downloaded as 640px-wide JPEGs from images.pexels.com; same Pexels License.
+These decorative photographs are hosted locally and are not analysis evidence.
+The ribbon uses eight unique images: the three original video posters and these
+five photographs. Architecture was removed in favour of cash operations,
+document review and video observation. All stock imagery is illustrative;
+foreign currencies and workplaces do not represent ForteBank or its customers.
 
 Repository context checked:
 src/rules/rules.yaml has seven named categories and an 'other' fallback.

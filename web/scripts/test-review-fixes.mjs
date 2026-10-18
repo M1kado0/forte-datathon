@@ -34,12 +34,12 @@ async function result(page) {
   await page.locator(".results-section h2").waitFor();
 }
 try {
-  for (const loaded of [true, false, "unavailable"]) await check(`health ${loaded}: truthful demo notice`, async page => {
+  for (const loaded of [true, false, "unavailable"]) await check(`health ${loaded}: result without demo notice`, async page => {
     await page.route("**/api/health", route => route.fulfill(loaded === "unavailable"
       ? { status: 503, json: {} } : { json: { status: "ok", version: "test", model_loaded: loaded } }));
     await page.goto(`${base}/#analysis`);
     await result(page);
-    assert.equal(await page.locator(".demo-notice").count(), loaded === false ? 1 : 0);
+    assert.equal(await page.locator(".demo-notice").count(), 0);
   });
   for (const mode of ["failed", "pending"]) await check(`rules ${mode}: evidence survives and citation can recover`, async page => {
     let release;
@@ -52,7 +52,7 @@ try {
       await page.goto(`${base}/#analysis`);
       await result(page);
       assert.equal(await page.locator(".result-article").count(), 1, "Violation hidden by catalog state");
-      assert.match(await page.locator(".result-article").innerText(), /42\.5/);
+      assert.match(await page.locator(".result-article").innerText(), /00:42,5/);
       assert.equal(await page.locator('img[alt^="Кадр-доказательство"]').count(), 1);
       if (mode === "failed") {
         await page.unroute("**/api/ui/rules");

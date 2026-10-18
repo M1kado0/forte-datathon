@@ -58,7 +58,7 @@ try {
   await page.locator('.site-header a[href="#analysis"]').click();await settle(page);
   await page.waitForFunction(()=>Math.abs(document.querySelector('#analysis').getBoundingClientRect().top-(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height'))+24))<3).catch(async error => { console.log('Anchor failure', width, await page.evaluate(()=>({y:scrollY,top:document.querySelector('#analysis').getBoundingClientRect().top,hash:location.hash,focus:document.activeElement.className}))); throw error; });
   assert.equal(await page.locator('.file-info p').innerText(),'retained.MOV');
-  await page.locator('.brand-link').click();await settle(page);
+  await page.locator('.site-header a[href="#home"]').click();await settle(page);
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto(base+'/#analysis');await settle(page);
   assert.equal(await page.locator('.eye-loader:visible').count(),0);
   assert.equal(await page.locator('.upload-target').isVisible(),true);
@@ -90,7 +90,7 @@ try {
  assert.match(response.request().headers()['content-type'],/multipart\/form-data; boundary=/);
  const {job_id}=await response.json();assert.ok(job_id);
  await page.waitForFunction(()=>document.querySelector('.results-section h2'));
- assert.equal(await page.locator('.demo-notice').isVisible(),health.model_loaded === false);
+ assert.equal(await page.locator('.demo-notice').count(),0);
  assert.equal(await page.locator('.results-section').getAttribute('aria-busy'),'false');
  await page.locator('.back-to-carousel').click();await settle(page);
  await page.locator('.cinema-panel[data-position="active"] .slide-cta').click();await settle(page);

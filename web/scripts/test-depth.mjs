@@ -26,15 +26,7 @@ try {
     await page.goto(base);
     await page.locator('.eye-loader').waitFor({ state: 'detached' });
     await page.evaluate(() => document.fonts.ready);
-    const navbarLogo = await page.locator('.brand-link img').evaluate(img => {
-      const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-      const context = canvas.getContext('2d'); context.drawImage(img, 0, 0);
-      return { src: new URL(img.src).pathname, natural: [img.naturalWidth, img.naturalHeight], rendered: [img.getBoundingClientRect().width, img.getBoundingClientRect().height], cornerAlpha: context.getImageData(0, 0, 1, 1).data[3] };
-    });
-    assert.equal(navbarLogo.src, '/forte-logo.png'); assert.deepEqual(navbarLogo.natural, [731, 218]); assert.equal(navbarLogo.cornerAlpha, 0);
-    assert.ok(Math.abs(navbarLogo.rendered[0] / navbarLogo.rendered[1] - 731 / 218) < .01);
-    const brandSurface = await page.locator('.brand-link').evaluate(el => ({ background: getComputedStyle(el).backgroundColor, radius: getComputedStyle(el).borderRadius }));
-    assert.equal(brandSurface.background, 'rgba(0, 0, 0, 0)'); assert.equal(brandSurface.radius, '0px');
+    assert.equal(await page.locator('.site-header img, .brand-link').count(), 0);
     assert.equal(await page.locator('.partner-forte').first().getAttribute('src'), '/forte-logo.svg');
     assert.equal(await page.locator('.cinema').getAttribute('tabindex'), '0');
     assert.equal(await page.locator('.depth-ribbon button').count(), 0);
@@ -53,22 +45,26 @@ try {
     assert.equal(styles.transition, 'box-shadow');
     assert.match(styles.edgeBlur, /blur/); assert.match(styles.edgeMask, /gradient/);
     assert.equal(styles.pointer, 'none'); assert.equal(styles.center, 'none');
-    assert.equal(await page.locator('.about-title').getAttribute('data-reveal-pending'), '');
+    // A compact hero can put About in the initial viewport. Already-visible
+    // copy intentionally skips the scroll entrance animation.
+    const aboutPending = await page.locator('.about-title').getAttribute('data-reveal-pending') === '';
+    if (!aboutPending) assert.equal(await page.locator('.about-title').evaluate(el => getComputedStyle(el).opacity), '1');
     assert.equal(await page.evaluate(() => window.revealStarts.some(r => r.text.includes('За кадром'))), false);
     assert.match(await page.locator('body').evaluate(el => getComputedStyle(el).backgroundImage), /radial-gradient/);
     assert.equal(await page.locator('#about').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
     const aboutBox = await page.locator('#about').boundingBox();
     assert.equal(aboutBox.x, 0); assert.equal(aboutBox.width, width);
     const copyBefore = await page.locator('.hero-intro p').boundingBox();
-    await page.locator('.hero-title').hover();
-    if (await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)) {
-      await page.waitForFunction(() => Math.abs(parseFloat(getComputedStyle(document.querySelector('.hero-title')).scale) - 1.045) < .001);
-    } else assert.equal(await page.locator('.hero-title').evaluate(el => getComputedStyle(el).scale), 'none');
+    await page.waitForFunction(() => document.querySelector('.hero-title').dataset.animating === 'true');
+    assert.equal(await page.locator('.slogan-pause').count(), 0);
+    assert.match(await page.locator('.hero-title').evaluate(el => getComputedStyle(el).fontFamily), /Google Sans/);
+    assert.equal(await page.locator('.hero-title').evaluate(el => getComputedStyle(el).fontWeight), '400');
+    assert.equal(await page.locator('.slogan-letter').first().evaluate(el => getComputedStyle(el).animationPlayState), 'running');
     assert.deepEqual(await page.locator('.hero-intro p').boundingBox(), copyBefore);
     const titleBox = await page.locator('.hero-title').boundingBox();
     assert.ok(titleBox.x >= 0 && titleBox.x + titleBox.width <= width);
     await page.mouse.move(0, 0);
-    await page.waitForFunction(() => { const scale = getComputedStyle(document.querySelector('.hero-title')).scale; return scale === 'none' || Math.abs(Number(scale) - 1) < .001; });
+    assert.equal(await page.locator('.ribbon-frame img').evaluateAll(images => new Set(images.map(image => image.src)).size), 8);
     await page.waitForFunction(() => document.querySelector('.partner-NU').naturalWidth > 0);
     const logo = await page.locator('.partner-NU').first().evaluate(el => {
       const box = el.getBoundingClientRect(), slot = el.parentElement.getBoundingClientRect();
@@ -81,9 +77,11 @@ try {
 
     // Scroll into text without anchor focus, and observe the actual in-flight reveal.
     await scrollTo(page, '.about-intro');
-    await page.waitForFunction(() => document.querySelector('.about-title').getAnimations().length > 0);
-    const inFlight = await page.locator('.about-title').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
-    assert.ok(inFlight.opacity < 1); assert.notEqual(inFlight.transform, 'none');
+    if (aboutPending) {
+      await page.waitForFunction(() => document.querySelector('.about-title').getAnimations().length > 0);
+      const inFlight = await page.locator('.about-title').evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), transform: getComputedStyle(el).transform }));
+      assert.ok(inFlight.opacity < 1); assert.notEqual(inFlight.transform, 'none');
+    }
     await settleText(page);
     assert.equal(await page.locator('.about-title').evaluate(el => getComputedStyle(el).opacity), '1');
     await capture(page, `${width}-about`);
@@ -117,7 +115,7 @@ try {
     await capture(page, `${width}-team`);
     await scrollTo(page, '.about-intro');
     await page.waitForTimeout(150);
-    assert.equal(await page.evaluate(() => window.revealStarts.filter(r => r.text.includes('За кадром')).length), 1);
+    assert.equal(await page.evaluate(() => window.revealStarts.filter(r => r.text.includes('За кадром')).length), aboutPending ? 1 : 0);
     assert.equal(await page.locator('.about-title').evaluate(el => el.getAnimations().filter(animation => animation.playState === 'running').length), 0);
 
     // All About copy and the solid navigation retain accessible contrast.
@@ -155,8 +153,10 @@ try {
     await capture(page, `${width}-logos-reduced`);
     await page.locator('.hero-title').hover();
     assert.equal(await page.locator('.hero-title').evaluate(el => getComputedStyle(el).scale), 'none');
+    assert.equal(await page.locator('.slogan-letter').first().evaluate(el => getComputedStyle(el).animationName), 'none');
+    assert.equal(await page.locator('.slogan-pause').count(), 0);
     assert.deepEqual(errors, []);
-    console.log(`${width}px: dots, NU proportions, stable heading hover, white navigation, full dark About, reveals, reduced motion, no overflow — PASS (minimum About contrast ${Math.min(...contrast.text).toFixed(2)}:1)`);
+    console.log(`${width}px: dots, NU proportions, Google Sans 400, letter wave without pause button, eight images, white navigation, full dark About, reveals, reduced motion, no overflow — PASS (minimum About contrast ${Math.min(...contrast.text).toFixed(2)}:1)`);
     await page.close();
   }
 
