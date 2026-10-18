@@ -22,8 +22,8 @@ Known limits, for #32 and #34 (no id merging is built before there is real track
   it, as tall as the cashier". An incassator or a client who leans over the desk reads as an outsider. The
   values rest on two positives (X-18, X-30) and are for #34 to recheck. A second worker who stands beside the
   cashier through a count with a controller fires it too, since by looks only the cash tells them from an
-  outsider. Thresholds.controller_exempt silences the type while cash lies on the desk, but it also hides
-  X-18's outsider, so it is off until real tracks decide. An outsider farther than room_radius, behind the cashier, is not
+  outsider. Thresholds.controller_exempt (on) silences the type while cash lies on the desk, so a real outsider
+  who stands there while cash lies out is not seen either; the labelled ones are (#34). An outsider farther than room_radius, behind the cashier, is not
   seen either.
 - foreign_object_at_desk and valuables_left_on_desk see an object within object_radius of the seat, so a
   client's cup at the counter counts. valuables_left_on_desk is a book on the desk: the safe is not detected,

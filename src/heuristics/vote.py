@@ -3,11 +3,10 @@
 A hit already passed its type's thresholds, so it is confident. The vote only raises the verdict to
 "violation" and never lowers it: silence is not "no violation". N is passed in, #34 picks it on LOVO.
 
-A type may vote only if it held at most 2 false positives in 19 clean videos (scripts/heuristics_lovo.py
-report prints the count per type; on the stand-in tracks that is outsider_in_cash_room 0/19 and
-foreign_object_at_desk 2/19, while cash_on_desk_next_client has 7/19 and client_left_during_count 4/19).
-The hits of the other types are still reported as findings; they just do not raise the verdict. The set
-rests on stand-in tracks, #34 rechecks it on the real ones.
+A type may vote only if it fires on no clean video at that N. `train` (src/models/evaluate.py) picks the types and N on
+leave-one-video-out and saves them with the model; they are in reports/metrics.json under "vote". Real tracks
+left outsider_in_cash_room alone: foreign_object_at_desk fires on 2 of 19 clean videos at 3 s. The constant below
+is the earlier stand-in set, kept for tests that call `vote` without settings.
 """
 
 from collections.abc import Collection, Iterable

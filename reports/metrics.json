@@ -2,6 +2,274 @@
   "video_recall": 1.0,
   "fp_rate": 0.9473684210526315,
   "median_abs_dt": 5.0,
+  "type_accuracy": 0.09523809523809523,
+  "branch_a": {
+    "video_recall": 1.0,
+    "fp_rate": 0.9473684210526315,
+    "median_abs_dt": 5.0
+  },
+  "vote": {
+    "enabled": true,
+    "n_sec": 3.0,
+    "types": [
+      "outsider_in_cash_room"
+    ],
+    "grid": [
+      {
+        "n_sec": 3.0,
+        "types": [
+          "outsider_in_cash_room"
+        ],
+        "added_false_positives": 0
+      },
+      {
+        "n_sec": 4.0,
+        "types": [
+          "outsider_in_cash_room"
+        ],
+        "added_false_positives": 0
+      },
+      {
+        "n_sec": 5.0,
+        "types": [
+          "outsider_in_cash_room"
+        ],
+        "added_false_positives": 0
+      },
+      {
+        "n_sec": 6.0,
+        "types": [
+          "outsider_in_cash_room"
+        ],
+        "added_false_positives": 0
+      },
+      {
+        "n_sec": 8.0,
+        "types": [],
+        "added_false_positives": 0
+      },
+      {
+        "n_sec": 10.0,
+        "types": [],
+        "added_false_positives": 0
+      }
+    ],
+    "clean_videos": 19,
+    "clean_videos_branch_a_misses": 1
+  },
+  "types": {
+    "allowed": [
+      "outsider_in_cash_room"
+    ],
+    "per_type": {
+      "cash_on_desk_next_client": {
+        "right": 1,
+        "fired": 5
+      },
+      "client_left_during_count": {
+        "right": 0,
+        "fired": 5
+      },
+      "count_without_controller": {
+        "right": 0,
+        "fired": 5
+      },
+      "foreign_object_at_desk": {
+        "right": 1,
+        "fired": 4
+      },
+      "outsider_in_cash_room": {
+        "right": 2,
+        "fired": 2
+      }
+    },
+    "n_typed_right": 2,
+    "n_named": 2,
+    "by_video": {
+      "X-1": {
+        "truth": [
+          "cash_partially_given"
+        ],
+        "found": "other"
+      },
+      "X-2": {
+        "truth": [
+          "id_not_presented"
+        ],
+        "found": "other"
+      },
+      "X-4": {
+        "truth": [
+          "cash_on_desk_next_client"
+        ],
+        "found": "other"
+      },
+      "X-11": {
+        "truth": [
+          "keys_left_on_safe"
+        ],
+        "found": "other"
+      },
+      "X-13": {
+        "truth": [
+          "cash_put_away_uncounted"
+        ],
+        "found": "other"
+      },
+      "X-15": {
+        "truth": [
+          "foreign_object_at_desk"
+        ],
+        "found": "other"
+      },
+      "X-17": {
+        "truth": [
+          "collector_id_not_shown"
+        ],
+        "found": "other"
+      },
+      "X-18": {
+        "truth": [
+          "outsider_in_cash_room"
+        ],
+        "found": "outsider_in_cash_room"
+      },
+      "X-20": {
+        "truth": [
+          "safe_left_open"
+        ],
+        "found": "other"
+      },
+      "X-22": {
+        "truth": [
+          "keys_left_on_safe"
+        ],
+        "found": "other"
+      },
+      "X-24": {
+        "truth": [
+          "valuables_left_on_desk"
+        ],
+        "found": "other"
+      },
+      "X-26": {
+        "truth": [
+          "cash_left_on_desk"
+        ],
+        "found": "other"
+      },
+      "X-28": {
+        "truth": [
+          "laptop_left_open"
+        ],
+        "found": "other"
+      },
+      "X-30": {
+        "truth": [
+          "outsider_in_cash_room"
+        ],
+        "found": "outsider_in_cash_room"
+      },
+      "X-32": {
+        "truth": [
+          "cash_room_door_open"
+        ],
+        "found": "other"
+      },
+      "X-33": {
+        "truth": [
+          "cash_room_door_open"
+        ],
+        "found": "other"
+      },
+      "X-34": {
+        "truth": [
+          "client_left_during_count"
+        ],
+        "found": "other"
+      },
+      "X-38": {
+        "truth": [
+          "cash_on_desk_next_client"
+        ],
+        "found": "other"
+      },
+      "X-40": {
+        "truth": [
+          "foreign_object_at_desk"
+        ],
+        "found": "other"
+      },
+      "X-44": {
+        "truth": [
+          "detector_not_used"
+        ],
+        "found": "other"
+      },
+      "X-46": {
+        "truth": [
+          "foreign_object_at_desk"
+        ],
+        "found": "other"
+      }
+    }
+  },
+  "knn": {
+    "enabled": false,
+    "grid": [
+      {
+        "k": 5,
+        "min_share": 0.6,
+        "answered": 15,
+        "right": 0
+      },
+      {
+        "k": 5,
+        "min_share": 0.8,
+        "answered": 14,
+        "right": 0
+      },
+      {
+        "k": 5,
+        "min_share": 1.0,
+        "answered": 12,
+        "right": 0
+      },
+      {
+        "k": 15,
+        "min_share": 0.6,
+        "answered": 12,
+        "right": 0
+      },
+      {
+        "k": 15,
+        "min_share": 0.8,
+        "answered": 5,
+        "right": 0
+      },
+      {
+        "k": 15,
+        "min_share": 1.0,
+        "answered": 0,
+        "right": 0
+      }
+    ]
+  },
+  "timecode_choice": {
+    "state": {
+      "n": 4,
+      "onset": 1.5,
+      "peak": 5.25,
+      "n_picked": 2,
+      "picked_onset": 9.75,
+      "picked_peak": 9.5
+    },
+    "action": {
+      "n": 19,
+      "onset": 9.0,
+      "peak": 5.0
+    }
+  },
   "timecode_mode": "peak",
   "median_abs_dt_by_mode": {
     "onset": 9.5,
@@ -10,11 +278,12 @@
   "threshold": 0.007924697361886501,
   "n_videos": 40,
   "n_violation_videos": 21,
+  "n_clean_videos": 19,
   "n_false_positives": 18,
   "embed_seconds_ref_video": {
     "video_id": "X-14",
     "duration": 142.51647944457446,
-    "seconds": 17.95923147800204
+    "seconds": 45.09237975900032
   },
   "video_scores": {
     "X-1": 0.9739677309989929,

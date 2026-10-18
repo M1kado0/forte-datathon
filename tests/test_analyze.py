@@ -11,21 +11,17 @@ from itertools import combinations
 
 import cv2
 import numpy as np
+import pandas as pd
 import pytest
 
+from contracts.data import TRACKS_SCHEMA
 from contracts.schemas import JobResponse
 from src.config import VIDEOS_DIR, WEIGHTS
 from src.features.embeddings import MODEL_NAME
 from src.models import analyze as analyze_mod
-from src.models.analyze import (
-    FALLBACK_TYPE,
-    MAX_FALLBACK_VIOLATIONS,
-    MAX_VIOLATIONS,
-    MIN_GAP_SEC,
-    analyze,
-    pick_timecodes,
-)
+from src.models.analyze import FALLBACK_TYPE, MAX_VIOLATIONS, MIN_GAP_SEC, analyze
 from src.models.train import MODEL_PATH
+from src.models.violations import Settings, Vote
 from src.rules.describe import rule_catalog
 
 SRC_FPS = 10
@@ -69,8 +65,9 @@ def assert_contract(violations):
     """Every invariant of the ticket's smoke test and ADR 0005, for any verdict."""
     verdict = "violation" if violations else "no_violation"
     JobResponse(job_id="t", status="done", verdict=verdict, violations=violations)  # raises on mismatch
-    only_fallback = all(v.type == FALLBACK_NAME for v in violations)
-    assert len(violations) <= (MAX_FALLBACK_VIOLATIONS if only_fallback else MAX_VIOLATIONS)
+    assert len(violations) <= MAX_VIOLATIONS
+    if violations and all(v.type == FALLBACK_NAME for v in violations):
+        assert len(violations) == 1  # ADR 0005: a fallback-typed result is one violation per video
     for a, b in combinations(violations, 2):
         assert abs(a.timecode_sec - b.timecode_sec) >= MIN_GAP_SEC
     for v in violations:
@@ -104,22 +101,70 @@ def test_no_window_above_threshold_is_no_violation(tmp_path):
     assert_contract(violations)
 
 
-def test_pick_timecodes_takes_best_peak_then_next_one_past_the_gap():
-    starts = np.arange(20) * 0.5  # window centres 1.0, 1.5, ..., 10.5
-    scores = np.zeros(20)
-    scores[[2, 4, 14]] = [0.6, 0.9, 0.7]  # centres 2.0, 3.0, 8.0
-    assert pick_timecodes(starts, scores, threshold=0.5) == [3.0, 8.0]
-    assert pick_timecodes(starts, scores, threshold=0.5, max_n=1) == [3.0]
-    assert pick_timecodes(starts, scores, threshold=0.95) == []
-    assert pick_timecodes(np.zeros(0), np.zeros(0), threshold=0.5) == []
+OUTSIDER = "outsider_in_cash_room"
+OUTSIDER_NAME = next(t["name"] for t in rule_catalog() if t["id"] == OUTSIDER)
 
 
-def test_pick_timecodes_stops_at_max_violations():
-    starts = np.arange(40) * 0.5
-    scores = np.zeros(40)
-    scores[[2, 16, 30]] = [0.9, 0.8, 0.7]  # centres 2.0, 9.0, 16.0, all past the gap
-    assert MAX_VIOLATIONS == 2
-    assert pick_timecodes(starts, scores, threshold=0.5) == [2.0, 9.0]
+def people_tracks(second=(2.0, 12.0)):
+    """The cashier at the seat all clip and a second person beside the seat between `second` seconds."""
+
+    def person(track_id, t0, t1, cy):
+        return [
+            (track_id, "person", "person", i / 4, 180.0, cy - 100.0, 220.0, cy + 100.0, 0.9)
+            for i in range(round(t0 * 4), round(t1 * 4))
+        ]
+
+    rows = person(1, 0, SECONDS, 400.0) + person(2, *second, 520.0)
+    return TRACKS_SCHEMA.validate(pd.DataFrame(rows, columns=list(TRACKS_SCHEMA.columns)))
+
+
+def run_with_tracks(tmp_path, peaks, settings, table):
+    model = {**FAKE_MODEL, "settings": settings}
+    clip = make_clip(tmp_path / "clip.mov", peaks)
+    return analyze(clip, embedder=brightness_embedder, model=model, tracks=lambda _: table)
+
+
+VOTING = Settings(
+    allowed=frozenset({OUTSIDER}), vote=Vote(enabled=True, n_sec=3.0, types=frozenset({OUTSIDER}))
+)
+
+
+def test_heuristic_type_at_the_start_of_the_state_when_branch_a_agrees(tmp_path):
+    violations = run_with_tracks(tmp_path, {7: BRIGHT}, VOTING, people_tracks())
+    assert_contract(violations)
+    assert [v.type for v in violations] == [OUTSIDER_NAME]
+    assert violations[0].timecode_sec == pytest.approx(2.0, abs=0.2)
+
+
+def test_voting_hit_raises_a_verdict_branch_a_did_not_give(tmp_path):
+    violations = run_with_tracks(tmp_path, {}, VOTING, people_tracks())
+    assert_contract(violations)
+    assert [v.type for v in violations] == [OUTSIDER_NAME]
+
+
+def test_vote_switched_off_leaves_the_verdict_to_branch_a(tmp_path):
+    no_vote = Settings(allowed=frozenset({OUTSIDER}), vote=Vote(enabled=False))
+    assert run_with_tracks(tmp_path, {}, no_vote, people_tracks()) == []
+
+
+def test_a_model_without_settings_never_builds_tracks(tmp_path):
+    def forbidden(_):
+        raise AssertionError("branch B must not run")
+
+    clip = make_clip(tmp_path / "clip.mov", {7: BRIGHT})
+    violations = analyze(clip, embedder=brightness_embedder, model=FAKE_MODEL, tracks=forbidden)
+    assert [v.type for v in violations] == [FALLBACK_NAME]
+
+
+def test_failed_tracks_leave_the_answer_to_branch_a(tmp_path):
+    def broken(_):
+        raise RuntimeError("out of memory")
+
+    clip = make_clip(tmp_path / "clip.mov", {7: BRIGHT})
+    model = {**FAKE_MODEL, "settings": VOTING}
+    violations = analyze(clip, embedder=brightness_embedder, model=model, tracks=broken)
+    assert_contract(violations)
+    assert [v.type for v in violations] == [FALLBACK_NAME]
 
 
 def test_model_from_other_embeddings_is_refused(monkeypatch):
@@ -161,5 +206,5 @@ def test_smoke_real_model_on_shortest_real_clip(monkeypatch):
     monkeypatch.setattr(analyze_mod, "embed_video", functools.cache(analyze_mod.embed_video))
     assert_contract(analyze(REAL_CLIP))
     forced = analyze(REAL_CLIP, model={**analyze_mod.default_model(), "threshold": 0.0})
-    assert len(forced) == MAX_FALLBACK_VIOLATIONS
+    assert len(forced) == 1
     assert_contract(forced)
