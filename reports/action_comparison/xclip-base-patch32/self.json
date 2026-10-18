@@ -1,0 +1,298 @@
+{
+  "video_recall": 1.0,
+  "fp_rate": 1.0,
+  "median_abs_dt": 3.5,
+  "type_accuracy": 0.0,
+  "n_videos": 10,
+  "n_violation_videos": 6,
+  "n_clean_videos": 4,
+  "n_false_positives": 4,
+  "n_typed_right": 0,
+  "localized_labels_within_5s": 5,
+  "n_violation_labels": 6,
+  "by_video": {
+    "computer_on": {
+      "truth": [
+        [
+          7,
+          "laptop_left_open"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 7.0,
+          "start_sec": 5.0,
+          "end_sec": 8.0,
+          "action": "two people standing beside a desk",
+          "action_score": 0.299648255109787,
+          "violation_score": 1.0
+        },
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 12.0,
+          "start_sec": 11.0,
+          "end_sec": 13.0,
+          "action": "a person closing a door",
+          "action_score": 0.218923881649971,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "IDnotshown": {
+      "truth": [
+        [
+          7,
+          "id_not_presented"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "other",
+          "raw_type": "foreign_object_at_desk",
+          "timecode_sec": 4.0,
+          "start_sec": 3.0,
+          "end_sec": 9.0,
+          "action": "two people standing beside a desk",
+          "action_score": 0.3914557099342346,
+          "violation_score": 1.0
+        },
+        {
+          "type": "client_left_during_count",
+          "raw_type": "client_left_during_count",
+          "timecode_sec": 9.0,
+          "start_sec": 8.0,
+          "end_sec": 12.178833333333333,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.29693278670310974,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "left_door_open": {
+      "truth": [
+        [
+          4,
+          "cash_room_door_open"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "other",
+          "raw_type": "foreign_object_at_desk",
+          "timecode_sec": 2.0,
+          "start_sec": 1.0,
+          "end_sec": 7.0,
+          "action": "a person leaving a desk and walking away",
+          "action_score": 0.33003512024879456,
+          "violation_score": 1.0
+        },
+        {
+          "type": "safe_left_open",
+          "raw_type": "safe_left_open",
+          "timecode_sec": 8.0,
+          "start_sec": 6.0,
+          "end_sec": 10.2102,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.343334823846817,
+          "violation_score": 0.9999779462814331
+        }
+      ]
+    },
+    "light_on": {
+      "truth": [
+        [
+          15,
+          "other"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 8.0,
+          "start_sec": 0.0,
+          "end_sec": 19.5195,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.2581120729446411,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "noviolation": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "client_left_during_count",
+          "raw_type": "client_left_during_count",
+          "timecode_sec": 2.0,
+          "start_sec": 0.0,
+          "end_sec": 3.0,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.3599184453487396,
+          "violation_score": 1.0
+        },
+        {
+          "type": "safe_left_open",
+          "raw_type": "safe_left_open",
+          "timecode_sec": 20.0,
+          "start_sec": 19.0,
+          "end_sec": 22.2222,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.4265228807926178,
+          "violation_score": 0.9999990463256836
+        }
+      ]
+    },
+    "person": {
+      "truth": [
+        [
+          12,
+          "outsider_in_cash_room"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 3.0,
+          "start_sec": 1.0,
+          "end_sec": 4.0,
+          "action": "a person closing a door",
+          "action_score": 0.24634794890880585,
+          "violation_score": 1.0
+        },
+        {
+          "type": "outsider_in_cash_room",
+          "raw_type": "outsider_in_cash_room",
+          "timecode_sec": 10.0,
+          "start_sec": 7.0,
+          "end_sec": 13.0,
+          "action": "a person leaving a desk and walking away",
+          "action_score": 0.2260482758283615,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "phone_left": {
+      "truth": [
+        [
+          11,
+          "foreign_object_at_desk"
+        ]
+      ],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 15.0,
+          "start_sec": 0.0,
+          "end_sec": 19.0,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.2833685576915741,
+          "violation_score": 1.0
+        },
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 20.0,
+          "start_sec": 19.0,
+          "end_sec": 22.0,
+          "action": "a person closing a door",
+          "action_score": 0.2754802703857422,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "2people_no_violation": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 4.0,
+          "start_sec": 0.0,
+          "end_sec": 26.0,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.4686168432235718,
+          "violation_score": 1.0
+        },
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 34.0,
+          "start_sec": 27.0,
+          "end_sec": 38.90553333333333,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.5963870286941528,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "no_violation_counting_and_leaving": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 25.158466666666666,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.33129584789276123,
+          "violation_score": 1.0
+        }
+      ]
+    },
+    "no_violation_giving_money_one_person": {
+      "truth": [],
+      "score": 1.0,
+      "events": [
+        {
+          "type": "keys_left_on_safe",
+          "raw_type": "keys_left_on_safe",
+          "timecode_sec": 1.0,
+          "start_sec": 0.0,
+          "end_sec": 37.0,
+          "action": "an empty room with a desk and a safe",
+          "action_score": 0.5086890459060669,
+          "violation_score": 1.0
+        },
+        {
+          "type": "outsider_in_cash_room",
+          "raw_type": "outsider_in_cash_room",
+          "timecode_sec": 37.97226666666667,
+          "start_sec": 36.0,
+          "end_sec": 38.97226666666667,
+          "action": "a person entering a room",
+          "action_score": 0.23730303347110748,
+          "violation_score": 1.0
+        }
+      ]
+    }
+  },
+  "embedding_seconds": {
+    "computer_on": 2.2192129000031855,
+    "IDnotshown": 1.809530700003961,
+    "left_door_open": 1.5031429000082426,
+    "light_on": 2.9960728000005474,
+    "noviolation": 3.4469267000094987,
+    "person": 4.245559599992703,
+    "phone_left": 3.461978999999701,
+    "2people_no_violation": 17.92622080000001,
+    "no_violation_counting_and_leaving": 3.9280202999943867,
+    "no_violation_giving_money_one_person": 5.98692039999878
+  },
+  "protocol": "Previously used self benchmark; no fitting, selection or threshold adjustment on it in this experiment."
+}

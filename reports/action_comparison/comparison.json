@@ -1,0 +1,5030 @@
+{
+  "selected": "r3d-18",
+  "results": {
+    "r3d-18": {
+      "lovo": {
+        "video_recall": 1.0,
+        "fp_rate": 0.9473684210526315,
+        "median_abs_dt": 3.4333333333333336,
+        "type_accuracy": 0.0,
+        "n_videos": 40,
+        "n_violation_videos": 21,
+        "n_clean_videos": 19,
+        "n_false_positives": 18,
+        "n_typed_right": 0,
+        "localized_labels_within_5s": 17,
+        "n_violation_labels": 22,
+        "by_video": {
+          "X-1": {
+            "truth": [
+              [
+                22,
+                "cash_partially_given"
+              ]
+            ],
+            "score": 0.1176510751247406,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 14.0,
+                "start_sec": 13.0,
+                "end_sec": 15.0,
+                "action": "using computer",
+                "action_score": 0.6020094752311707,
+                "violation_score": 0.1176510751247406
+              }
+            ]
+          },
+          "X-2": {
+            "truth": [
+              [
+                10,
+                "id_not_presented"
+              ]
+            ],
+            "score": 0.9727190136909485,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 13.0,
+                "start_sec": 10.0,
+                "end_sec": 14.0,
+                "action": "fixing hair",
+                "action_score": 0.10502702742815018,
+                "violation_score": 0.9727190136909485
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 4.0,
+                "action": "using computer",
+                "action_score": 0.357318639755249,
+                "violation_score": 0.37967202067375183
+              }
+            ]
+          },
+          "X-3": {
+            "truth": [],
+            "score": 0.9994768500328064,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 13.0,
+                "start_sec": 11.0,
+                "end_sec": 14.0,
+                "action": "fixing hair",
+                "action_score": 0.11330695450305939,
+                "violation_score": 0.9994768500328064
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 5.0,
+                "end_sec": 9.0,
+                "action": "making bed",
+                "action_score": 0.23694008588790894,
+                "violation_score": 0.9437248706817627
+              }
+            ]
+          },
+          "X-4": {
+            "truth": [
+              [
+                57,
+                "cash_on_desk_next_client"
+              ],
+              [
+                68,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.9773897528648376,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 19.0,
+                "start_sec": 17.0,
+                "end_sec": 21.0,
+                "action": "fixing hair",
+                "action_score": 0.19840437173843384,
+                "violation_score": 0.9773897528648376
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 68.0,
+                "start_sec": 66.0,
+                "end_sec": 70.0,
+                "action": "fixing hair",
+                "action_score": 0.18495172262191772,
+                "violation_score": 0.9596661925315857
+              }
+            ]
+          },
+          "X-5": {
+            "truth": [],
+            "score": 0.9815531969070435,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 70.6,
+                "start_sec": 69.6,
+                "end_sec": 71.6,
+                "action": "sanding floor",
+                "action_score": 0.160052090883255,
+                "violation_score": 0.9815531969070435
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 11.0,
+                "start_sec": 9.0,
+                "end_sec": 13.0,
+                "action": "using computer",
+                "action_score": 0.28874677419662476,
+                "violation_score": 0.7186008095741272
+              }
+            ]
+          },
+          "X-8": {
+            "truth": [],
+            "score": 0.09199170768260956,
+            "events": []
+          },
+          "X-10": {
+            "truth": [],
+            "score": 0.9684310555458069,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 7.0,
+                "action": "sharpening knives",
+                "action_score": 0.11640606075525284,
+                "violation_score": 0.9684310555458069
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "sharpening knives",
+                "action_score": 0.12077296525239944,
+                "violation_score": 0.9038524031639099
+              }
+            ]
+          },
+          "X-11": {
+            "truth": [
+              [
+                18,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.15984787046909332,
+            "events": [
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 18.0,
+                "start_sec": 17.0,
+                "end_sec": 19.0,
+                "action": "making bed",
+                "action_score": 0.4787382185459137,
+                "violation_score": 0.15984787046909332
+              }
+            ]
+          },
+          "X-12": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 36.0,
+                "start_sec": 34.0,
+                "end_sec": 38.0,
+                "action": "moving furniture",
+                "action_score": 0.09934354573488235,
+                "violation_score": 1.0
+              },
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 41.0,
+                "start_sec": 39.0,
+                "end_sec": 42.300000000000004,
+                "action": "making bed",
+                "action_score": 0.20903509855270386,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "X-13": {
+            "truth": [
+              [
+                47,
+                "cash_put_away_uncounted"
+              ]
+            ],
+            "score": 0.990171492099762,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 60.0,
+                "start_sec": 59.0,
+                "end_sec": 64.0,
+                "action": "bookbinding",
+                "action_score": 0.14818859100341797,
+                "violation_score": 0.990171492099762
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 37.0,
+                "start_sec": 36.0,
+                "end_sec": 38.0,
+                "action": "making sushi",
+                "action_score": 0.22178561985492706,
+                "violation_score": 0.894489049911499
+              }
+            ]
+          },
+          "X-14": {
+            "truth": [],
+            "score": 0.9507009983062744,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 41.0,
+                "start_sec": 39.0,
+                "end_sec": 43.0,
+                "action": "fixing hair",
+                "action_score": 0.17313194274902344,
+                "violation_score": 0.9507009983062744
+              },
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 36.0,
+                "start_sec": 35.0,
+                "end_sec": 37.0,
+                "action": "fixing hair",
+                "action_score": 0.2197399139404297,
+                "violation_score": 0.762544572353363
+              }
+            ]
+          },
+          "X-15": {
+            "truth": [
+              [
+                15,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.9975855350494385,
+            "events": [
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 14.0,
+                "start_sec": 7.0,
+                "end_sec": 15.0,
+                "action": "bookbinding",
+                "action_score": 0.20598669350147247,
+                "violation_score": 0.9975855350494385
+              },
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 19.866666666666667,
+                "start_sec": 18.866666666666667,
+                "end_sec": 20.866666666666667,
+                "action": "using computer",
+                "action_score": 0.17185741662979126,
+                "violation_score": 0.3812094032764435
+              }
+            ]
+          },
+          "X-16": {
+            "truth": [],
+            "score": 0.9990389347076416,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 19.0,
+                "start_sec": 18.0,
+                "end_sec": 21.0,
+                "action": "spraying",
+                "action_score": 0.14385053515434265,
+                "violation_score": 0.9990389347076416
+              },
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "sharpening knives",
+                "action_score": 0.13278581202030182,
+                "violation_score": 0.996751070022583
+              }
+            ]
+          },
+          "X-17": {
+            "truth": [
+              [
+                7,
+                "collector_id_not_shown"
+              ]
+            ],
+            "score": 0.8521808981895447,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "shredding paper",
+                "action_score": 0.09266965091228485,
+                "violation_score": 0.8521808981895447
+              }
+            ]
+          },
+          "X-18": {
+            "truth": [
+              [
+                20,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9917136430740356,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 12.0,
+                "start_sec": 11.0,
+                "end_sec": 14.0,
+                "action": "using computer",
+                "action_score": 0.15631867945194244,
+                "violation_score": 0.9917136430740356
+              }
+            ]
+          },
+          "X-19": {
+            "truth": [],
+            "score": 0.9771404266357422,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 41.0,
+                "start_sec": 39.0,
+                "end_sec": 42.0,
+                "action": "sharpening knives",
+                "action_score": 0.27901896834373474,
+                "violation_score": 0.9771404266357422
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 22.0,
+                "start_sec": 21.0,
+                "end_sec": 24.0,
+                "action": "using computer",
+                "action_score": 0.1922629475593567,
+                "violation_score": 0.9742265343666077
+              }
+            ]
+          },
+          "X-20": {
+            "truth": [
+              [
+                5,
+                "safe_left_open"
+              ]
+            ],
+            "score": 0.5214165449142456,
+            "events": [
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 4.0,
+                "start_sec": 2.0,
+                "end_sec": 5.0,
+                "action": "bookbinding",
+                "action_score": 0.20867480337619781,
+                "violation_score": 0.5214165449142456
+              }
+            ]
+          },
+          "X-21": {
+            "truth": [],
+            "score": 0.9559841752052307,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 7.0,
+                "start_sec": 0.0,
+                "end_sec": 19.6,
+                "action": "bookbinding",
+                "action_score": 0.28711405396461487,
+                "violation_score": 0.9559841752052307
+              }
+            ]
+          },
+          "X-22": {
+            "truth": [
+              [
+                14,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.42737677693367004,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 7.0,
+                "action": "bookbinding",
+                "action_score": 0.12992389500141144,
+                "violation_score": 0.42737677693367004
+              },
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 15.0,
+                "start_sec": 14.0,
+                "end_sec": 16.0,
+                "action": "bookbinding",
+                "action_score": 0.38835012912750244,
+                "violation_score": 0.15687258541584015
+              }
+            ]
+          },
+          "X-23": {
+            "truth": [],
+            "score": 0.9762618541717529,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 15.0,
+                "start_sec": 10.0,
+                "end_sec": 17.0,
+                "action": "bookbinding",
+                "action_score": 0.30315494537353516,
+                "violation_score": 0.9762618541717529
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 8.0,
+                "start_sec": 5.0,
+                "end_sec": 10.0,
+                "action": "bookbinding",
+                "action_score": 0.33892399072647095,
+                "violation_score": 0.5111207365989685
+              }
+            ]
+          },
+          "X-24": {
+            "truth": [
+              [
+                8,
+                "valuables_left_on_desk"
+              ]
+            ],
+            "score": 0.9849275350570679,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 7.0,
+                "start_sec": 6.0,
+                "end_sec": 8.0,
+                "action": "front raises",
+                "action_score": 0.13249823451042175,
+                "violation_score": 0.9849275350570679
+              }
+            ]
+          },
+          "X-25": {
+            "truth": [],
+            "score": 0.9782800078392029,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "clean and jerk",
+                "action_score": 0.22755098342895508,
+                "violation_score": 0.9782800078392029
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 12.0,
+                "start_sec": 11.0,
+                "end_sec": 16.0,
+                "action": "bookbinding",
+                "action_score": 0.15011027455329895,
+                "violation_score": 0.8368353247642517
+              }
+            ]
+          },
+          "X-26": {
+            "truth": [
+              [
+                9,
+                "cash_left_on_desk"
+              ]
+            ],
+            "score": 0.5531242489814758,
+            "events": [
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 13.0,
+                "start_sec": 12.0,
+                "end_sec": 15.0,
+                "action": "building cabinet",
+                "action_score": 0.200906902551651,
+                "violation_score": 0.5531242489814758
+              }
+            ]
+          },
+          "X-27": {
+            "truth": [],
+            "score": 0.9611952900886536,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 11.0,
+                "action": "bookbinding",
+                "action_score": 0.24172793328762054,
+                "violation_score": 0.9611952900886536
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 20.0,
+                "start_sec": 15.0,
+                "end_sec": 21.0,
+                "action": "bookbinding",
+                "action_score": 0.17778347432613373,
+                "violation_score": 0.8460525870323181
+              }
+            ]
+          },
+          "X-28": {
+            "truth": [
+              [
+                7,
+                "laptop_left_open"
+              ]
+            ],
+            "score": 0.9964720010757446,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 8.0,
+                "start_sec": 6.0,
+                "end_sec": 10.0,
+                "action": "bookbinding",
+                "action_score": 0.10158504545688629,
+                "violation_score": 0.9964720010757446
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 14.0,
+                "start_sec": 13.0,
+                "end_sec": 15.0,
+                "action": "bookbinding",
+                "action_score": 0.24551813304424286,
+                "violation_score": 0.3056624233722687
+              }
+            ]
+          },
+          "X-29": {
+            "truth": [],
+            "score": 0.8513198494911194,
+            "events": [
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 11.0,
+                "start_sec": 10.0,
+                "end_sec": 12.0,
+                "action": "sharpening knives",
+                "action_score": 0.23140451312065125,
+                "violation_score": 0.8513198494911194
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 16.0,
+                "start_sec": 15.0,
+                "end_sec": 17.0,
+                "action": "building cabinet",
+                "action_score": 0.46623483300209045,
+                "violation_score": 0.17155303061008453
+              }
+            ]
+          },
+          "X-30": {
+            "truth": [
+              [
+                13,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9981411695480347,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "situp",
+                "action_score": 0.5577116012573242,
+                "violation_score": 0.9981411695480347
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 14.0,
+                "start_sec": 11.0,
+                "end_sec": 15.0,
+                "action": "getting a haircut",
+                "action_score": 0.18433859944343567,
+                "violation_score": 0.36926722526550293
+              }
+            ]
+          },
+          "X-31": {
+            "truth": [],
+            "score": 0.9964093565940857,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 9.0,
+                "start_sec": 8.0,
+                "end_sec": 10.0,
+                "action": "counting money",
+                "action_score": 0.050650980323553085,
+                "violation_score": 0.9964093565940857
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 20.0,
+                "start_sec": 18.0,
+                "end_sec": 22.0,
+                "action": "waxing eyebrows",
+                "action_score": 0.2541377544403076,
+                "violation_score": 0.9943291544914246
+              }
+            ]
+          },
+          "X-32": {
+            "truth": [
+              [
+                5,
+                "cash_room_door_open"
+              ]
+            ],
+            "score": 0.9965830445289612,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "waxing eyebrows",
+                "action_score": 0.10744141787290573,
+                "violation_score": 0.9965830445289612
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 17.0,
+                "start_sec": 16.0,
+                "end_sec": 21.3,
+                "action": "using computer",
+                "action_score": 0.11848326027393341,
+                "violation_score": 0.9709815979003906
+              }
+            ]
+          },
+          "X-33": {
+            "truth": [
+              [
+                6,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9265278577804565,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "bookbinding",
+                "action_score": 0.10028260946273804,
+                "violation_score": 0.9265278577804565
+              }
+            ]
+          },
+          "X-34": {
+            "truth": [
+              [
+                13,
+                "client_left_during_count"
+              ]
+            ],
+            "score": 0.3015156686306,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 15.0,
+                "start_sec": 14.0,
+                "end_sec": 16.0,
+                "action": "massaging person's head",
+                "action_score": 0.083928681910038,
+                "violation_score": 0.3015156686306
+              }
+            ]
+          },
+          "X-35": {
+            "truth": [],
+            "score": 0.5927402973175049,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 52.0,
+                "start_sec": 50.0,
+                "end_sec": 56.76666666666667,
+                "action": "making bed",
+                "action_score": 0.5739091038703918,
+                "violation_score": 0.5927402973175049
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "making bed",
+                "action_score": 0.3836272954940796,
+                "violation_score": 0.35096627473831177
+              }
+            ]
+          },
+          "X-37": {
+            "truth": [],
+            "score": 0.17129144072532654,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 4.0,
+                "action": "using computer",
+                "action_score": 0.24135172367095947,
+                "violation_score": 0.17129144072532654
+              }
+            ]
+          },
+          "X-38": {
+            "truth": [
+              [
+                33,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.45001286268234253,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 55.0,
+                "start_sec": 54.0,
+                "end_sec": 57.0,
+                "action": "making bed",
+                "action_score": 0.22273758053779602,
+                "violation_score": 0.45001286268234253
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 25.0,
+                "start_sec": 24.0,
+                "end_sec": 26.0,
+                "action": "making bed",
+                "action_score": 0.4322347939014435,
+                "violation_score": 0.1465497463941574
+              }
+            ]
+          },
+          "X-39": {
+            "truth": [],
+            "score": 0.9897626042366028,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 39.0,
+                "start_sec": 37.0,
+                "end_sec": 40.0,
+                "action": "making bed",
+                "action_score": 0.46397116780281067,
+                "violation_score": 0.9897626042366028
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 50.0,
+                "start_sec": 48.0,
+                "end_sec": 51.0,
+                "action": "shredding paper",
+                "action_score": 0.3799491822719574,
+                "violation_score": 0.9834513664245605
+              }
+            ]
+          },
+          "X-40": {
+            "truth": [
+              [
+                17,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.999697208404541,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 13.0,
+                "start_sec": 12.0,
+                "end_sec": 17.0,
+                "action": "clean and jerk",
+                "action_score": 0.2548846900463104,
+                "violation_score": 0.999697208404541
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 5.0,
+                "start_sec": 2.0,
+                "end_sec": 8.0,
+                "action": "sharpening knives",
+                "action_score": 0.29011639952659607,
+                "violation_score": 0.9930747747421265
+              }
+            ]
+          },
+          "X-43": {
+            "truth": [],
+            "score": 0.9929571151733398,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "making a sandwich",
+                "action_score": 0.11274339258670807,
+                "violation_score": 0.9929571151733398
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 22.366666666666667,
+                "start_sec": 17.0,
+                "end_sec": 23.366666666666667,
+                "action": "washing hands",
+                "action_score": 0.13763292133808136,
+                "violation_score": 0.9791704416275024
+              }
+            ]
+          },
+          "X-44": {
+            "truth": [
+              [
+                16,
+                "detector_not_used"
+              ]
+            ],
+            "score": 0.6857682466506958,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 19.433333333333334,
+                "start_sec": 18.433333333333334,
+                "end_sec": 20.433333333333334,
+                "action": "building cabinet",
+                "action_score": 0.10845043510198593,
+                "violation_score": 0.6857682466506958
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 4.0,
+                "action": "making a sandwich",
+                "action_score": 0.09686700999736786,
+                "violation_score": 0.4333018660545349
+              }
+            ]
+          },
+          "X-45": {
+            "truth": [],
+            "score": 0.9999908208847046,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 12.0,
+                "start_sec": 6.0,
+                "end_sec": 14.0,
+                "action": "making a sandwich",
+                "action_score": 0.13932958245277405,
+                "violation_score": 0.9999908208847046
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 20.0,
+                "start_sec": 19.0,
+                "end_sec": 22.0,
+                "action": "making a sandwich",
+                "action_score": 0.1199592724442482,
+                "violation_score": 0.9996174573898315
+              }
+            ]
+          },
+          "X-46": {
+            "truth": [
+              [
+                11,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.789420485496521,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 7.0,
+                "start_sec": 4.0,
+                "end_sec": 9.0,
+                "action": "washing hands",
+                "action_score": 0.29996269941329956,
+                "violation_score": 0.789420485496521
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 14.0,
+                "start_sec": 12.0,
+                "end_sec": 15.0,
+                "action": "washing hands",
+                "action_score": 0.14949721097946167,
+                "violation_score": 0.38484784960746765
+              }
+            ]
+          }
+        },
+        "threshold": 0.1176510751247406,
+        "protocol": "OOF heads; threshold selected on these same scores (optimistic recall)."
+      },
+      "nested": {
+        "video_recall": 1.0,
+        "fp_rate": 0.9473684210526315,
+        "median_abs_dt": 3.4333333333333336,
+        "type_accuracy": 0.0,
+        "n_videos": 40,
+        "n_violation_videos": 21,
+        "n_clean_videos": 19,
+        "n_false_positives": 18,
+        "n_typed_right": 0,
+        "localized_labels_within_5s": 17,
+        "n_violation_labels": 22,
+        "by_video": {
+          "X-1": {
+            "truth": [
+              [
+                22,
+                "cash_partially_given"
+              ]
+            ],
+            "score": 0.1176510751247406,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 14.0,
+                "start_sec": 13.0,
+                "end_sec": 15.0,
+                "action": "using computer",
+                "action_score": 0.6020094752311707,
+                "violation_score": 0.1176510751247406
+              }
+            ]
+          },
+          "X-2": {
+            "truth": [
+              [
+                10,
+                "id_not_presented"
+              ]
+            ],
+            "score": 0.9727190136909485,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 13.0,
+                "start_sec": 10.0,
+                "end_sec": 14.0,
+                "action": "fixing hair",
+                "action_score": 0.10502702742815018,
+                "violation_score": 0.9727190136909485
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 4.0,
+                "action": "using computer",
+                "action_score": 0.357318639755249,
+                "violation_score": 0.37967202067375183
+              }
+            ]
+          },
+          "X-3": {
+            "truth": [],
+            "score": 0.9994768500328064,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 13.0,
+                "start_sec": 11.0,
+                "end_sec": 14.0,
+                "action": "fixing hair",
+                "action_score": 0.11330695450305939,
+                "violation_score": 0.9994768500328064
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 5.0,
+                "end_sec": 9.0,
+                "action": "making bed",
+                "action_score": 0.23694008588790894,
+                "violation_score": 0.9437248706817627
+              }
+            ]
+          },
+          "X-4": {
+            "truth": [
+              [
+                57,
+                "cash_on_desk_next_client"
+              ],
+              [
+                68,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.9773897528648376,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 19.0,
+                "start_sec": 17.0,
+                "end_sec": 22.0,
+                "action": "fixing hair",
+                "action_score": 0.19840437173843384,
+                "violation_score": 0.9773897528648376
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 68.0,
+                "start_sec": 66.0,
+                "end_sec": 70.0,
+                "action": "fixing hair",
+                "action_score": 0.18495172262191772,
+                "violation_score": 0.9596661925315857
+              }
+            ]
+          },
+          "X-5": {
+            "truth": [],
+            "score": 0.9815531969070435,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 70.6,
+                "start_sec": 69.6,
+                "end_sec": 71.6,
+                "action": "sanding floor",
+                "action_score": 0.160052090883255,
+                "violation_score": 0.9815531969070435
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 11.0,
+                "start_sec": 9.0,
+                "end_sec": 13.0,
+                "action": "using computer",
+                "action_score": 0.28874677419662476,
+                "violation_score": 0.7186008095741272
+              }
+            ]
+          },
+          "X-8": {
+            "truth": [],
+            "score": 0.09199170768260956,
+            "events": []
+          },
+          "X-10": {
+            "truth": [],
+            "score": 0.9684310555458069,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 7.0,
+                "action": "sharpening knives",
+                "action_score": 0.11640606075525284,
+                "violation_score": 0.9684310555458069
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "sharpening knives",
+                "action_score": 0.12077296525239944,
+                "violation_score": 0.9038524031639099
+              }
+            ]
+          },
+          "X-11": {
+            "truth": [
+              [
+                18,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.15984787046909332,
+            "events": [
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 18.0,
+                "start_sec": 17.0,
+                "end_sec": 19.0,
+                "action": "making bed",
+                "action_score": 0.4787382185459137,
+                "violation_score": 0.15984787046909332
+              }
+            ]
+          },
+          "X-12": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 36.0,
+                "start_sec": 34.0,
+                "end_sec": 38.0,
+                "action": "moving furniture",
+                "action_score": 0.09934354573488235,
+                "violation_score": 1.0
+              },
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 41.0,
+                "start_sec": 39.0,
+                "end_sec": 42.300000000000004,
+                "action": "making bed",
+                "action_score": 0.20903509855270386,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "X-13": {
+            "truth": [
+              [
+                47,
+                "cash_put_away_uncounted"
+              ]
+            ],
+            "score": 0.990171492099762,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 60.0,
+                "start_sec": 59.0,
+                "end_sec": 64.0,
+                "action": "bookbinding",
+                "action_score": 0.14818859100341797,
+                "violation_score": 0.990171492099762
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 37.0,
+                "start_sec": 36.0,
+                "end_sec": 38.0,
+                "action": "making sushi",
+                "action_score": 0.22178561985492706,
+                "violation_score": 0.894489049911499
+              }
+            ]
+          },
+          "X-14": {
+            "truth": [],
+            "score": 0.9507009983062744,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 41.0,
+                "start_sec": 39.0,
+                "end_sec": 43.0,
+                "action": "fixing hair",
+                "action_score": 0.17313194274902344,
+                "violation_score": 0.9507009983062744
+              },
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 36.0,
+                "start_sec": 35.0,
+                "end_sec": 37.0,
+                "action": "fixing hair",
+                "action_score": 0.2197399139404297,
+                "violation_score": 0.762544572353363
+              }
+            ]
+          },
+          "X-15": {
+            "truth": [
+              [
+                15,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.9975855350494385,
+            "events": [
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 14.0,
+                "start_sec": 7.0,
+                "end_sec": 15.0,
+                "action": "bookbinding",
+                "action_score": 0.20598669350147247,
+                "violation_score": 0.9975855350494385
+              },
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 19.866666666666667,
+                "start_sec": 18.866666666666667,
+                "end_sec": 20.866666666666667,
+                "action": "using computer",
+                "action_score": 0.17185741662979126,
+                "violation_score": 0.3812094032764435
+              }
+            ]
+          },
+          "X-16": {
+            "truth": [],
+            "score": 0.9990389347076416,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 19.0,
+                "start_sec": 18.0,
+                "end_sec": 21.0,
+                "action": "spraying",
+                "action_score": 0.14385053515434265,
+                "violation_score": 0.9990389347076416
+              },
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "sharpening knives",
+                "action_score": 0.13278581202030182,
+                "violation_score": 0.996751070022583
+              }
+            ]
+          },
+          "X-17": {
+            "truth": [
+              [
+                7,
+                "collector_id_not_shown"
+              ]
+            ],
+            "score": 0.8521808981895447,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "shredding paper",
+                "action_score": 0.09266965091228485,
+                "violation_score": 0.8521808981895447
+              }
+            ]
+          },
+          "X-18": {
+            "truth": [
+              [
+                20,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9917136430740356,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 12.0,
+                "start_sec": 11.0,
+                "end_sec": 14.0,
+                "action": "using computer",
+                "action_score": 0.15631867945194244,
+                "violation_score": 0.9917136430740356
+              }
+            ]
+          },
+          "X-19": {
+            "truth": [],
+            "score": 0.9771404266357422,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 41.0,
+                "start_sec": 39.0,
+                "end_sec": 42.0,
+                "action": "sharpening knives",
+                "action_score": 0.27901896834373474,
+                "violation_score": 0.9771404266357422
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 22.0,
+                "start_sec": 21.0,
+                "end_sec": 24.0,
+                "action": "using computer",
+                "action_score": 0.1922629475593567,
+                "violation_score": 0.9742265343666077
+              }
+            ]
+          },
+          "X-20": {
+            "truth": [
+              [
+                5,
+                "safe_left_open"
+              ]
+            ],
+            "score": 0.5214165449142456,
+            "events": [
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 4.0,
+                "start_sec": 2.0,
+                "end_sec": 5.0,
+                "action": "bookbinding",
+                "action_score": 0.20867480337619781,
+                "violation_score": 0.5214165449142456
+              }
+            ]
+          },
+          "X-21": {
+            "truth": [],
+            "score": 0.9559841752052307,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 7.0,
+                "start_sec": 0.0,
+                "end_sec": 19.6,
+                "action": "bookbinding",
+                "action_score": 0.28711405396461487,
+                "violation_score": 0.9559841752052307
+              }
+            ]
+          },
+          "X-22": {
+            "truth": [
+              [
+                14,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.42737677693367004,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 7.0,
+                "action": "bookbinding",
+                "action_score": 0.12992389500141144,
+                "violation_score": 0.42737677693367004
+              },
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 15.0,
+                "start_sec": 14.0,
+                "end_sec": 16.0,
+                "action": "bookbinding",
+                "action_score": 0.38835012912750244,
+                "violation_score": 0.15687258541584015
+              }
+            ]
+          },
+          "X-23": {
+            "truth": [],
+            "score": 0.9762618541717529,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 15.0,
+                "start_sec": 10.0,
+                "end_sec": 17.0,
+                "action": "bookbinding",
+                "action_score": 0.30315494537353516,
+                "violation_score": 0.9762618541717529
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 8.0,
+                "start_sec": 5.0,
+                "end_sec": 9.0,
+                "action": "bookbinding",
+                "action_score": 0.33892399072647095,
+                "violation_score": 0.5111207365989685
+              }
+            ]
+          },
+          "X-24": {
+            "truth": [
+              [
+                8,
+                "valuables_left_on_desk"
+              ]
+            ],
+            "score": 0.9849275350570679,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 7.0,
+                "start_sec": 6.0,
+                "end_sec": 8.0,
+                "action": "front raises",
+                "action_score": 0.13249823451042175,
+                "violation_score": 0.9849275350570679
+              }
+            ]
+          },
+          "X-25": {
+            "truth": [],
+            "score": 0.9782800078392029,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "clean and jerk",
+                "action_score": 0.22755098342895508,
+                "violation_score": 0.9782800078392029
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 12.0,
+                "start_sec": 11.0,
+                "end_sec": 16.0,
+                "action": "bookbinding",
+                "action_score": 0.15011027455329895,
+                "violation_score": 0.8368353247642517
+              }
+            ]
+          },
+          "X-26": {
+            "truth": [
+              [
+                9,
+                "cash_left_on_desk"
+              ]
+            ],
+            "score": 0.5531242489814758,
+            "events": [
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 13.0,
+                "start_sec": 12.0,
+                "end_sec": 15.0,
+                "action": "building cabinet",
+                "action_score": 0.200906902551651,
+                "violation_score": 0.5531242489814758
+              }
+            ]
+          },
+          "X-27": {
+            "truth": [],
+            "score": 0.9611952900886536,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 11.0,
+                "action": "bookbinding",
+                "action_score": 0.24172793328762054,
+                "violation_score": 0.9611952900886536
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 20.0,
+                "start_sec": 14.0,
+                "end_sec": 21.0,
+                "action": "bookbinding",
+                "action_score": 0.17778347432613373,
+                "violation_score": 0.8460525870323181
+              }
+            ]
+          },
+          "X-28": {
+            "truth": [
+              [
+                7,
+                "laptop_left_open"
+              ]
+            ],
+            "score": 0.9964720010757446,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 8.0,
+                "start_sec": 6.0,
+                "end_sec": 10.0,
+                "action": "bookbinding",
+                "action_score": 0.10158504545688629,
+                "violation_score": 0.9964720010757446
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 14.0,
+                "start_sec": 13.0,
+                "end_sec": 15.0,
+                "action": "bookbinding",
+                "action_score": 0.24551813304424286,
+                "violation_score": 0.3056624233722687
+              }
+            ]
+          },
+          "X-29": {
+            "truth": [],
+            "score": 0.8513198494911194,
+            "events": [
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 11.0,
+                "start_sec": 10.0,
+                "end_sec": 12.0,
+                "action": "sharpening knives",
+                "action_score": 0.23140451312065125,
+                "violation_score": 0.8513198494911194
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 16.0,
+                "start_sec": 15.0,
+                "end_sec": 17.3,
+                "action": "building cabinet",
+                "action_score": 0.46623483300209045,
+                "violation_score": 0.17155303061008453
+              }
+            ]
+          },
+          "X-30": {
+            "truth": [
+              [
+                13,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9981411695480347,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "situp",
+                "action_score": 0.5577116012573242,
+                "violation_score": 0.9981411695480347
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 14.0,
+                "start_sec": 11.0,
+                "end_sec": 15.0,
+                "action": "getting a haircut",
+                "action_score": 0.18433859944343567,
+                "violation_score": 0.36926722526550293
+              }
+            ]
+          },
+          "X-31": {
+            "truth": [],
+            "score": 0.9964093565940857,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 9.0,
+                "start_sec": 8.0,
+                "end_sec": 10.0,
+                "action": "counting money",
+                "action_score": 0.050650980323553085,
+                "violation_score": 0.9964093565940857
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 20.0,
+                "start_sec": 18.0,
+                "end_sec": 22.0,
+                "action": "waxing eyebrows",
+                "action_score": 0.2541377544403076,
+                "violation_score": 0.9943291544914246
+              }
+            ]
+          },
+          "X-32": {
+            "truth": [
+              [
+                5,
+                "cash_room_door_open"
+              ]
+            ],
+            "score": 0.9965830445289612,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "waxing eyebrows",
+                "action_score": 0.10744141787290573,
+                "violation_score": 0.9965830445289612
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 17.0,
+                "start_sec": 16.0,
+                "end_sec": 21.3,
+                "action": "using computer",
+                "action_score": 0.11848326027393341,
+                "violation_score": 0.9709815979003906
+              }
+            ]
+          },
+          "X-33": {
+            "truth": [
+              [
+                6,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9265278577804565,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "bookbinding",
+                "action_score": 0.10028260946273804,
+                "violation_score": 0.9265278577804565
+              }
+            ]
+          },
+          "X-34": {
+            "truth": [
+              [
+                13,
+                "client_left_during_count"
+              ]
+            ],
+            "score": 0.3015156686306,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 15.0,
+                "start_sec": 14.0,
+                "end_sec": 16.0,
+                "action": "massaging person's head",
+                "action_score": 0.083928681910038,
+                "violation_score": 0.3015156686306
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "making bed",
+                "action_score": 0.31733226776123047,
+                "violation_score": 0.07732942700386047
+              }
+            ]
+          },
+          "X-35": {
+            "truth": [],
+            "score": 0.5927402973175049,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 52.0,
+                "start_sec": 50.0,
+                "end_sec": 56.76666666666667,
+                "action": "making bed",
+                "action_score": 0.5739091038703918,
+                "violation_score": 0.5927402973175049
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 10.0,
+                "action": "making bed",
+                "action_score": 0.3836272954940796,
+                "violation_score": 0.35096627473831177
+              }
+            ]
+          },
+          "X-37": {
+            "truth": [],
+            "score": 0.17129144072532654,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 4.0,
+                "action": "using computer",
+                "action_score": 0.24135172367095947,
+                "violation_score": 0.17129144072532654
+              }
+            ]
+          },
+          "X-38": {
+            "truth": [
+              [
+                33,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.45001286268234253,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 55.0,
+                "start_sec": 54.0,
+                "end_sec": 57.0,
+                "action": "making bed",
+                "action_score": 0.22273758053779602,
+                "violation_score": 0.45001286268234253
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 25.0,
+                "start_sec": 24.0,
+                "end_sec": 26.0,
+                "action": "making bed",
+                "action_score": 0.4322347939014435,
+                "violation_score": 0.1465497463941574
+              }
+            ]
+          },
+          "X-39": {
+            "truth": [],
+            "score": 0.9897626042366028,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 39.0,
+                "start_sec": 37.0,
+                "end_sec": 40.0,
+                "action": "making bed",
+                "action_score": 0.46397116780281067,
+                "violation_score": 0.9897626042366028
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 50.0,
+                "start_sec": 48.0,
+                "end_sec": 51.0,
+                "action": "shredding paper",
+                "action_score": 0.3799491822719574,
+                "violation_score": 0.9834513664245605
+              }
+            ]
+          },
+          "X-40": {
+            "truth": [
+              [
+                17,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.999697208404541,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 13.0,
+                "start_sec": 12.0,
+                "end_sec": 17.0,
+                "action": "clean and jerk",
+                "action_score": 0.2548846900463104,
+                "violation_score": 0.999697208404541
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 5.0,
+                "start_sec": 2.0,
+                "end_sec": 8.0,
+                "action": "sharpening knives",
+                "action_score": 0.29011639952659607,
+                "violation_score": 0.9930747747421265
+              }
+            ]
+          },
+          "X-43": {
+            "truth": [],
+            "score": 0.9929571151733398,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "making a sandwich",
+                "action_score": 0.11274339258670807,
+                "violation_score": 0.9929571151733398
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 22.366666666666667,
+                "start_sec": 17.0,
+                "end_sec": 23.366666666666667,
+                "action": "washing hands",
+                "action_score": 0.13763292133808136,
+                "violation_score": 0.9791704416275024
+              }
+            ]
+          },
+          "X-44": {
+            "truth": [
+              [
+                16,
+                "detector_not_used"
+              ]
+            ],
+            "score": 0.6857682466506958,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 19.433333333333334,
+                "start_sec": 18.433333333333334,
+                "end_sec": 20.433333333333334,
+                "action": "building cabinet",
+                "action_score": 0.10845043510198593,
+                "violation_score": 0.6857682466506958
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 4.0,
+                "action": "making a sandwich",
+                "action_score": 0.09686700999736786,
+                "violation_score": 0.4333018660545349
+              }
+            ]
+          },
+          "X-45": {
+            "truth": [],
+            "score": 0.9999908208847046,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 12.0,
+                "start_sec": 6.0,
+                "end_sec": 14.0,
+                "action": "making a sandwich",
+                "action_score": 0.13932958245277405,
+                "violation_score": 0.9999908208847046
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 20.0,
+                "start_sec": 19.0,
+                "end_sec": 22.0,
+                "action": "making a sandwich",
+                "action_score": 0.1199592724442482,
+                "violation_score": 0.9996174573898315
+              }
+            ]
+          },
+          "X-46": {
+            "truth": [
+              [
+                11,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.789420485496521,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 7.0,
+                "start_sec": 4.0,
+                "end_sec": 9.0,
+                "action": "washing hands",
+                "action_score": 0.29996269941329956,
+                "violation_score": 0.789420485496521
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 14.0,
+                "start_sec": 12.0,
+                "end_sec": 15.0,
+                "action": "washing hands",
+                "action_score": 0.14949721097946167,
+                "violation_score": 0.38484784960746765
+              }
+            ]
+          }
+        },
+        "thresholds": {
+          "X-1": 0.03854348883032799,
+          "X-2": 0.06540273129940033,
+          "X-3": 0.13871516287326813,
+          "X-4": 0.032429493963718414,
+          "X-5": 0.07678399980068207,
+          "X-8": 0.13175895810127258,
+          "X-10": 0.12062369287014008,
+          "X-11": 0.06581734120845795,
+          "X-12": 0.06287118047475815,
+          "X-13": 0.10700439661741257,
+          "X-14": 0.14574843645095825,
+          "X-15": 0.11363699287176132,
+          "X-16": 0.025445353239774704,
+          "X-17": 0.02506917528808117,
+          "X-18": 0.08344040811061859,
+          "X-19": 0.12323858588933945,
+          "X-20": 0.10283704102039337,
+          "X-21": 0.039232391864061356,
+          "X-22": 0.10482782125473022,
+          "X-23": 0.1727990210056305,
+          "X-24": 0.11038636416196823,
+          "X-25": 0.13834579288959503,
+          "X-26": 0.15132059156894684,
+          "X-27": 0.09412699192762375,
+          "X-28": 0.12476236373186111,
+          "X-29": 0.08056461066007614,
+          "X-30": 0.09722428768873215,
+          "X-31": 0.04406413063406944,
+          "X-32": 0.056423306465148926,
+          "X-33": 0.19791467487812042,
+          "X-34": 0.024731088429689407,
+          "X-35": 0.0921221673488617,
+          "X-37": 0.1169731542468071,
+          "X-38": 0.1334218531847,
+          "X-39": 0.06308732181787491,
+          "X-40": 0.09578847140073776,
+          "X-43": 0.13997502624988556,
+          "X-44": 0.12279216945171356,
+          "X-45": 0.061049316078424454,
+          "X-46": 0.0215442031621933
+        },
+        "protocol": "Outer video excluded from both heads, scaler and inner-LOVO threshold selection."
+      },
+      "embedding_seconds": {
+        "X-1": 2.1733162000018638,
+        "X-2": 1.3218450999993365,
+        "X-3": 1.5291209999995772,
+        "X-4": 5.590062399991439,
+        "X-5": 5.3189010999922175,
+        "X-8": 2.8211461000028066,
+        "X-10": 1.0678761999879498,
+        "X-11": 1.6826117000018712,
+        "X-12": 3.2359817999968072,
+        "X-13": 5.3856832000019494,
+        "X-14": 9.976222700002836,
+        "X-15": 1.4759843000065302,
+        "X-16": 1.621646800005692,
+        "X-17": 1.02671819999523,
+        "X-18": 1.6449493000109214,
+        "X-19": 4.195949400003883,
+        "X-20": 0.8496492999984184,
+        "X-21": 1.4377274999860674,
+        "X-22": 1.466136600007303,
+        "X-23": 1.2691507999988971,
+        "X-24": 0.9781348000105936,
+        "X-25": 2.301363999999012,
+        "X-26": 1.306902899988927,
+        "X-27": 1.7440616999956546,
+        "X-28": 1.1191825999994762,
+        "X-29": 1.2438374000048498,
+        "X-30": 1.314112499996554,
+        "X-31": 1.6653432000020985,
+        "X-32": 1.4785387000010815,
+        "X-33": 1.014488100001472,
+        "X-34": 1.2347632000019075,
+        "X-35": 4.037003399993409,
+        "X-37": 1.0906352000019979,
+        "X-38": 4.0288996000017505,
+        "X-39": 5.565990100003546,
+        "X-40": 1.6933253000024706,
+        "X-43": 1.6202056000038283,
+        "X-44": 1.4594826999964425,
+        "X-45": 2.3694667000090703,
+        "X-46": 1.4895567000057781
+      },
+      "self": {
+        "video_recall": 1.0,
+        "fp_rate": 1.0,
+        "median_abs_dt": 8.0,
+        "type_accuracy": 0.16666666666666666,
+        "n_videos": 10,
+        "n_violation_videos": 6,
+        "n_clean_videos": 4,
+        "n_false_positives": 4,
+        "n_typed_right": 1,
+        "localized_labels_within_5s": 4,
+        "n_violation_labels": 6,
+        "by_video": {
+          "computer_on": {
+            "truth": [
+              [
+                7,
+                "laptop_left_open"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 5.0,
+                "action": "playing organ",
+                "action_score": 0.23092758655548096,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 7.0,
+                "action": "smoking",
+                "action_score": 0.08966422826051712,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "IDnotshown": {
+            "truth": [
+              [
+                7,
+                "id_not_presented"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "playing organ",
+                "action_score": 0.43785297870635986,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 11.0,
+                "action": "smoking hookah",
+                "action_score": 0.17124208807945251,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "left_door_open": {
+            "truth": [
+              [
+                4,
+                "cash_room_door_open"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "smoking hookah",
+                "action_score": 0.30466365814208984,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 7.0,
+                "start_sec": 6.0,
+                "end_sec": 8.0,
+                "action": "smoking",
+                "action_score": 0.4477405846118927,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "light_on": {
+            "truth": [
+              [
+                15,
+                "other"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 3.0,
+                "action": "playing organ",
+                "action_score": 0.40379559993743896,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 10.0,
+                "action": "tossing coin",
+                "action_score": 0.20265430212020874,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "noviolation": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 3.0,
+                "action": "smoking hookah",
+                "action_score": 0.3836819529533386,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 7.0,
+                "start_sec": 6.0,
+                "end_sec": 8.0,
+                "action": "counting money",
+                "action_score": 0.1950114220380783,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "person": {
+            "truth": [
+              [
+                12,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 4.0,
+                "action": "jumpstyle dancing",
+                "action_score": 0.17400574684143066,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 6.0,
+                "start_sec": 5.0,
+                "end_sec": 7.0,
+                "action": "smoking hookah",
+                "action_score": 0.20085415244102478,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "phone_left": {
+            "truth": [
+              [
+                11,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 4.0,
+                "action": "playing organ",
+                "action_score": 0.3052085041999817,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 10.0,
+                "start_sec": 9.0,
+                "end_sec": 12.0,
+                "action": "smoking hookah",
+                "action_score": 0.2630952298641205,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "2people_no_violation": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 8.0,
+                "action": "cracking neck",
+                "action_score": 0.3160860538482666,
+                "violation_score": 1.0
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 10.0,
+                "start_sec": 9.0,
+                "end_sec": 11.0,
+                "action": "making bed",
+                "action_score": 0.34419751167297363,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "no_violation_counting_and_leaving": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 3.0,
+                "action": "bench pressing",
+                "action_score": 0.27878496050834656,
+                "violation_score": 1.0
+              },
+              {
+                "type": "cash_partially_given",
+                "raw_type": "cash_partially_given",
+                "timecode_sec": 9.0,
+                "start_sec": 8.0,
+                "end_sec": 10.0,
+                "action": "bench pressing",
+                "action_score": 0.28230756521224976,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "no_violation_giving_money_one_person": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "cash_partially_given",
+                "raw_type": "cash_partially_given",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 7.0,
+                "action": "cracking neck",
+                "action_score": 0.2761269807815552,
+                "violation_score": 1.0
+              },
+              {
+                "type": "cash_partially_given",
+                "raw_type": "cash_partially_given",
+                "timecode_sec": 11.0,
+                "start_sec": 10.0,
+                "end_sec": 12.0,
+                "action": "bench pressing",
+                "action_score": 0.4609571099281311,
+                "violation_score": 1.0
+              }
+            ]
+          }
+        },
+        "embedding_seconds": {
+          "computer_on": 2.3313900000066496,
+          "IDnotshown": 1.6474774000089383,
+          "left_door_open": 1.4502519999950891,
+          "light_on": 2.862649300004705,
+          "noviolation": 3.1452818999969168,
+          "person": 3.8212719000002835,
+          "phone_left": 3.221666000012192,
+          "2people_no_violation": 17.927300600000308,
+          "no_violation_counting_and_leaving": 3.5440648999938276,
+          "no_violation_giving_money_one_person": 5.5074197000067215
+        },
+        "protocol": "Previously used self benchmark; no fitting, selection or threshold adjustment on it in this experiment."
+      }
+    },
+    "xclip-base-patch32": {
+      "lovo": {
+        "video_recall": 1.0,
+        "fp_rate": 0.9473684210526315,
+        "median_abs_dt": 3.0,
+        "type_accuracy": 0.0,
+        "n_videos": 40,
+        "n_violation_videos": 21,
+        "n_clean_videos": 19,
+        "n_false_positives": 18,
+        "n_typed_right": 0,
+        "localized_labels_within_5s": 19,
+        "n_violation_labels": 22,
+        "by_video": {
+          "X-1": {
+            "truth": [
+              [
+                22,
+                "cash_partially_given"
+              ]
+            ],
+            "score": 0.7351335287094116,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2650253176689148,
+                "violation_score": 0.7351335287094116
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 24.933333333333334,
+                "start_sec": 23.0,
+                "end_sec": 25.933333333333334,
+                "action": "two people standing beside a desk",
+                "action_score": 0.3643028736114502,
+                "violation_score": 0.44883406162261963
+              }
+            ]
+          },
+          "X-2": {
+            "truth": [
+              [
+                10,
+                "id_not_presented"
+              ]
+            ],
+            "score": 0.37432312965393066,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 7.0,
+                "start_sec": 4.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.4164527952671051,
+                "violation_score": 0.37432312965393066
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 13.0,
+                "start_sec": 11.0,
+                "end_sec": 15.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.3336498737335205,
+                "violation_score": 0.162147656083107
+              }
+            ]
+          },
+          "X-3": {
+            "truth": [],
+            "score": 0.96115642786026,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 10.0,
+                "start_sec": 6.0,
+                "end_sec": 17.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.30457279086112976,
+                "violation_score": 0.96115642786026
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 17.0,
+                "start_sec": 16.0,
+                "end_sec": 19.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.22048057615756989,
+                "violation_score": 0.888988733291626
+              }
+            ]
+          },
+          "X-4": {
+            "truth": [
+              [
+                57,
+                "cash_on_desk_next_client"
+              ],
+              [
+                68,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.9940581321716309,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 71.0,
+                "start_sec": 60.0,
+                "end_sec": 72.7,
+                "action": "two people standing beside a desk",
+                "action_score": 0.253240704536438,
+                "violation_score": 0.9940581321716309
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 49.0,
+                "start_sec": 46.0,
+                "end_sec": 52.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.31472256779670715,
+                "violation_score": 0.6553205847740173
+              }
+            ]
+          },
+          "X-5": {
+            "truth": [],
+            "score": 0.5466105341911316,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 65.0,
+                "start_sec": 60.0,
+                "end_sec": 71.6,
+                "action": "two people standing beside a desk",
+                "action_score": 0.4118761122226715,
+                "violation_score": 0.5466105341911316
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 5.0,
+                "start_sec": 2.0,
+                "end_sec": 7.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.3225964903831482,
+                "violation_score": 0.19523541629314423
+              }
+            ]
+          },
+          "X-8": {
+            "truth": [],
+            "score": 0.0005755805177614093,
+            "events": []
+          },
+          "X-10": {
+            "truth": [],
+            "score": 0.8750064373016357,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 5.0,
+                "start_sec": 4.0,
+                "end_sec": 7.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.20290863513946533,
+                "violation_score": 0.8750064373016357
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 14.0,
+                "start_sec": 12.0,
+                "end_sec": 15.566666666666666,
+                "action": "two people standing beside a desk",
+                "action_score": 0.23495890200138092,
+                "violation_score": 0.48678404092788696
+              }
+            ]
+          },
+          "X-11": {
+            "truth": [
+              [
+                18,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.04474491626024246,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 18.0,
+                "start_sec": 17.0,
+                "end_sec": 19.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.41340503096580505,
+                "violation_score": 0.04474491626024246
+              }
+            ]
+          },
+          "X-12": {
+            "truth": [],
+            "score": 0.9665764570236206,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 41.300000000000004,
+                "start_sec": 38.0,
+                "end_sec": 42.300000000000004,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.36021843552589417,
+                "violation_score": 0.9665764570236206
+              },
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 33.0,
+                "start_sec": 32.0,
+                "end_sec": 34.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5479898452758789,
+                "violation_score": 0.6150463819503784
+              }
+            ]
+          },
+          "X-13": {
+            "truth": [
+              [
+                47,
+                "cash_put_away_uncounted"
+              ]
+            ],
+            "score": 0.9811952114105225,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 64.3,
+                "start_sec": 60.0,
+                "end_sec": 65.3,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.38819044828414917,
+                "violation_score": 0.9811952114105225
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 48.0,
+                "start_sec": 46.0,
+                "end_sec": 61.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.7195438146591187,
+                "violation_score": 0.9237692356109619
+              }
+            ]
+          },
+          "X-14": {
+            "truth": [],
+            "score": 0.9808328151702881,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 17.0,
+                "start_sec": 12.0,
+                "end_sec": 22.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.40865546464920044,
+                "violation_score": 0.9808328151702881
+              },
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.369599312543869,
+                "violation_score": 0.9607231616973877
+              }
+            ]
+          },
+          "X-15": {
+            "truth": [
+              [
+                15,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.9999547004699707,
+            "events": [
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 12.0,
+                "start_sec": 9.0,
+                "end_sec": 16.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5223262906074524,
+                "violation_score": 0.9999547004699707
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 4.0,
+                "start_sec": 3.0,
+                "end_sec": 5.0,
+                "action": "a person using a mobile phone",
+                "action_score": 0.15194714069366455,
+                "violation_score": 0.2854556739330292
+              }
+            ]
+          },
+          "X-16": {
+            "truth": [],
+            "score": 0.9765164256095886,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 6.0,
+                "start_sec": 4.0,
+                "end_sec": 7.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.33877190947532654,
+                "violation_score": 0.9765164256095886
+              },
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 17.0,
+                "start_sec": 14.0,
+                "end_sec": 19.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.39948976039886475,
+                "violation_score": 0.8601770401000977
+              }
+            ]
+          },
+          "X-17": {
+            "truth": [
+              [
+                7,
+                "collector_id_not_shown"
+              ]
+            ],
+            "score": 0.49051231145858765,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 10.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.3833906054496765,
+                "violation_score": 0.49051231145858765
+              }
+            ]
+          },
+          "X-18": {
+            "truth": [
+              [
+                20,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.6008798480033875,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 19.0,
+                "start_sec": 18.0,
+                "end_sec": 22.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.282822847366333,
+                "violation_score": 0.6008798480033875
+              },
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 11.0,
+                "start_sec": 10.0,
+                "end_sec": 15.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.1987486481666565,
+                "violation_score": 0.3794791102409363
+              }
+            ]
+          },
+          "X-19": {
+            "truth": [],
+            "score": 0.982377290725708,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 5.0,
+                "start_sec": 2.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5247767567634583,
+                "violation_score": 0.982377290725708
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 52.0,
+                "start_sec": 44.0,
+                "end_sec": 54.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.43681657314300537,
+                "violation_score": 0.9483639001846313
+              }
+            ]
+          },
+          "X-20": {
+            "truth": [
+              [
+                5,
+                "safe_left_open"
+              ]
+            ],
+            "score": 0.049288176000118256,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 5.0,
+                "start_sec": 4.0,
+                "end_sec": 6.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.38367897272109985,
+                "violation_score": 0.049288176000118256
+              }
+            ]
+          },
+          "X-21": {
+            "truth": [],
+            "score": 0.9855937361717224,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 18.0,
+                "start_sec": 17.0,
+                "end_sec": 19.6,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.1795673817396164,
+                "violation_score": 0.9855937361717224
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 11.0,
+                "start_sec": 0.0,
+                "end_sec": 13.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.22841230034828186,
+                "violation_score": 0.9324936866760254
+              }
+            ]
+          },
+          "X-22": {
+            "truth": [
+              [
+                14,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.9807900190353394,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 12.0,
+                "start_sec": 5.0,
+                "end_sec": 17.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.7143099904060364,
+                "violation_score": 0.9807900190353394
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 19.0,
+                "start_sec": 17.0,
+                "end_sec": 21.03333333333333,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.3438476622104645,
+                "violation_score": 0.3370378911495209
+              }
+            ]
+          },
+          "X-23": {
+            "truth": [],
+            "score": 0.9333359599113464,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 14.0,
+                "start_sec": 0.0,
+                "end_sec": 17.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.6514977812767029,
+                "violation_score": 0.9333359599113464
+              }
+            ]
+          },
+          "X-24": {
+            "truth": [
+              [
+                8,
+                "valuables_left_on_desk"
+              ]
+            ],
+            "score": 0.24060828983783722,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 8.0,
+                "start_sec": 6.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.6456729173660278,
+                "violation_score": 0.24060828983783722
+              }
+            ]
+          },
+          "X-25": {
+            "truth": [],
+            "score": 0.9983304142951965,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 7.0,
+                "start_sec": 4.0,
+                "end_sec": 15.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.639145016670227,
+                "violation_score": 0.9983304142951965
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 27.0,
+                "start_sec": 24.0,
+                "end_sec": 28.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.3961423635482788,
+                "violation_score": 0.45168739557266235
+              }
+            ]
+          },
+          "X-26": {
+            "truth": [
+              [
+                9,
+                "cash_left_on_desk"
+              ]
+            ],
+            "score": 0.8188004493713379,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 15.0,
+                "start_sec": 9.0,
+                "end_sec": 16.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.409492552280426,
+                "violation_score": 0.8188004493713379
+              },
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 9.0,
+                "start_sec": 8.0,
+                "end_sec": 10.0,
+                "action": "a person sitting and working at a desk",
+                "action_score": 0.2476290911436081,
+                "violation_score": 0.34445908665657043
+              }
+            ]
+          },
+          "X-27": {
+            "truth": [],
+            "score": 0.9749099612236023,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 22.0,
+                "start_sec": 8.0,
+                "end_sec": 23.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.28029143810272217,
+                "violation_score": 0.9749099612236023
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 5.0,
+                "start_sec": 1.0,
+                "end_sec": 9.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.2620679438114166,
+                "violation_score": 0.6901585459709167
+              }
+            ]
+          },
+          "X-28": {
+            "truth": [
+              [
+                7,
+                "laptop_left_open"
+              ]
+            ],
+            "score": 0.15777836740016937,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 10.0,
+                "start_sec": 8.0,
+                "end_sec": 11.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5588573217391968,
+                "violation_score": 0.15777836740016937
+              },
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 15.0,
+                "start_sec": 14.0,
+                "end_sec": 16.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.26282650232315063,
+                "violation_score": 0.11770878732204437
+              }
+            ]
+          },
+          "X-29": {
+            "truth": [],
+            "score": 0.6821215748786926,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 10.0,
+                "start_sec": 6.0,
+                "end_sec": 14.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.6098015904426575,
+                "violation_score": 0.6821215748786926
+              },
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 7.0,
+                "action": "a person sitting and working at a desk",
+                "action_score": 0.23558954894542694,
+                "violation_score": 0.6151446104049683
+              }
+            ]
+          },
+          "X-30": {
+            "truth": [
+              [
+                13,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9562883377075195,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 9.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.393738716840744,
+                "violation_score": 0.9562883377075195
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 17.8,
+                "start_sec": 16.8,
+                "end_sec": 18.8,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5146699547767639,
+                "violation_score": 0.320137619972229
+              }
+            ]
+          },
+          "X-31": {
+            "truth": [],
+            "score": 0.9292870163917542,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 5.0,
+                "start_sec": 4.0,
+                "end_sec": 6.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.17012633383274078,
+                "violation_score": 0.9292870163917542
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 12.0,
+                "start_sec": 6.0,
+                "end_sec": 14.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5147717595100403,
+                "violation_score": 0.9146268367767334
+              }
+            ]
+          },
+          "X-32": {
+            "truth": [
+              [
+                5,
+                "cash_room_door_open"
+              ]
+            ],
+            "score": 0.8355149030685425,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 20.3,
+                "start_sec": 19.0,
+                "end_sec": 21.3,
+                "action": "two people standing beside a desk",
+                "action_score": 0.32783883810043335,
+                "violation_score": 0.8355149030685425
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 4.0,
+                "start_sec": 2.0,
+                "end_sec": 10.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.2668657898902893,
+                "violation_score": 0.365546315908432
+              }
+            ]
+          },
+          "X-33": {
+            "truth": [
+              [
+                6,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.36119404435157776,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 6.0,
+                "start_sec": 4.0,
+                "end_sec": 7.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.5150147080421448,
+                "violation_score": 0.36119404435157776
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 13.0,
+                "start_sec": 10.0,
+                "end_sec": 14.333333333333334,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2733824849128723,
+                "violation_score": 0.10905473679304123
+              }
+            ]
+          },
+          "X-34": {
+            "truth": [
+              [
+                13,
+                "client_left_during_count"
+              ]
+            ],
+            "score": 0.06530190259218216,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 9.0,
+                "action": "a person sitting and working at a desk",
+                "action_score": 0.1927080899477005,
+                "violation_score": 0.06530190259218216
+              }
+            ]
+          },
+          "X-35": {
+            "truth": [],
+            "score": 0.5689969062805176,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 3.0,
+                "start_sec": 0.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.4321683943271637,
+                "violation_score": 0.5689969062805176
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 13.0,
+                "start_sec": 12.0,
+                "end_sec": 14.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.19464004039764404,
+                "violation_score": 0.08460260927677155
+              }
+            ]
+          },
+          "X-37": {
+            "truth": [],
+            "score": 0.7981371879577637,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 0.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.19679982960224152,
+                "violation_score": 0.7981371879577637
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 13.0,
+                "start_sec": 12.0,
+                "end_sec": 14.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.22452618181705475,
+                "violation_score": 0.11986240744590759
+              }
+            ]
+          },
+          "X-38": {
+            "truth": [
+              [
+                33,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.969924807548523,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 3.0,
+                "start_sec": 0.0,
+                "end_sec": 7.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.49464765191078186,
+                "violation_score": 0.969924807548523
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 25.0,
+                "start_sec": 23.0,
+                "end_sec": 27.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.31242212653160095,
+                "violation_score": 0.5193414092063904
+              }
+            ]
+          },
+          "X-39": {
+            "truth": [],
+            "score": 0.9961467981338501,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 4.0,
+                "start_sec": 0.0,
+                "end_sec": 8.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.47187888622283936,
+                "violation_score": 0.9961467981338501
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 73.0,
+                "start_sec": 72.0,
+                "end_sec": 78.73333333333333,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.4026060104370117,
+                "violation_score": 0.9936351776123047
+              }
+            ]
+          },
+          "X-40": {
+            "truth": [
+              [
+                17,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.986748218536377,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 11.0,
+                "start_sec": 2.0,
+                "end_sec": 25.266666666666666,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5597014427185059,
+                "violation_score": 0.986748218536377
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 2.0,
+                "start_sec": 1.0,
+                "end_sec": 3.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.2749248743057251,
+                "violation_score": 0.24316880106925964
+              }
+            ]
+          },
+          "X-43": {
+            "truth": [],
+            "score": 0.9869041442871094,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 18.0,
+                "start_sec": 8.0,
+                "end_sec": 23.366666666666667,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.3608793318271637,
+                "violation_score": 0.9869041442871094
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 5.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.270251989364624,
+                "violation_score": 0.7792057394981384
+              }
+            ]
+          },
+          "X-44": {
+            "truth": [
+              [
+                16,
+                "detector_not_used"
+              ]
+            ],
+            "score": 0.9777057766914368,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 19.433333333333334,
+                "start_sec": 13.0,
+                "end_sec": 20.433333333333334,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.40003204345703125,
+                "violation_score": 0.9777057766914368
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 6.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.39476948976516724,
+                "violation_score": 0.9722068309783936
+              }
+            ]
+          },
+          "X-45": {
+            "truth": [],
+            "score": 0.7543310523033142,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 22.0,
+                "start_sec": 11.0,
+                "end_sec": 26.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.23583902418613434,
+                "violation_score": 0.7543310523033142
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 6.0,
+                "start_sec": 4.0,
+                "end_sec": 10.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2515822649002075,
+                "violation_score": 0.35881009697914124
+              }
+            ]
+          },
+          "X-46": {
+            "truth": [
+              [
+                11,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.34654220938682556,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 12.0,
+                "start_sec": 11.0,
+                "end_sec": 19.133333333333333,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.28591805696487427,
+                "violation_score": 0.34654220938682556
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2205946147441864,
+                "violation_score": 0.19416631758213043
+              }
+            ]
+          }
+        },
+        "threshold": 0.04474491626024246,
+        "protocol": "OOF heads; threshold selected on these same scores (optimistic recall)."
+      },
+      "nested": {
+        "video_recall": 0.9047619047619048,
+        "fp_rate": 0.9473684210526315,
+        "median_abs_dt": 3.0,
+        "type_accuracy": 0.0,
+        "n_videos": 40,
+        "n_violation_videos": 21,
+        "n_clean_videos": 19,
+        "n_false_positives": 18,
+        "n_typed_right": 0,
+        "localized_labels_within_5s": 17,
+        "n_violation_labels": 22,
+        "by_video": {
+          "X-1": {
+            "truth": [
+              [
+                22,
+                "cash_partially_given"
+              ]
+            ],
+            "score": 0.7351335287094116,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 3.0,
+                "start_sec": 2.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2650253176689148,
+                "violation_score": 0.7351335287094116
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 24.933333333333334,
+                "start_sec": 22.0,
+                "end_sec": 25.933333333333334,
+                "action": "two people standing beside a desk",
+                "action_score": 0.3643028736114502,
+                "violation_score": 0.44883406162261963
+              }
+            ]
+          },
+          "X-2": {
+            "truth": [
+              [
+                10,
+                "id_not_presented"
+              ]
+            ],
+            "score": 0.37432312965393066,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 7.0,
+                "start_sec": 4.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.4164527952671051,
+                "violation_score": 0.37432312965393066
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 13.0,
+                "start_sec": 11.0,
+                "end_sec": 15.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.3336498737335205,
+                "violation_score": 0.162147656083107
+              }
+            ]
+          },
+          "X-3": {
+            "truth": [],
+            "score": 0.96115642786026,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 10.0,
+                "start_sec": 6.0,
+                "end_sec": 17.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.30457279086112976,
+                "violation_score": 0.96115642786026
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 17.0,
+                "start_sec": 16.0,
+                "end_sec": 19.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.22048057615756989,
+                "violation_score": 0.888988733291626
+              }
+            ]
+          },
+          "X-4": {
+            "truth": [
+              [
+                57,
+                "cash_on_desk_next_client"
+              ],
+              [
+                68,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.9940581321716309,
+            "events": [
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 71.0,
+                "start_sec": 60.0,
+                "end_sec": 72.7,
+                "action": "two people standing beside a desk",
+                "action_score": 0.253240704536438,
+                "violation_score": 0.9940581321716309
+              },
+              {
+                "type": "id_not_presented",
+                "raw_type": "id_not_presented",
+                "timecode_sec": 49.0,
+                "start_sec": 46.0,
+                "end_sec": 52.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.31472256779670715,
+                "violation_score": 0.6553205847740173
+              }
+            ]
+          },
+          "X-5": {
+            "truth": [],
+            "score": 0.5466105341911316,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 65.0,
+                "start_sec": 60.0,
+                "end_sec": 71.6,
+                "action": "two people standing beside a desk",
+                "action_score": 0.4118761122226715,
+                "violation_score": 0.5466105341911316
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 5.0,
+                "start_sec": 2.0,
+                "end_sec": 7.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.3225964903831482,
+                "violation_score": 0.19523541629314423
+              }
+            ]
+          },
+          "X-8": {
+            "truth": [],
+            "score": 0.0005755805177614093,
+            "events": []
+          },
+          "X-10": {
+            "truth": [],
+            "score": 0.8750064373016357,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 5.0,
+                "start_sec": 4.0,
+                "end_sec": 7.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.20290863513946533,
+                "violation_score": 0.8750064373016357
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 14.0,
+                "start_sec": 12.0,
+                "end_sec": 15.566666666666666,
+                "action": "two people standing beside a desk",
+                "action_score": 0.23495890200138092,
+                "violation_score": 0.48678404092788696
+              }
+            ]
+          },
+          "X-11": {
+            "truth": [
+              [
+                18,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.04474491626024246,
+            "events": []
+          },
+          "X-12": {
+            "truth": [],
+            "score": 0.9665764570236206,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 41.300000000000004,
+                "start_sec": 38.0,
+                "end_sec": 42.300000000000004,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.36021843552589417,
+                "violation_score": 0.9665764570236206
+              },
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 33.0,
+                "start_sec": 32.0,
+                "end_sec": 34.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5479898452758789,
+                "violation_score": 0.6150463819503784
+              }
+            ]
+          },
+          "X-13": {
+            "truth": [
+              [
+                47,
+                "cash_put_away_uncounted"
+              ]
+            ],
+            "score": 0.9811952114105225,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 64.3,
+                "start_sec": 60.0,
+                "end_sec": 65.3,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.38819044828414917,
+                "violation_score": 0.9811952114105225
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 48.0,
+                "start_sec": 46.0,
+                "end_sec": 61.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.7195438146591187,
+                "violation_score": 0.9237692356109619
+              }
+            ]
+          },
+          "X-14": {
+            "truth": [],
+            "score": 0.9808328151702881,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 17.0,
+                "start_sec": 12.0,
+                "end_sec": 22.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.40865546464920044,
+                "violation_score": 0.9808328151702881
+              },
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 2.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.369599312543869,
+                "violation_score": 0.9607231616973877
+              }
+            ]
+          },
+          "X-15": {
+            "truth": [
+              [
+                15,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.9999547004699707,
+            "events": [
+              {
+                "type": "cash_put_away_uncounted",
+                "raw_type": "cash_put_away_uncounted",
+                "timecode_sec": 12.0,
+                "start_sec": 9.0,
+                "end_sec": 16.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5223262906074524,
+                "violation_score": 0.9999547004699707
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 4.0,
+                "start_sec": 3.0,
+                "end_sec": 5.0,
+                "action": "a person using a mobile phone",
+                "action_score": 0.15194714069366455,
+                "violation_score": 0.2854556739330292
+              }
+            ]
+          },
+          "X-16": {
+            "truth": [],
+            "score": 0.9765164256095886,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 6.0,
+                "start_sec": 4.0,
+                "end_sec": 7.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.33877190947532654,
+                "violation_score": 0.9765164256095886
+              },
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 17.0,
+                "start_sec": 14.0,
+                "end_sec": 19.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.39948976039886475,
+                "violation_score": 0.8601770401000977
+              }
+            ]
+          },
+          "X-17": {
+            "truth": [
+              [
+                7,
+                "collector_id_not_shown"
+              ]
+            ],
+            "score": 0.49051231145858765,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 10.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.3833906054496765,
+                "violation_score": 0.49051231145858765
+              }
+            ]
+          },
+          "X-18": {
+            "truth": [
+              [
+                20,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.6008798480033875,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 19.0,
+                "start_sec": 18.0,
+                "end_sec": 22.599999999999998,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.282822847366333,
+                "violation_score": 0.6008798480033875
+              },
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 11.0,
+                "start_sec": 10.0,
+                "end_sec": 15.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.1987486481666565,
+                "violation_score": 0.3794791102409363
+              }
+            ]
+          },
+          "X-19": {
+            "truth": [],
+            "score": 0.982377290725708,
+            "events": [
+              {
+                "type": "collector_id_not_shown",
+                "raw_type": "collector_id_not_shown",
+                "timecode_sec": 5.0,
+                "start_sec": 2.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5247767567634583,
+                "violation_score": 0.982377290725708
+              },
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 52.0,
+                "start_sec": 44.0,
+                "end_sec": 54.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.43681657314300537,
+                "violation_score": 0.9483639001846313
+              }
+            ]
+          },
+          "X-20": {
+            "truth": [
+              [
+                5,
+                "safe_left_open"
+              ]
+            ],
+            "score": 0.049288176000118256,
+            "events": []
+          },
+          "X-21": {
+            "truth": [],
+            "score": 0.9855937361717224,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 18.0,
+                "start_sec": 17.0,
+                "end_sec": 19.6,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.1795673817396164,
+                "violation_score": 0.9855937361717224
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 11.0,
+                "start_sec": 1.0,
+                "end_sec": 13.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.22841230034828186,
+                "violation_score": 0.9324936866760254
+              }
+            ]
+          },
+          "X-22": {
+            "truth": [
+              [
+                14,
+                "keys_left_on_safe"
+              ]
+            ],
+            "score": 0.9807900190353394,
+            "events": [
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 12.0,
+                "start_sec": 4.0,
+                "end_sec": 18.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.7143099904060364,
+                "violation_score": 0.9807900190353394
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 19.0,
+                "start_sec": 17.0,
+                "end_sec": 21.03333333333333,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.3438476622104645,
+                "violation_score": 0.3370378911495209
+              }
+            ]
+          },
+          "X-23": {
+            "truth": [],
+            "score": 0.9333359599113464,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 14.0,
+                "start_sec": 0.0,
+                "end_sec": 17.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.6514977812767029,
+                "violation_score": 0.9333359599113464
+              }
+            ]
+          },
+          "X-24": {
+            "truth": [
+              [
+                8,
+                "valuables_left_on_desk"
+              ]
+            ],
+            "score": 0.24060828983783722,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 8.0,
+                "start_sec": 6.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.6456729173660278,
+                "violation_score": 0.24060828983783722
+              }
+            ]
+          },
+          "X-25": {
+            "truth": [],
+            "score": 0.9983304142951965,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 7.0,
+                "start_sec": 4.0,
+                "end_sec": 15.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.639145016670227,
+                "violation_score": 0.9983304142951965
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 27.0,
+                "start_sec": 24.0,
+                "end_sec": 28.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.3961423635482788,
+                "violation_score": 0.45168739557266235
+              }
+            ]
+          },
+          "X-26": {
+            "truth": [
+              [
+                9,
+                "cash_left_on_desk"
+              ]
+            ],
+            "score": 0.8188004493713379,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 15.0,
+                "start_sec": 9.0,
+                "end_sec": 16.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.409492552280426,
+                "violation_score": 0.8188004493713379
+              },
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 9.0,
+                "start_sec": 8.0,
+                "end_sec": 10.0,
+                "action": "a person sitting and working at a desk",
+                "action_score": 0.2476290911436081,
+                "violation_score": 0.34445908665657043
+              }
+            ]
+          },
+          "X-27": {
+            "truth": [],
+            "score": 0.9749099612236023,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 22.0,
+                "start_sec": 8.0,
+                "end_sec": 23.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.28029143810272217,
+                "violation_score": 0.9749099612236023
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 5.0,
+                "start_sec": 1.0,
+                "end_sec": 9.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.2620679438114166,
+                "violation_score": 0.6901585459709167
+              }
+            ]
+          },
+          "X-28": {
+            "truth": [
+              [
+                7,
+                "laptop_left_open"
+              ]
+            ],
+            "score": 0.15777836740016937,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 10.0,
+                "start_sec": 8.0,
+                "end_sec": 11.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5588573217391968,
+                "violation_score": 0.15777836740016937
+              },
+              {
+                "type": "other",
+                "raw_type": "valuables_left_on_desk",
+                "timecode_sec": 15.0,
+                "start_sec": 14.0,
+                "end_sec": 16.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.26282650232315063,
+                "violation_score": 0.11770878732204437
+              }
+            ]
+          },
+          "X-29": {
+            "truth": [],
+            "score": 0.6821215748786926,
+            "events": [
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 10.0,
+                "start_sec": 6.0,
+                "end_sec": 14.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.6098015904426575,
+                "violation_score": 0.6821215748786926
+              },
+              {
+                "type": "laptop_left_open",
+                "raw_type": "laptop_left_open",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 7.0,
+                "action": "a person sitting and working at a desk",
+                "action_score": 0.23558954894542694,
+                "violation_score": 0.6151446104049683
+              }
+            ]
+          },
+          "X-30": {
+            "truth": [
+              [
+                13,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.9562883377075195,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 9.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.393738716840744,
+                "violation_score": 0.9562883377075195
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 17.8,
+                "start_sec": 16.8,
+                "end_sec": 18.8,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5146699547767639,
+                "violation_score": 0.320137619972229
+              }
+            ]
+          },
+          "X-31": {
+            "truth": [],
+            "score": 0.9292870163917542,
+            "events": [
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 5.0,
+                "start_sec": 4.0,
+                "end_sec": 6.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.17012633383274078,
+                "violation_score": 0.9292870163917542
+              },
+              {
+                "type": "cash_room_door_open",
+                "raw_type": "cash_room_door_open",
+                "timecode_sec": 12.0,
+                "start_sec": 6.0,
+                "end_sec": 14.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5147717595100403,
+                "violation_score": 0.9146268367767334
+              }
+            ]
+          },
+          "X-32": {
+            "truth": [
+              [
+                5,
+                "cash_room_door_open"
+              ]
+            ],
+            "score": 0.8355149030685425,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 20.3,
+                "start_sec": 19.0,
+                "end_sec": 21.3,
+                "action": "two people standing beside a desk",
+                "action_score": 0.32783883810043335,
+                "violation_score": 0.8355149030685425
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 4.0,
+                "start_sec": 2.0,
+                "end_sec": 10.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.2668657898902893,
+                "violation_score": 0.365546315908432
+              }
+            ]
+          },
+          "X-33": {
+            "truth": [
+              [
+                6,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 0.36119404435157776,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 6.0,
+                "start_sec": 4.0,
+                "end_sec": 7.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.5150147080421448,
+                "violation_score": 0.36119404435157776
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 13.0,
+                "start_sec": 10.0,
+                "end_sec": 14.333333333333334,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2733824849128723,
+                "violation_score": 0.10905473679304123
+              }
+            ]
+          },
+          "X-34": {
+            "truth": [
+              [
+                13,
+                "client_left_during_count"
+              ]
+            ],
+            "score": 0.06530190259218216,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 7.0,
+                "end_sec": 10.0,
+                "action": "a person sitting and working at a desk",
+                "action_score": 0.1927080899477005,
+                "violation_score": 0.06530190259218216
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 15.0,
+                "start_sec": 14.0,
+                "end_sec": 16.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.354148268699646,
+                "violation_score": 0.032524142414331436
+              }
+            ]
+          },
+          "X-35": {
+            "truth": [],
+            "score": 0.5689969062805176,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 3.0,
+                "start_sec": 0.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.4321683943271637,
+                "violation_score": 0.5689969062805176
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 13.0,
+                "start_sec": 11.0,
+                "end_sec": 14.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.19464004039764404,
+                "violation_score": 0.08460260927677155
+              }
+            ]
+          },
+          "X-37": {
+            "truth": [],
+            "score": 0.7981371879577637,
+            "events": [
+              {
+                "type": "cash_on_desk_next_client",
+                "raw_type": "cash_on_desk_next_client",
+                "timecode_sec": 8.0,
+                "start_sec": 0.0,
+                "end_sec": 9.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.19679982960224152,
+                "violation_score": 0.7981371879577637
+              },
+              {
+                "type": "cash_left_on_desk",
+                "raw_type": "cash_left_on_desk",
+                "timecode_sec": 13.0,
+                "start_sec": 11.0,
+                "end_sec": 14.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.22452618181705475,
+                "violation_score": 0.11986240744590759
+              }
+            ]
+          },
+          "X-38": {
+            "truth": [
+              [
+                33,
+                "cash_on_desk_next_client"
+              ]
+            ],
+            "score": 0.969924807548523,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 3.0,
+                "start_sec": 0.0,
+                "end_sec": 7.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.49464765191078186,
+                "violation_score": 0.969924807548523
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 25.0,
+                "start_sec": 23.0,
+                "end_sec": 28.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.31242212653160095,
+                "violation_score": 0.5193414092063904
+              }
+            ]
+          },
+          "X-39": {
+            "truth": [],
+            "score": 0.9961467981338501,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 4.0,
+                "start_sec": 0.0,
+                "end_sec": 8.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.47187888622283936,
+                "violation_score": 0.9961467981338501
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 73.0,
+                "start_sec": 72.0,
+                "end_sec": 78.73333333333333,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.4026060104370117,
+                "violation_score": 0.9936351776123047
+              }
+            ]
+          },
+          "X-40": {
+            "truth": [
+              [
+                17,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.986748218536377,
+            "events": [
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 11.0,
+                "start_sec": 2.0,
+                "end_sec": 25.266666666666666,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.5597014427185059,
+                "violation_score": 0.986748218536377
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 2.0,
+                "start_sec": 1.0,
+                "end_sec": 3.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.2749248743057251,
+                "violation_score": 0.24316880106925964
+              }
+            ]
+          },
+          "X-43": {
+            "truth": [],
+            "score": 0.9869041442871094,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 18.0,
+                "start_sec": 8.0,
+                "end_sec": 23.366666666666667,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.3608793318271637,
+                "violation_score": 0.9869041442871094
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 7.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.270251989364624,
+                "violation_score": 0.7792057394981384
+              }
+            ]
+          },
+          "X-44": {
+            "truth": [
+              [
+                16,
+                "detector_not_used"
+              ]
+            ],
+            "score": 0.9777057766914368,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 19.433333333333334,
+                "start_sec": 13.0,
+                "end_sec": 20.433333333333334,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.40003204345703125,
+                "violation_score": 0.9777057766914368
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 7.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.39476948976516724,
+                "violation_score": 0.9722068309783936
+              }
+            ]
+          },
+          "X-45": {
+            "truth": [],
+            "score": 0.7543310523033142,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 22.0,
+                "start_sec": 11.0,
+                "end_sec": 26.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.23583902418613434,
+                "violation_score": 0.7543310523033142
+              },
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 6.0,
+                "start_sec": 4.0,
+                "end_sec": 10.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2515822649002075,
+                "violation_score": 0.35881009697914124
+              }
+            ]
+          },
+          "X-46": {
+            "truth": [
+              [
+                11,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 0.34654220938682556,
+            "events": [
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 12.0,
+                "start_sec": 11.0,
+                "end_sec": 14.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.28591805696487427,
+                "violation_score": 0.34654220938682556
+              },
+              {
+                "type": "detector_not_used",
+                "raw_type": "detector_not_used",
+                "timecode_sec": 18.133333333333333,
+                "start_sec": 15.0,
+                "end_sec": 19.133333333333333,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.34460189938545227,
+                "violation_score": 0.26844918727874756
+              }
+            ]
+          }
+        },
+        "thresholds": {
+          "X-1": 0.034193526953458786,
+          "X-2": 0.035084035247564316,
+          "X-3": 0.02893935516476631,
+          "X-4": 0.024856705218553543,
+          "X-5": 0.042143985629081726,
+          "X-8": 0.046768996864557266,
+          "X-10": 0.04481027275323868,
+          "X-11": 0.06122737005352974,
+          "X-12": 0.056128546595573425,
+          "X-13": 0.03180108591914177,
+          "X-14": 0.034929558634757996,
+          "X-15": 0.05504924803972244,
+          "X-16": 0.04700830578804016,
+          "X-17": 0.11857688426971436,
+          "X-18": 0.03583873063325882,
+          "X-19": 0.0486551895737648,
+          "X-20": 0.05278399959206581,
+          "X-21": 0.06165395677089691,
+          "X-22": 0.015159006230533123,
+          "X-23": 0.04312186315655708,
+          "X-24": 0.029218191280961037,
+          "X-25": 0.043052561581134796,
+          "X-26": 0.031224286183714867,
+          "X-27": 0.046524785459041595,
+          "X-28": 0.03518066182732582,
+          "X-29": 0.042865537106990814,
+          "X-30": 0.05183691158890724,
+          "X-31": 0.03150834143161774,
+          "X-32": 0.0344279408454895,
+          "X-33": 0.04102584719657898,
+          "X-34": 0.018781855702400208,
+          "X-35": 0.03487076982855797,
+          "X-37": 0.035990096628665924,
+          "X-38": 0.036471106112003326,
+          "X-39": 0.06058136746287346,
+          "X-40": 0.015999287366867065,
+          "X-43": 0.041562583297491074,
+          "X-44": 0.023521436378359795,
+          "X-45": 0.037961553782224655,
+          "X-46": 0.05380777642130852
+        },
+        "protocol": "Outer video excluded from both heads, scaler and inner-LOVO threshold selection."
+      },
+      "embedding_seconds": {
+        "X-1": 2.5813217000104487,
+        "X-2": 1.54271370000788,
+        "X-3": 1.6596334999921964,
+        "X-4": 6.560137499996927,
+        "X-5": 6.1679801999998745,
+        "X-8": 3.3304456000041682,
+        "X-10": 1.248885799999698,
+        "X-11": 2.1436195999995107,
+        "X-12": 3.8608433999906993,
+        "X-13": 5.971117799999774,
+        "X-14": 12.214346000007936,
+        "X-15": 1.7039115999941714,
+        "X-16": 1.9208516999933636,
+        "X-17": 1.2360768000071403,
+        "X-18": 1.8896227999939583,
+        "X-19": 5.073749400005909,
+        "X-20": 0.9801460000016959,
+        "X-21": 1.6401478000043426,
+        "X-22": 1.6906144999957178,
+        "X-23": 1.4801716999936616,
+        "X-24": 1.2187816999939969,
+        "X-25": 2.5942747000081,
+        "X-26": 1.6519033999938983,
+        "X-27": 2.2066692000080366,
+        "X-28": 1.3509181999979774,
+        "X-29": 1.4697734000073979,
+        "X-30": 1.7152585000003455,
+        "X-31": 1.9251709999953164,
+        "X-32": 1.7995667000068352,
+        "X-33": 1.297995599990827,
+        "X-34": 1.5734707999945385,
+        "X-35": 5.256135599993286,
+        "X-37": 1.315169599998626,
+        "X-38": 5.02091950000613,
+        "X-39": 6.751188399997773,
+        "X-40": 2.082515500005684,
+        "X-43": 1.9004389999900013,
+        "X-44": 1.7076532000064617,
+        "X-45": 2.938423600004171,
+        "X-46": 1.6068115000089165
+      },
+      "self": {
+        "video_recall": 1.0,
+        "fp_rate": 1.0,
+        "median_abs_dt": 3.5,
+        "type_accuracy": 0.0,
+        "n_videos": 10,
+        "n_violation_videos": 6,
+        "n_clean_videos": 4,
+        "n_false_positives": 4,
+        "n_typed_right": 0,
+        "localized_labels_within_5s": 5,
+        "n_violation_labels": 6,
+        "by_video": {
+          "computer_on": {
+            "truth": [
+              [
+                7,
+                "laptop_left_open"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 7.0,
+                "start_sec": 5.0,
+                "end_sec": 8.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.299648255109787,
+                "violation_score": 1.0
+              },
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 12.0,
+                "start_sec": 11.0,
+                "end_sec": 13.0,
+                "action": "a person closing a door",
+                "action_score": 0.218923881649971,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "IDnotshown": {
+            "truth": [
+              [
+                7,
+                "id_not_presented"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 4.0,
+                "start_sec": 3.0,
+                "end_sec": 9.0,
+                "action": "two people standing beside a desk",
+                "action_score": 0.3914557099342346,
+                "violation_score": 1.0
+              },
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 9.0,
+                "start_sec": 8.0,
+                "end_sec": 12.178833333333333,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.29693278670310974,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "left_door_open": {
+            "truth": [
+              [
+                4,
+                "cash_room_door_open"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "other",
+                "raw_type": "foreign_object_at_desk",
+                "timecode_sec": 2.0,
+                "start_sec": 1.0,
+                "end_sec": 7.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.33003512024879456,
+                "violation_score": 1.0
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 8.0,
+                "start_sec": 6.0,
+                "end_sec": 10.2102,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.343334823846817,
+                "violation_score": 0.9999779462814331
+              }
+            ]
+          },
+          "light_on": {
+            "truth": [
+              [
+                15,
+                "other"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 8.0,
+                "start_sec": 0.0,
+                "end_sec": 19.5195,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.2581120729446411,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "noviolation": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "client_left_during_count",
+                "raw_type": "client_left_during_count",
+                "timecode_sec": 2.0,
+                "start_sec": 0.0,
+                "end_sec": 3.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.3599184453487396,
+                "violation_score": 1.0
+              },
+              {
+                "type": "safe_left_open",
+                "raw_type": "safe_left_open",
+                "timecode_sec": 20.0,
+                "start_sec": 19.0,
+                "end_sec": 22.2222,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.4265228807926178,
+                "violation_score": 0.9999990463256836
+              }
+            ]
+          },
+          "person": {
+            "truth": [
+              [
+                12,
+                "outsider_in_cash_room"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 3.0,
+                "start_sec": 1.0,
+                "end_sec": 4.0,
+                "action": "a person closing a door",
+                "action_score": 0.24634794890880585,
+                "violation_score": 1.0
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 10.0,
+                "start_sec": 7.0,
+                "end_sec": 13.0,
+                "action": "a person leaving a desk and walking away",
+                "action_score": 0.2260482758283615,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "phone_left": {
+            "truth": [
+              [
+                11,
+                "foreign_object_at_desk"
+              ]
+            ],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 15.0,
+                "start_sec": 0.0,
+                "end_sec": 19.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.2833685576915741,
+                "violation_score": 1.0
+              },
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 20.0,
+                "start_sec": 19.0,
+                "end_sec": 22.0,
+                "action": "a person closing a door",
+                "action_score": 0.2754802703857422,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "2people_no_violation": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 4.0,
+                "start_sec": 0.0,
+                "end_sec": 26.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.4686168432235718,
+                "violation_score": 1.0
+              },
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 34.0,
+                "start_sec": 27.0,
+                "end_sec": 38.90553333333333,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.5963870286941528,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "no_violation_counting_and_leaving": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 25.158466666666666,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.33129584789276123,
+                "violation_score": 1.0
+              }
+            ]
+          },
+          "no_violation_giving_money_one_person": {
+            "truth": [],
+            "score": 1.0,
+            "events": [
+              {
+                "type": "keys_left_on_safe",
+                "raw_type": "keys_left_on_safe",
+                "timecode_sec": 1.0,
+                "start_sec": 0.0,
+                "end_sec": 37.0,
+                "action": "an empty room with a desk and a safe",
+                "action_score": 0.5086890459060669,
+                "violation_score": 1.0
+              },
+              {
+                "type": "outsider_in_cash_room",
+                "raw_type": "outsider_in_cash_room",
+                "timecode_sec": 37.97226666666667,
+                "start_sec": 36.0,
+                "end_sec": 38.97226666666667,
+                "action": "a person entering a room",
+                "action_score": 0.23730303347110748,
+                "violation_score": 1.0
+              }
+            ]
+          }
+        },
+        "embedding_seconds": {
+          "computer_on": 2.2192129000031855,
+          "IDnotshown": 1.809530700003961,
+          "left_door_open": 1.5031429000082426,
+          "light_on": 2.9960728000005474,
+          "noviolation": 3.4469267000094987,
+          "person": 4.245559599992703,
+          "phone_left": 3.461978999999701,
+          "2people_no_violation": 17.92622080000001,
+          "no_violation_counting_and_leaving": 3.9280202999943867,
+          "no_violation_giving_money_one_person": 5.98692039999878
+        },
+        "protocol": "Previously used self benchmark; no fitting, selection or threshold adjustment on it in this experiment."
+      }
+    }
+  },
+  "limits": "Sparse violation point labels do not measure generic action-recognition accuracy. Dense proposals preserve static scenes. Type classes absent from a training fold cannot be learned. Historical baselines differ in both features and decision pipeline."
+}

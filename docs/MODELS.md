@@ -12,6 +12,13 @@
 | siglip-base | `google/siglip-base-patch16-224` | эмбеддинги, zero-shot по тексту | Apache-2.0 | 813 MB |
 | dfine-small | `ustc-community/dfine-small-coco` | детекция людей и объектов (D-FINE-S) | Apache-2.0 | 41 MB |
 | owlv2-base | `google/owlv2-base-patch16-ensemble` | open-vocabulary детекция (OWLv2) | Apache-2.0 | 620 MB |
+| xclip-base-patch32 | `microsoft/xclip-base-patch32` | temporal action proposals (8 frames), experimental | MIT ([card](https://huggingface.co/microsoft/xclip-base-patch32)) | ~605 MB |
+| r3d-18 | torchvision `R3D_18_Weights.KINETICS400_V1` | temporal action proposals (16 frames), experimental | BSD-3-Clause ([distribution](https://github.com/pytorch/vision/blob/main/LICENSE)) | 127 MB |
+
+Action experiment: `uv run python -m scripts.action_weights` downloads these separately;
+`uv run python -m src.models.action_train` compares the frozen action encoders with separate
+binary and type heads. VideoMAE and TimeSformer K400 checkpoints were excluded because
+their model cards specify CC-BY-NC-4.0. No new package dependencies are required.
 
 SigLIP now supplies the default frame embeddings; `FORTE_EMBEDDER=dinov2-small`
 selects the previous encoder. Both use local weights only. Reproduce the comparison

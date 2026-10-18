@@ -133,6 +133,12 @@ flowchart LR
 метриками DINOv2 и проверяет собственные записи отдельно от обучения.
 [Протокол](docs/research/siglip-comparison.md), [результат](reports/embedding_comparison/comparison.md).
 
+Эксперимент «действие → нарушение → тип и время»:
+`uv run python -m scripts.action_weights`, затем `uv run python -m src.models.action_train`.
+[Протокол и ограничения](docs/research/action-first.md). Для запуска через существующий API
+задайте `FORTE_ACTION_MODEL=r3d-18` или `FORTE_ACTION_MODEL=xclip-base-patch32` при
+`FORTE_ANALYZER=real`. Без этой переменной используется прежний анализатор.
+
 ## Ограничения
 
 - **Ложных срабатываний много, и это намеренно.** Порог стоит так, чтобы не пропустить нарушение, а чистое видео модель отличает плохо. Насколько часто она ошибается, видно в `fp_rate` в `reports/metrics.json`, оценка каждого видео там же в `video_scores`.
