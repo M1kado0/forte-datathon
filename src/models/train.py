@@ -117,6 +117,10 @@ def cross_validate(ids: list[str], clips: list[Clip]) -> list[np.ndarray]:
     return scores
 
 
+def _video_score(clf: BaseEstimator, clip: Clip) -> float:
+    return video_score(clf.predict_proba(clip.feats)[:, 1]) if len(clip.feats) else 0.0
+
+
 def _nested_fold(
     ids: list[str], clips: list[Clip], outer_train: np.ndarray, outer_val: np.ndarray
 ) -> list[dict]:
@@ -130,9 +134,7 @@ def _nested_fold(
             clf = fit_on([inner[i] for i in train_idx])
             fold_models.append(clf)
             for i in val_idx:
-                inner_scores[i] = (
-                    video_score(clf.predict_proba(inner[i].feats)[:, 1]) if len(inner[i].feats) else 0.0
-                )
+                inner_scores[i] = _video_score(clf, inner[i])
         threshold = choose_threshold(inner_scores, [c.is_violation for c in inner])
         full = fit_on(inner)
         return [
@@ -140,11 +142,9 @@ def _nested_fold(
                 "video_id": ids[v],
                 "is_violation": clips[v].is_violation,
                 "threshold": threshold,
-                "full_score": video_score(full.predict_proba(clips[v].feats)[:, 1]),
+                "full_score": _video_score(full, clips[v]),
                 # the scale the threshold was measured on: a typical fold model, averaged over the folds
-                "fold_score": float(
-                    np.mean([video_score(m.predict_proba(clips[v].feats)[:, 1]) for m in fold_models])
-                ),
+                "fold_score": float(np.mean([_video_score(m, clips[v]) for m in fold_models])),
             }
             for v in outer_val
             if len(clips[v].feats)
